@@ -22,6 +22,8 @@
   .sidebar-section{font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;padding:.75rem .5rem .25rem}
   .new-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;width:100%;margin-bottom:.5rem;transition:background .15s}
   .new-btn:hover{background:var(--accent2)}
+  .team-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:var(--radius);background:none;color:var(--text3);border:1px solid var(--border);cursor:pointer;font-family:var(--font);font-size:12px;width:100%;margin-bottom:.25rem;transition:all .15s}
+  .team-btn:hover{color:var(--text);border-color:var(--border2);background:var(--surface2)}
   .sync-status{margin-top:auto;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:.5rem}
   .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
   .sync-dot.online{background:var(--done);animation:pulse 2s infinite}
@@ -62,7 +64,7 @@
   .ticket-body{min-width:0}
   .ticket-id{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:3px}
   .ticket-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
-  .ticket-meta{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3);flex-wrap:wrap}
+  .ticket-meta{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);flex-wrap:wrap}
   .ticket-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
   .status-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);letter-spacing:.03em;white-space:nowrap}
   .s-open{background:rgba(111,168,247,.12);color:var(--open);border:1px solid rgba(111,168,247,.2)}
@@ -70,14 +72,19 @@
   .s-review{background:rgba(247,212,111,.12);color:var(--review);border:1px solid rgba(247,212,111,.2)}
   .s-done{background:rgba(111,212,168,.12);color:var(--done);border:1px solid rgba(111,212,168,.2)}
   .deadline-tag{font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:10px;white-space:nowrap}
-  .dl-ok{color:var(--text3)}
-  .dl-soon{color:var(--warn);background:rgba(247,212,111,.1);border:1px solid rgba(247,212,111,.2)}
-  .dl-overdue{color:var(--overdue);background:rgba(247,112,111,.1);border:1px solid rgba(247,112,111,.2)}
+  .dl-ok{color:var(--text3)}.dl-soon{color:var(--warn);background:rgba(247,212,111,.1);border:1px solid rgba(247,212,111,.2)}.dl-overdue{color:var(--overdue);background:rgba(247,112,111,.1);border:1px solid rgba(247,112,111,.2)}
   .subtask-bar{height:3px;border-radius:2px;background:var(--border2);margin-top:5px;overflow:hidden}
   .subtask-bar-fill{height:100%;border-radius:2px;background:var(--done);transition:width .3s}
   .empty-state{text-align:center;padding:4rem 2rem;color:var(--text3)}
   .empty-state p{font-size:13px;margin-top:8px}
   .loading{text-align:center;padding:3rem;color:var(--text3);font-family:var(--mono);font-size:12px}
+
+  /* Avatars stack */
+  .avatar-stack{display:flex;flex-direction:row}
+  .avatar-stack .av{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0;margin-left:-5px;border:1px solid var(--surface);position:relative}
+  .avatar-stack .av:first-child{margin-left:0}
+
+  /* Modals */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:3rem 1rem;z-index:100;backdrop-filter:blur(2px);overflow-y:auto}
   .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:600px}
   .modal-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -104,6 +111,8 @@
   .btn-ghost:hover{color:var(--accent);background:rgba(124,111,247,.08);border-color:transparent}
   .btn-icon{border-color:transparent;background:none;color:var(--text3);padding:2px 6px;font-size:14px;cursor:pointer;border-radius:4px;border:1px solid transparent}
   .btn-icon:hover{color:var(--overdue);background:rgba(247,112,111,.08)}
+
+  /* Detail */
   .detail-title{font-size:17px;font-weight:500;margin-bottom:8px;line-height:1.4}
   .detail-desc{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:1.25rem}
   .detail-id{font-family:var(--mono);font-size:11px;color:var(--text3)}
@@ -118,20 +127,29 @@
   .deadline-status.over{color:var(--overdue);background:rgba(247,112,111,.07);border:1px solid rgba(247,112,111,.2)}
   .deadline-status.ok{color:var(--text3)}
 
+  /* Contributor picker */
+  .contributor-picker{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border2)}
+  .contributor-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .15s;font-family:var(--font)}
+  .contributor-chip:hover{border-color:var(--accent);color:var(--text)}
+  .contributor-chip.selected{background:rgba(124,111,247,.15);border-color:var(--accent);color:var(--text)}
+  .contributor-chip .chip-av{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:500;flex-shrink:0}
+  .contributors-display{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .contrib-tag{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;background:var(--surface2);border:1px solid var(--border)}
+
   /* Subtasks */
   .subtask-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-  .subtask-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);font-size:13px;transition:opacity .15s}
+  .subtask-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);font-size:13px;transition:opacity .15s;flex-wrap:wrap}
   .subtask-item.done-task{opacity:.55}
   .subtask-check{width:16px;height:16px;border-radius:4px;border:1px solid var(--border2);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
   .subtask-check:hover{border-color:var(--accent)}
   .subtask-check.checked{background:var(--done);border-color:var(--done)}
   .subtask-check.checked::after{content:'✓';font-size:10px;color:#0f0f11;font-weight:700}
-  .subtask-text{flex:1;color:var(--text)}
+  .subtask-text{flex:1;min-width:0;color:var(--text)}
   .subtask-item.done-task .subtask-text{text-decoration:line-through;color:var(--text3)}
-  .subtask-assignee{font-size:11px;color:var(--text3);flex-shrink:0}
+  .subtask-meta{display:flex;align-items:center;gap:6px;margin-left:auto}
   .subtask-progress{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px}
-  .add-subtask-row{display:flex;gap:8px;margin-top:4px}
-  .add-subtask-row input{flex:1;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none}
+  .add-subtask-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .add-subtask-row input[type=text],.add-subtask-row input:not([type]){flex:2;min-width:120px;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none}
   .add-subtask-row input:focus{border-color:var(--accent)}
   .add-subtask-row input::placeholder{color:var(--text3)}
 
@@ -142,7 +160,7 @@
   .link-url{flex:1;color:var(--accent);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
   .link-url:hover{text-decoration:underline}
   .link-label{color:var(--text2);font-size:12px;flex-shrink:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .add-link-row{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .add-link-row{display:flex;gap:6px;flex-wrap:wrap}
   .add-link-row input{padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none}
   .add-link-row input:focus{border-color:var(--accent)}
   .add-link-row input::placeholder{color:var(--text3)}
@@ -161,19 +179,40 @@
   .reply-box{margin-top:8px;margin-left:20px;border-left:2px solid var(--accent);padding-left:12px;display:flex;gap:8px;align-items:flex-start}
   .reply-box input{flex:1;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-family:var(--font);font-size:12px;outline:none}
   .reply-box input:focus{border-color:var(--accent)}
+
+  /* Team modal */
   .name-modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:380px;padding:1.5rem}
   .name-modal h3{font-size:16px;font-weight:500;margin-bottom:6px}
   .name-modal p{font-size:13px;color:var(--text2);margin-bottom:1.25rem;line-height:1.6}
+  .team-member-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .team-member-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
 
+<!-- Name prompt -->
 <div class="modal-overlay" id="name-modal-overlay">
   <div class="name-modal">
     <h3>What's your name?</h3>
     <p>Shows up on your comments so your team knows who said what.</p>
     <div class="field"><input id="name-input" placeholder="e.g. Alex, Jordan, Sam..." maxlength="30" onkeydown="if(event.key==='Enter')saveName()" autofocus /></div>
     <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="saveName()">Let's go</button></div>
+  </div>
+</div>
+
+<!-- Team roster modal -->
+<div class="modal-overlay" id="team-modal" style="display:none" onclick="if(event.target===this)closeTeamModal()">
+  <div class="name-modal" style="max-width:420px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="margin-bottom:0">Team roster</h3>
+      <button class="modal-close" onclick="closeTeamModal()">×</button>
+    </div>
+    <p style="margin-bottom:1rem">These names appear in contributor pickers across all tickets.</p>
+    <div id="team-member-list" style="margin-bottom:1rem"></div>
+    <div style="display:flex;gap:8px">
+      <input id="team-add-input" placeholder="Add team member name..." maxlength="30" style="flex:1;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')addTeamMember()" />
+      <button class="btn btn-primary btn-sm" onclick="addTeamMember()">Add</button>
+    </div>
   </div>
 </div>
 
@@ -185,6 +224,7 @@
       <span id="who-name">...</span>
     </div>
     <button class="new-btn" onclick="openNewModal()">+ New Ticket</button>
+    <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
     <div class="sidebar-section">Filter by status</div>
     <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All tickets<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
@@ -229,9 +269,13 @@
       <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add more context..."></textarea></div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
-        <div class="field"><label>Assignee</label><input id="nt-assignee" placeholder="Name or username" /></div>
+        <div class="field"><label>Deadline (optional)</label><input type="date" id="nt-deadline" style="color-scheme:dark" /></div>
       </div>
-      <div class="field"><label>Deadline (optional)</label><input type="date" id="nt-deadline" style="color-scheme:dark" /></div>
+      <div class="field">
+        <label>Contributors</label>
+        <div class="contributor-picker" id="nt-contributor-picker"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">Select one or more. First selected = main assignee.</div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeNewModal()">Cancel</button>
@@ -261,22 +305,26 @@
             <option value="open">Open</option><option value="in progress">In Progress</option><option value="review">Review</option><option value="done">Done</option>
           </select>
         </div>
-        <div class="field"><label>Assignee</label><input id="d-assignee-inp" onchange="updateTicketField('assignee',this.value)" /></div>
+        <div class="field">
+          <label>Deadline</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
+            <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+          </div>
+          <div id="d-deadline-status"></div>
+        </div>
       </div>
 
       <div class="field">
-        <label>Deadline</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
-          <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
-        </div>
-        <div id="d-deadline-status"></div>
+        <label>Contributors</label>
+        <div class="contributor-picker" id="d-contributor-picker"></div>
+        <div id="d-contributors-display" class="contributors-display"></div>
       </div>
 
       <div class="divider"></div>
 
-      <!-- Subtasks (collapsible) -->
-      <div class="collapsible-header" onclick="toggleSection('subtasks')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:0;user-select:none">
+      <!-- Subtasks collapsible -->
+      <div onclick="toggleSection('subtasks')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="section-label" style="margin-bottom:0">Subtasks</span>
           <span id="d-subtask-progress" class="subtask-progress"></span>
@@ -286,16 +334,20 @@
       <div id="subtasks-body" style="display:none;margin-top:.75rem">
         <div id="d-subtask-list" class="subtask-list"></div>
         <div class="add-subtask-row">
-          <input id="subtask-input" placeholder="Add a subtask..." onkeydown="if(event.key==='Enter')addSubtask()" style="flex:2;min-width:0" />
-          <input type="date" id="subtask-deadline" title="Subtask deadline (optional)" style="padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none;color-scheme:dark;width:140px" />
+          <input id="subtask-input" placeholder="Add a subtask..." onkeydown="if(event.key==='Enter')addSubtask()" />
+          <input type="date" id="subtask-deadline" title="Deadline (optional)" style="padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none;color-scheme:dark;width:136px" />
           <button class="btn btn-sm btn-primary" onclick="addSubtask()">Add</button>
+        </div>
+        <div style="margin-top:8px">
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Subtask contributors</div>
+          <div class="contributor-picker" id="subtask-contributor-picker"></div>
         </div>
       </div>
 
       <div class="divider"></div>
 
-      <!-- Links (collapsible) -->
-      <div class="collapsible-header" onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;margin-bottom:0;user-select:none">
+      <!-- Links collapsible -->
+      <div onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="section-label" style="margin-bottom:0">Links</span>
           <span id="d-link-count" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
@@ -349,11 +401,19 @@ window.addEventListener('load', function() {
 
   var db = firebase.database();
   var ticketsRef = db.ref('tickets');
+  var teamRef = db.ref('team');
+
   var allTickets = {};
+  var teamMembers = []; // [{id, name}]
   var currentFilter = 'all';
   var selectedTicketId = null;
   var currentUser = localStorage.getItem('spxbi_username') || '';
   var replyingTo = null;
+
+  // Selected contributors state for pickers
+  var ntSelectedContribs = []; // new ticket
+  var dSelectedContribs = [];  // detail ticket
+  var stSelectedContribs = []; // subtask
 
   // ── Helpers ───────────────────────────────────────────────
   var COLORS = ['#7c6ff7','#6fd4a8','#f7a86f','#6fa8f7','#f7706f','#f7d46f','#b86ff7'];
@@ -375,20 +435,107 @@ window.addEventListener('load', function() {
     return '<span class="deadline-tag dl-ok">📅 '+dl+'</span>';
   }
   function ensureHttp(url){ return url&&!/^https?:\/\//i.test(url)?'https://'+url:url; }
+  function subtaskStats(subtasks){ if(!subtasks) return {total:0,done:0}; var v=Object.values(subtasks); return {total:v.length,done:v.filter(function(s){return s.done;}).length}; }
 
-  // ── Subtask helpers ───────────────────────────────────────
-  function subtaskStats(subtasks){
-    if(!subtasks) return {total:0,done:0};
-    var vals=Object.values(subtasks);
-    return {total:vals.length, done:vals.filter(function(s){return s.done;}).length};
+  // Avatar stack HTML for array of names
+  function avatarStackHtml(names, size){
+    size = size||20;
+    if(!names||!names.length) return '';
+    return '<div class="avatar-stack">'+names.slice(0,4).map(function(n){
+      var c=colorFor(n);
+      return '<div class="av" style="background:'+c+'22;color:'+c+';width:'+size+'px;height:'+size+'px;font-size:'+Math.floor(size*.45)+'px" title="'+n+'">'+initials(n)+'</div>';
+    }).join('')+(names.length>4?'<div class="av" style="background:var(--surface2);color:var(--text3);font-size:9px;width:'+size+'px;height:'+size+'px">+'+( names.length-4)+'</div>':'')+'</div>';
+  }
+
+  // ── Team roster ───────────────────────────────────────────
+  teamRef.on('value', function(snap){
+    var data = snap.val()||{};
+    teamMembers = Object.entries(data).map(function(e){ return {id:e[0],name:e[1].name}; })
+      .sort(function(a,b){ return a.name.localeCompare(b.name); });
+    refreshAllPickers();
+    renderTeamList();
+  });
+
+  function refreshAllPickers(){
+    renderContribPicker('nt-contributor-picker', ntSelectedContribs, function(sel){ ntSelectedContribs=sel; });
+    if(selectedTicketId) renderContribPicker('d-contributor-picker', dSelectedContribs, function(sel){ dSelectedContribs=sel; saveContributors(); });
+    renderContribPicker('subtask-contributor-picker', stSelectedContribs, function(sel){ stSelectedContribs=sel; });
+  }
+
+  function renderContribPicker(containerId, selected, onChange){
+    var el = document.getElementById(containerId); if(!el) return;
+    if(!teamMembers.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text3)">No team members yet. Add them via "Manage team".</div>';
+      return;
+    }
+    el.innerHTML = teamMembers.map(function(m){
+      var isSel = selected.indexOf(m.name)>-1;
+      var c = colorFor(m.name);
+      return '<button class="contributor-chip'+(isSel?' selected':'')+'" onclick="toggleContrib(\''+containerId+'\',\''+m.name+'\')" type="button">'
+        +'<div class="chip-av" style="background:'+c+'22;color:'+c+'">'+initials(m.name)+'</div>'
+        +m.name+'</button>';
+    }).join('');
+  }
+
+  window.toggleContrib = function(containerId, name){
+    var sel, onChange;
+    if(containerId==='nt-contributor-picker'){ sel=ntSelectedContribs; onChange=function(s){ntSelectedContribs=s;}; }
+    else if(containerId==='d-contributor-picker'){ sel=dSelectedContribs; onChange=function(s){dSelectedContribs=s;saveContributors();}; }
+    else { sel=stSelectedContribs; onChange=function(s){stSelectedContribs=s;}; }
+    var idx=sel.indexOf(name);
+    if(idx>-1) sel.splice(idx,1); else sel.push(name);
+    onChange(sel);
+    renderContribPicker(containerId, sel, onChange);
+    if(containerId==='d-contributor-picker') renderContributorsDisplay();
+  };
+
+  function saveContributors(){
+    if(!selectedTicketId) return;
+    db.ref('tickets/'+selectedTicketId).update({
+      contributors: dSelectedContribs.length ? dSelectedContribs : null,
+      assignee: dSelectedContribs[0]||'Unassigned'
+    });
+  }
+
+  function renderContributorsDisplay(){
+    var el=document.getElementById('d-contributors-display'); if(!el) return;
+    if(!dSelectedContribs.length){ el.innerHTML=''; return; }
+    el.innerHTML=dSelectedContribs.map(function(n){
+      var c=colorFor(n);
+      return '<div class="contrib-tag"><div style="width:14px;height:14px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:500">'+initials(n)+'</div><span style="font-size:12px;color:var(--text2)">'+n+'</span></div>';
+    }).join('');
+  }
+
+  // ── Team modal ────────────────────────────────────────────
+  window.openTeamModal = function(){ document.getElementById('team-modal').style.display='flex'; setTimeout(function(){document.getElementById('team-add-input').focus();},100); };
+  window.closeTeamModal = function(){ document.getElementById('team-modal').style.display='none'; };
+  window.addTeamMember = function(){
+    var input=document.getElementById('team-add-input');
+    var name=input.value.trim(); if(!name) return;
+    // Check for duplicate
+    if(teamMembers.some(function(m){return m.name.toLowerCase()===name.toLowerCase();})){input.value='';return;}
+    teamRef.push({name:name});
+    input.value='';
+  };
+  window.removeTeamMember = function(id){
+    teamRef.child(id).remove();
+  };
+  function renderTeamList(){
+    var el=document.getElementById('team-member-list'); if(!el) return;
+    if(!teamMembers.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:.5rem">No team members yet.</div>'; return; }
+    el.innerHTML=teamMembers.map(function(m){
+      var c=colorFor(m.name);
+      return '<div class="team-member-row">'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">'+initials(m.name)+'</div>'
+        +'<span style="flex:1;font-size:13px">'+m.name+'</span>'
+        +'<button class="btn-icon" onclick="removeTeamMember(\''+m.id+'\')" title="Remove">✕</button>'
+        +'</div>';
+    }).join('');
   }
 
   // ── Warning banner ────────────────────────────────────────
   function updateWarnings(){
-    var ticketItems=[];
-    var subtaskItems=[];
-
-    // Main ticket deadlines
+    var ticketItems=[],subtaskItems=[];
     Object.entries(allTickets).forEach(function(e){
       var id=e[0],t=e[1];
       if(!t.deadline||t.status==='done') return;
@@ -396,48 +543,37 @@ window.addEventListener('load', function() {
       if(diff<0) ticketItems.push({id:id,title:t.title,diff:diff,type:'overdue'});
       else if(diff<=3) ticketItems.push({id:id,title:t.title,diff:diff,type:'soon'});
     });
-
-    // Subtask deadlines
     Object.entries(allTickets).forEach(function(e){
-      var id=e[0],t=e[1];
-      if(!t.subtasks) return;
+      var id=e[0],t=e[1]; if(!t.subtasks) return;
       Object.entries(t.subtasks).forEach(function(se){
-        var s=se[1];
-        if(!s.deadline||s.done) return;
+        var s=se[1]; if(!s.deadline||s.done) return;
         var diff=deadlineDiff(s.deadline); if(diff===null) return;
         if(diff<0) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'overdue'});
         else if(diff<=3) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'soon'});
       });
     });
-
     ticketItems.sort(function(a,b){return a.diff-b.diff;});
     subtaskItems.sort(function(a,b){return a.diff-b.diff;});
-
-    var banner=document.getElementById('warn-banner');
-    var list=document.getElementById('warn-list');
+    var banner=document.getElementById('warn-banner'),list=document.getElementById('warn-list');
     if(!ticketItems.length&&!subtaskItems.length){banner.classList.remove('visible');return;}
     banner.classList.add('visible');
-
     var html='';
-
     if(ticketItems.length){
-      html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;margin-top:2px">Tickets</div>';
+      html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Tickets</div>';
       html+=ticketItems.map(function(it){
         var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
         var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
         return '<div class="warn-item" onclick="openDetailModal(\''+it.id+'\')"><span class="warn-badge '+badge+'">'+label+'</span><span>'+it.title+'</span></div>';
       }).join('');
     }
-
     if(subtaskItems.length){
       html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;margin-top:'+(ticketItems.length?'10px':'2px')+'">Subtasks</div>';
       html+=subtaskItems.map(function(it){
         var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
         var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
-        return '<div class="warn-item" onclick="openDetailModal(\''+it.id+'\')"><span class="warn-badge '+badge+'">'+label+'</span><span style="color:var(--text3)">'+it.ticketTitle+' &rsaquo;</span><span>'+it.subtaskTitle+'</span></div>';
+        return '<div class="warn-item" onclick="openDetailModal(\''+it.id+'\')"><span class="warn-badge '+badge+'">'+label+'</span><span style="color:var(--text3)">'+it.ticketTitle+' ›</span><span>'+it.subtaskTitle+'</span></div>';
       }).join('');
     }
-
     list.innerHTML=html;
   }
 
@@ -452,7 +588,6 @@ window.addEventListener('load', function() {
     if(da) da.innerHTML=avatarHtml(currentUser,22);
   }
   if(currentUser){document.getElementById('name-modal-overlay').style.display='none';updateWho();}
-
   window.saveName=function(){ var v=document.getElementById('name-input').value.trim(); if(!v)return; currentUser=v; localStorage.setItem('spxbi_username',v); document.getElementById('name-modal-overlay').style.display='none'; updateWho(); };
   window.changeName=function(){ var n=prompt('Change your name:',currentUser); if(n&&n.trim()){currentUser=n.trim();localStorage.setItem('spxbi_username',currentUser);updateWho();} };
 
@@ -466,7 +601,7 @@ window.addEventListener('load', function() {
       var t=allTickets[selectedTicketId];
       if(t){
         document.getElementById('d-status-sel').value=t.status;
-        document.getElementById('d-assignee-inp').value=t.assignee||'';
+        document.getElementById('d-deadline-inp').value=t.deadline||'';
         renderDeadlineStatus(t.deadline,t.status);
         renderSubtasks(selectedTicketId);
         renderLinks(selectedTicketId);
@@ -479,17 +614,22 @@ window.addEventListener('load', function() {
   window.createTicket=function(){
     var title=document.getElementById('nt-title').value.trim(); if(!title){document.getElementById('nt-title').focus();return;}
     var dl=document.getElementById('nt-deadline').value;
-    ticketsRef.push({title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',priority:document.getElementById('nt-priority').value,status:'open',assignee:document.getElementById('nt-assignee').value.trim()||'Unassigned',deadline:dl||null,created:fmtDate(),createdTs:Date.now()});
+    var assignee=ntSelectedContribs[0]||'Unassigned';
+    ticketsRef.push({title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
+      priority:document.getElementById('nt-priority').value,status:'open',
+      assignee:assignee,contributors:ntSelectedContribs.length?ntSelectedContribs:null,
+      deadline:dl||null,created:fmtDate(),createdTs:Date.now()});
     closeNewModal();
   };
+
   window.updateTicketField=function(field,value){
-    if(!selectedTicketId)return;
+    if(!selectedTicketId) return;
     var upd={}; upd[field]=(value===''?null:value);
     db.ref('tickets/'+selectedTicketId).update(upd);
     if(field==='status'){document.getElementById('d-status-badge').className='status-badge '+statusClass(value);document.getElementById('d-status-badge').textContent=value;renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);}
-    if(field==='deadline')renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
+    if(field==='deadline') renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
   };
-  window.clearDeadline=function(){ document.getElementById('d-deadline-inp').value=''; updateTicketField('deadline',''); document.getElementById('d-deadline-status').innerHTML=''; };
+  window.clearDeadline=function(){document.getElementById('d-deadline-inp').value='';updateTicketField('deadline','');document.getElementById('d-deadline-status').innerHTML='';};
   window.deleteTicket=function(){ if(!selectedTicketId)return; if(!confirm('Delete this ticket? This cannot be undone.'))return; db.ref('tickets/'+selectedTicketId).remove(); closeDetailModal(); };
 
   function renderDeadlineStatus(dl,status){
@@ -501,61 +641,43 @@ window.addEventListener('load', function() {
     else if(diff===0){cls='warn';msg='⏰ Due today!';}
     else if(diff<=3){cls='warn';msg='⏰ Due in '+diff+' day'+(diff>1?'s':'');}
     else{cls='ok';msg='📅 Due on '+dl;}
-    el.innerHTML='<div class="deadline-status '+cls+'">'+msg+'</div>';
+    el.innerHTML='<div class="deadline-status '+cls+'" style="margin-top:6px">'+msg+'</div>';
   }
+
+  // ── Collapsible sections ──────────────────────────────────
+  window.toggleSection=function(s){
+    var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron');
+    if(!b)return; var open=b.style.display==='none';
+    b.style.display=open?'block':'none';
+    if(c)c.style.transform=open?'rotate(90deg)':'rotate(0deg)';
+  };
+  function openSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='block'; if(c)c.style.transform='rotate(90deg)'; }
+  function closeSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='none'; if(c)c.style.transform='rotate(0deg)'; }
 
   // ── Subtasks ──────────────────────────────────────────────
-  // Collapsible sections
-  window.toggleSection=function(section){
-    var body=document.getElementById(section+'-body');
-    var chevron=document.getElementById(section+'-chevron');
-    if(!body)return;
-    var open=body.style.display==='none';
-    body.style.display=open?'block':'none';
-    if(chevron)chevron.style.transform=open?'rotate(90deg)':'rotate(0deg)';
-  };
-  function openSection(s){
-    var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron');
-    if(b)b.style.display='block';if(c)c.style.transform='rotate(90deg)';
-  }
-  function closeSection(s){
-    var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron');
-    if(b)b.style.display='none';if(c)c.style.transform='rotate(0deg)';
-  }
   window.addSubtask=function(){
-    if(!selectedTicketId)return;
+    if(!selectedTicketId) return;
     var input=document.getElementById('subtask-input');
     var dlInput=document.getElementById('subtask-deadline');
-    var text=input.value.trim(); if(!text)return;
+    var text=input.value.trim(); if(!text) return;
     var dl=dlInput?dlInput.value:'';
-    db.ref('tickets/'+selectedTicketId+'/subtasks').push({text:text,done:false,deadline:dl||null,createdBy:currentUser||'Unknown',ts:Date.now()});
-    input.value='';
-    if(dlInput)dlInput.value='';
+    var contribs=stSelectedContribs.slice();
+    db.ref('tickets/'+selectedTicketId+'/subtasks').push({text:text,done:false,deadline:dl||null,contributors:contribs.length?contribs:null,createdBy:currentUser||'Unknown',ts:Date.now()});
+    input.value=''; if(dlInput)dlInput.value='';
+    stSelectedContribs=[];
+    renderContribPicker('subtask-contributor-picker',stSelectedContribs,function(sel){stSelectedContribs=sel;});
   };
-
-  window.toggleSubtask=function(subtaskId,currentDone){
-    if(!selectedTicketId)return;
-    db.ref('tickets/'+selectedTicketId+'/subtasks/'+subtaskId).update({done:!currentDone});
-  };
-
-  window.deleteSubtask=function(subtaskId){
-    if(!selectedTicketId)return;
-    db.ref('tickets/'+selectedTicketId+'/subtasks/'+subtaskId).remove();
-  };
+  window.toggleSubtask=function(sid,cur){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).update({done:!cur}); };
+  window.deleteSubtask=function(sid){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).remove(); };
 
   function renderSubtasks(ticketId){
-    var t=allTickets[ticketId]; if(!t)return;
+    var t=allTickets[ticketId]; if(!t) return;
     var subtasks=t.subtasks?Object.entries(t.subtasks).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
     var stats=subtaskStats(t.subtasks);
     var progressEl=document.getElementById('d-subtask-progress');
-    var listEl=document.getElementById('d-subtask-list');
-    if(!progressEl||!listEl)return;
-    if(stats.total>0){
-      var pct=Math.round(stats.done/stats.total*100);
-      progressEl.textContent=stats.done+'/'+stats.total+' done ('+pct+'%)';
-    } else {
-      progressEl.textContent='';
-    }
+    var listEl=document.getElementById('d-subtask-list'); if(!progressEl||!listEl) return;
+    if(stats.total>0){ var pct=Math.round(stats.done/stats.total*100); progressEl.textContent=stats.done+'/'+stats.total+' ('+pct+'%)'; openSection('subtasks'); }
+    else { progressEl.textContent=''; closeSection('subtasks'); }
     if(!subtasks.length){listEl.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">No subtasks yet.</div>';return;}
     listEl.innerHTML=subtasks.map(function(entry){
       var sid=entry[0],s=entry[1];
@@ -569,37 +691,37 @@ window.addEventListener('load', function() {
           else dlTag='<span class="deadline-tag dl-ok">📅 '+s.deadline+'</span>';
         }
       }
+      var contribHtml=s.contributors&&s.contributors.length?avatarStackHtml(s.contributors,18):'';
       return '<div class="subtask-item'+(s.done?' done-task':'')+'">'
         +'<div class="subtask-check'+(s.done?' checked':'')+'" onclick="toggleSubtask(\''+sid+'\','+s.done+')"></div>'
         +'<span class="subtask-text">'+s.text+'</span>'
+        +'<div class="subtask-meta">'
         +(dlTag?dlTag:'')
-        +'<span class="subtask-assignee">'+s.createdBy+'</span>'
+        +(contribHtml?contribHtml:'')
         +'<button class="btn-icon" onclick="deleteSubtask(\''+sid+'\')" title="Remove">✕</button>'
-        +'</div>';
+        +'</div></div>';
     }).join('');
   }
 
   // ── Links ─────────────────────────────────────────────────
   window.addLink=function(){
-    if(!selectedTicketId)return;
+    if(!selectedTicketId) return;
     var urlInput=document.getElementById('link-url-input');
     var labelInput=document.getElementById('link-label-input');
-    var url=urlInput.value.trim(); if(!url)return;
+    var url=urlInput.value.trim(); if(!url) return;
     url=ensureHttp(url);
     var label=labelInput.value.trim()||url;
     db.ref('tickets/'+selectedTicketId+'/links').push({url:url,label:label,addedBy:currentUser||'Unknown',ts:Date.now()});
     urlInput.value=''; labelInput.value='';
   };
-
-  window.deleteLink=function(linkId){
-    if(!selectedTicketId)return;
-    db.ref('tickets/'+selectedTicketId+'/links/'+linkId).remove();
-  };
-
+  window.deleteLink=function(lid){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/links/'+lid).remove(); };
   function renderLinks(ticketId){
-    var t=allTickets[ticketId]; if(!t)return;
+    var t=allTickets[ticketId]; if(!t) return;
     var links=t.links?Object.entries(t.links).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
-    var el=document.getElementById('d-link-list'); if(!el)return;
+    var el=document.getElementById('d-link-list'); if(!el) return;
+    var countEl=document.getElementById('d-link-count');
+    if(countEl) countEl.textContent=links.length?links.length+' link'+(links.length>1?'s':''):'';
+    if(links.length>0) openSection('links'); else closeSection('links');
     if(!links.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">No links yet.</div>';return;}
     el.innerHTML=links.map(function(entry){
       var lid=entry[0],l=entry[1];
@@ -609,9 +731,9 @@ window.addEventListener('load', function() {
 
   // ── Comments ──────────────────────────────────────────────
   window.postComment=function(){
-    if(!selectedTicketId)return;
+    if(!selectedTicketId) return;
     var input=document.getElementById('d-comment-input');
-    var text=input.value.trim(); if(!text)return;
+    var text=input.value.trim(); if(!text) return;
     db.ref('tickets/'+selectedTicketId+'/comments').push({author:currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
     input.value=''; replyingTo=null;
   };
@@ -629,7 +751,7 @@ window.addEventListener('load', function() {
     if(box){box.style.display='flex';box.querySelector('input').focus();}
   };
   function renderComments(ticketId){
-    var t=allTickets[ticketId]; if(!t)return;
+    var t=allTickets[ticketId]; if(!t) return;
     var comments=t.comments?Object.entries(t.comments).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
     document.getElementById('d-comment-count').textContent='Comments ('+countComments(t.comments)+')';
     if(!comments.length){document.getElementById('d-comments').innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:8px">No comments yet.</p>';return;}
@@ -653,9 +775,14 @@ window.addEventListener('load', function() {
     document.getElementById('d-status-badge').className='status-badge '+statusClass(t.status);
     document.getElementById('d-status-badge').textContent=t.status;
     document.getElementById('d-status-sel').value=t.status;
-    document.getElementById('d-assignee-inp').value=t.assignee||'';
     document.getElementById('d-deadline-inp').value=t.deadline||'';
     renderDeadlineStatus(t.deadline,t.status);
+    // Load contributors
+    dSelectedContribs=t.contributors?t.contributors.slice():[];
+    stSelectedContribs=[];
+    renderContribPicker('d-contributor-picker',dSelectedContribs,function(sel){dSelectedContribs=sel;saveContributors();});
+    renderContributorsDisplay();
+    renderContribPicker('subtask-contributor-picker',stSelectedContribs,function(sel){stSelectedContribs=sel;});
     renderSubtasks(id);
     renderLinks(id);
     renderComments(id);
@@ -681,12 +808,14 @@ window.addEventListener('load', function() {
       var cc=t.comments?Object.values(t.comments).reduce(function(a,c){return a+1+(c.replies?Object.keys(c.replies).length:0);},0):0;
       var st=subtaskStats(t.subtasks);
       var lc=t.links?Object.keys(t.links).length:0;
-      var sc=statusClass(t.status),col=colorFor(t.assignee);
+      var sc=statusClass(t.status);
       var dlTag=deadlineTagHtml(t.deadline,t.status);
       var diff=t.deadline?deadlineDiff(t.deadline):null;
       var tcls='ticket'+(diff!==null&&diff<0&&t.status!=='done'?' is-overdue':diff!==null&&diff<=3&&diff>=0&&t.status!=='done'?' is-soon':'');
       var subtaskBar=st.total>0?'<div class="subtask-bar"><div class="subtask-bar-fill" style="width:'+Math.round(st.done/st.total*100)+'%"></div></div>':'';
-      return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+t.priority+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta"><span style="width:20px;height:20px;border-radius:50%;background:'+col+'22;color:'+col+';display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0">'+initials(t.assignee)+'</span><span>'+(t.assignee||'Unassigned')+'</span><span>·</span><span>'+(t.created||'')+'</span>'+(cc?'<span>· 💬 '+cc+'</span>':'')+(st.total?'<span>· ☑ '+st.done+'/'+st.total+'</span>':'')+(lc?'<span>· 🔗 '+lc+'</span>':'')+(dlTag?'<span>'+dlTag+'</span>':'')+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+t.status+'</span></div></div>';
+      var contribs=t.contributors&&t.contributors.length?t.contributors:[t.assignee||'Unassigned'];
+      var stackHtml=avatarStackHtml(contribs,20);
+      return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+t.priority+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta">'+stackHtml+'<span>·</span><span>'+(t.created||'')+'</span>'+(cc?'<span>· 💬 '+cc+'</span>':'')+(st.total?'<span>· ☑ '+st.done+'/'+st.total+'</span>':'')+(lc?'<span>· 🔗 '+lc+'</span>':'')+(dlTag?'<span>'+dlTag+'</span>':'')+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+t.status+'</span></div></div>';
     }).join('');
   };
 
@@ -714,8 +843,17 @@ window.addEventListener('load', function() {
     if(n)n.classList.add('active');if(p)p.classList.add('active');
     renderList();
   };
-  window.openNewModal=function(){ document.getElementById('new-modal').style.display='flex'; setTimeout(function(){document.getElementById('nt-title').focus();},100); };
-  window.closeNewModal=function(){ document.getElementById('new-modal').style.display='none'; ['nt-title','nt-desc','nt-assignee','nt-deadline'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';}); };
+  window.openNewModal=function(){
+    ntSelectedContribs=[];
+    renderContribPicker('nt-contributor-picker',ntSelectedContribs,function(sel){ntSelectedContribs=sel;});
+    document.getElementById('new-modal').style.display='flex';
+    setTimeout(function(){document.getElementById('nt-title').focus();},100);
+  };
+  window.closeNewModal=function(){
+    document.getElementById('new-modal').style.display='none';
+    ['nt-title','nt-desc','nt-deadline'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+    ntSelectedContribs=[];
+  };
   window.closeDetailModal=function(){ document.getElementById('detail-modal').style.display='none'; selectedTicketId=null; };
 
 }); // end load
