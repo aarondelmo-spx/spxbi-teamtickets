@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Tickets — spxbi</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f11;
+    --surface: #17171a;
+    --surface2: #1e1e23;
+    --border: #2a2a32;
+    --border2: #36363f;
+    --text: #e8e8ed;
+    --text2: #8888a0;
+    --text3: #55555f;
+    --accent: #7c6ff7;
+    --accent2: #5a54c4;
+    --high: #f7706f;
+    --med: #f7a86f;
+    --low: #6fd4a8;
+    --open: #6fa8f7;
+    --prog: #b86ff7;
+    --review: #f7d46f;
+    --done: #6fd4a8;
+    --font: 'IBM Plex Sans', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; position: sticky; top: 0; height: 100vh; }
+  .main { padding: 2rem; overflow-y: auto; }
+
+  /* Sidebar */
+  .logo { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); padding: 0 0.5rem 1.25rem; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+  .logo span { color: var(--text2); }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius); color: var(--text2); cursor: pointer; font-size: 13px; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--text); background: var(--surface2); }
+  .nav-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .nav-count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .sidebar-section { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; padding: 0.75rem 0.5rem 0.25rem; }
+  .new-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border-radius: var(--radius); background: var(--accent); color: #fff; border: none; cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 500; width: 100%; margin-bottom: 1rem; transition: background 0.15s; }
+  .new-btn:hover { background: var(--accent2); }
+  .sync-status { margin-top: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); padding: 0.5rem; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); }
+  .sync-dot.online { background: var(--done); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+
+  /* Header */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .page-title { font-size: 20px; font-weight: 500; color: var(--text); }
+  .page-sub { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.75rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 11px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-num { font-size: 26px; font-weight: 300; color: var(--text); font-family: var(--mono); }
+  .stat-num.c-high { color: var(--high); }
+  .stat-num.c-prog { color: var(--prog); }
+  .stat-num.c-done { color: var(--done); }
+
+  /* Filters */
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-pill { padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: none; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+  .filter-pill:hover { border-color: var(--border2); color: var(--text); }
+  .filter-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,0.08); }
+  .search { flex: 1; max-width: 260px; padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font); font-size: 13px; outline: none; }
+  .search:focus { border-color: var(--accent); }
+  .search::placeholder { color: var(--text3); }
+
+  /* Ticket list */
+  .ticket-list { display: flex; flex-direction: column; gap: 6px; }
+  .ticket { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0.9rem 1.1rem; cursor: pointer; transition: all 0.15s; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  .ticket:hover { border-color: var(--border2); background: var(--surface2); transform: translateX(2px); }
+  .ticket-left { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .priority-bar { width: 3px; height: 36px; border-radius: 2px; }
+  .priority-bar.high { background: var(--high); }
+  .priority-bar.medium { background: var(--med); }
+  .priority-bar.low { background: var(--low); }
+  .ticket-body { min-width: 0; }
+  .ticket-id { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+  .ticket-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+  .ticket-meta { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text3); }
+  .ticket-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .status-badge { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-family: var(--mono); letter-spacing: 0.03em; white-space: nowrap; }
+  .s-open { background: rgba(111,168,247,0.12); color: var(--open); border: 1px solid rgba(111,168,247,0.2); }
+  .s-progress { background: rgba(184,111,247,0.12); color: var(--prog); border: 1px solid rgba(184,111,247,0.2); }
+  .s-review { background: rgba(247,212,111,0.12); color: var(--review); border: 1px solid rgba(247,212,111,0.2); }
+  .s-done { background: rgba(111,212,168,0.12); color: var(--done); border: 1px solid rgba(111,212,168,0.2); }
+  .avatar { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; flex-shrink: 0; }
+  .comment-count { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text3); }
+  .empty-state p { font-size: 13px; margin-top: 8px; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 3rem; color: var(--text3); font-family: var(--mono); font-size: 12px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-start; justify-content: center; padding: 3rem 1rem; z-index: 100; backdrop-filter: blur(2px); }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); width: 100%; max-width: 540px; max-height: 85vh; overflow-y: auto; }
+  .modal-header { padding: 1.25rem 1.5rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 15px; font-weight: 500; color: var(--text); }
+  .modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { background: var(--surface2); color: var(--text); }
+  .modal-body { padding: 1.25rem 1.5rem; }
+  .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+  /* Form */
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 12px; border-radius: var(--radius); border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; outline: none; transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  .field select option { background: var(--surface2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: none; color: var(--text2); font-family: var(--font); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn-danger { color: var(--high); border-color: rgba(247,112,111,0.3); }
+  .btn-danger:hover { background: rgba(247,112,111,0.08); }
+
+  /* Detail modal */
+  .detail-title { font-size: 17px; font-weight: 500; margin-bottom: 8px; line-height: 1.4; }
+  .detail-desc { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 1.25rem; }
+  .detail-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .detail-id { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+  .comments-title { font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+  .comment { background: var(--surface2); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
+  .comment-meta { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 4px; }
+  .comment-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .comment-input-row { display: flex; gap: 8px; margin-top: 10px; }
+  .comment-input-row input { flex: 1; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--font); font-size: 13px; outline: none; }
+  .comment-input-row input:focus { border-color: var(--accent); }
+  .priority-badge { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-family: var(--mono); }
+  .pb-high { background: rgba(247,112,111,0.12); color: var(--high); border: 1px solid rgba(247,112,111,0.2); }
+  .pb-medium { background: rgba(247,168,111,0.12); color: var(--med); border: 1px solid rgba(247,168,111,0.2); }
+  .pb-low { background: rgba(111,212,168,0.12); color: var(--low); border: 1px solid rgba(111,212,168,0.2); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">TICKETS<span>/spxbi</span></div>
+    <button class="new-btn" onclick="openNewModal()">+ New Ticket</button>
+    <div class="sidebar-section">Filter by status</div>
+    <button class="nav-item active" id="nav-all" onclick="setFilter('all',this)">
+      <span class="nav-dot" style="background:#8888a0"></span> All tickets
+      <span class="nav-count" id="cnt-all">0</span>
+    </button>
+    <button class="nav-item" id="nav-open" onclick="setFilter('open',this)">
+      <span class="nav-dot" style="background:var(--open)"></span> Open
+      <span class="nav-count" id="cnt-open">0</span>
+    </button>
+    <button class="nav-item" id="nav-in progress" onclick="setFilter('in progress',this)">
+      <span class="nav-dot" style="background:var(--prog)"></span> In progress
+      <span class="nav-count" id="cnt-in progress">0</span>
+    </button>
+    <button class="nav-item" id="nav-review" onclick="setFilter('review',this)">
+      <span class="nav-dot" style="background:var(--review)"></span> Review
+      <span class="nav-count" id="cnt-review">0</span>
+    </button>
+    <button class="nav-item" id="nav-done" onclick="setFilter('done',this)">
+      <span class="nav-dot" style="background:var(--done)"></span> Done
+      <span class="nav-count" id="cnt-done">0</span>
+    </button>
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Connecting...</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Team Tickets</div>
+        <div class="page-sub" id="ticket-count-sub">Loading...</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Total</div><div class="stat-num" id="s-total">—</div></div>
+      <div class="stat"><div class="stat-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
+      <div class="stat"><div class="stat-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
+      <div class="stat"><div class="stat-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+    </div>
+
+    <div class="toolbar">
+      <input class="search" placeholder="Search tickets..." id="search-input" oninput="renderList()" />
+      <button class="filter-pill active" id="pill-all" onclick="setFilter('all',this,true)">All</button>
+      <button class="filter-pill" id="pill-open" onclick="setFilter('open',this,true)">Open</button>
+      <button class="filter-pill" id="pill-in progress" onclick="setFilter('in progress',this,true)">In Progress</button>
+      <button class="filter-pill" id="pill-review" onclick="setFilter('review',this,true)">Review</button>
+      <button class="filter-pill" id="pill-done" onclick="setFilter('done',this,true)">Done</button>
+    </div>
+
+    <div class="ticket-list" id="ticket-list">
+      <div class="loading">Connecting to database...</div>
+    </div>
+  </main>
+</div>
+
+<!-- New Ticket Modal -->
+<div class="modal-overlay" id="new-modal" style="display:none" onclick="if(event.target===this)closeNewModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Ticket</h3>
+      <button class="modal-close" onclick="closeNewModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Title</label><input id="nt-title" placeholder="What needs to be done?" /></div>
+      <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add more context..."></textarea></div>
+      <div class="form-row">
+        <div class="field"><label>Priority</label>
+          <select id="nt-priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select>
+        </div>
+        <div class="field"><label>Assignee</label>
+          <input id="nt-assignee" placeholder="Name or username" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeNewModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="createTicket()">Create Ticket</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detail-modal" style="display:none" onclick="if(event.target===this)closeDetailModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="detail-id" id="d-id"></span>
+        <span id="d-priority-badge"></span>
+        <span id="d-status-badge"></span>
+      </div>
+      <button class="modal-close" onclick="closeDetailModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-title" id="d-title"></div>
+      <div class="detail-desc" id="d-desc"></div>
+      <div class="form-row">
+        <div class="field"><label>Status</label>
+          <select id="d-status-sel" onchange="updateTicketField('status', this.value)">
+            <option value="open">Open</option>
+            <option value="in progress">In Progress</option>
+            <option value="review">Review</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+        <div class="field"><label>Assignee</label>
+          <input id="d-assignee-inp" onchange="updateTicketField('assignee', this.value)" />
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="comments-title">Comments</div>
+      <div id="d-comments"></div>
+      <div class="comment-input-row">
+        <input id="d-comment-input" placeholder="Add a comment... (Enter to post)" onkeydown="if(event.key==='Enter')postComment()" />
+        <button class="btn btn-primary" onclick="postComment()">Post</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="deleteTicket()">Delete ticket</button>
+      <button class="btn" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-NDTU5Ofkq8cxdU29TIL0J-5n4oPPlg0",
+    authDomain: "spxbi-teamtickets.firebaseapp.com",
+    databaseURL: "https://spxbi-teamtickets-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "spxbi-teamtickets",
+    storageBucket: "spxbi-teamtickets.firebasestorage.app",
+    messagingSenderId: "527260288738",
+    appId: "1:527260288738:web:c94bb1db3e4b70873a00bb",
+    measurementId: "G-RWSCDPFW1Q"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const ticketsRef = ref(db, 'tickets');
+
+  let allTickets = {};
+  let currentFilter = 'all';
+  let selectedTicketId = null;
+
+  // Expose to global scope
+  window._db = db;
+  window._ref = ref;
+  window._push = push;
+  window._set = set;
+  window._update = update;
+  window._remove = remove;
+  window._ticketsRef = ticketsRef;
+  window._getSelectedId = () => selectedTicketId;
+  window._setSelectedId = (id) => { selectedTicketId = id; };
+  window._getAllTickets = () => allTickets;
+
+  // Listen for real-time updates
+  onValue(ticketsRef, (snapshot) => {
+    allTickets = snapshot.val() || {};
+    window._allTickets = allTickets;
+    updateStats();
+    renderList();
+    updateCounts();
+    document.getElementById('sync-dot').className = 'sync-dot online';
+    document.getElementById('sync-label').textContent = 'Synced live';
+  }, (error) => {
+    document.getElementById('sync-label').textContent = 'Connection error';
+    document.getElementById('ticket-list').innerHTML = '<div class="loading">Could not connect. Check your internet.</div>';
+  });
+
+  window.createTicket = function() {
+    const title = document.getElementById('nt-title').value.trim();
+    if (!title) { document.getElementById('nt-title').focus(); return; }
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    const newTicket = {
+      title,
+      desc: document.getElementById('nt-desc').value.trim() || 'No description provided.',
+      priority: document.getElementById('nt-priority').value,
+      status: 'open',
+      assignee: document.getElementById('nt-assignee').value.trim() || 'Unassigned',
+      created: `${months[now.getMonth()]} ${now.getDate()}`,
+      createdTs: Date.now(),
+      comments: {}
+    };
+    const newRef = push(ticketsRef);
+    set(newRef, newTicket);
+    closeNewModal();
+  };
+
+  window.updateTicketField = function(field, value) {
+    if (!selectedTicketId) return;
+    const ticketRef = ref(db, `tickets/${selectedTicketId}`);
+    update(ticketRef, { [field]: value });
+    if (field === 'status') {
+      document.getElementById('d-status-badge').className = 'status-badge ' + statusClass(value);
+      document.getElementById('d-status-badge').textContent = value;
+    }
+  };
+
+  window.postComment = function() {
+    if (!selectedTicketId) return;
+    const input = document.getElementById('d-comment-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const now = new Date();
+    const commentRef = ref(db, `tickets/${selectedTicketId}/comments`);
+    push(commentRef, { author: 'You', text, time: `${months[now.getMonth()]} ${now.getDate()}`, ts: Date.now() });
+    input.value = '';
+    // Refresh detail view
+    const ticket = allTickets[selectedTicketId];
+    if (ticket) setTimeout(() => openDetailModal(selectedTicketId), 100);
+  };
+
+  window.deleteTicket = function() {
+    if (!selectedTicketId) return;
+    if (!confirm('Delete this ticket? This cannot be undone.')) return;
+    const ticketRef = ref(db, `tickets/${selectedTicketId}`);
+    remove(ticketRef);
+    closeDetailModal();
+  };
+
+  window.openDetailModal = function(id) {
+    selectedTicketId = id;
+    const t = allTickets[id];
+    if (!t) return;
+    document.getElementById('d-id').textContent = id.slice(-6).toUpperCase();
+    document.getElementById('d-title').textContent = t.title;
+    document.getElementById('d-desc').textContent = t.desc || 'No description.';
+    document.getElementById('d-priority-badge').className = 'priority-badge ' + priorityBadgeClass(t.priority);
+    document.getElementById('d-priority-badge').textContent = t.priority || 'medium';
+    document.getElementById('d-status-badge').className = 'status-badge ' + statusClass(t.status);
+    document.getElementById('d-status-badge').textContent = t.status;
+    document.getElementById('d-status-sel').value = t.status;
+    document.getElementById('d-assignee-inp').value = t.assignee || '';
+    // Comments
+    const comments = t.comments ? Object.values(t.comments).sort((a,b) => (a.ts||0)-(b.ts||0)) : [];
+    document.getElementById('d-comments').innerHTML = comments.length === 0
+      ? '<p style="font-size:12px;color:var(--text3);margin-bottom:8px">No comments yet.</p>'
+      : comments.map(c => `<div class="comment"><div class="comment-meta">${c.author} · ${c.time}</div><div class="comment-text">${c.text}</div></div>`).join('');
+    document.getElementById('detail-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('d-comment-input')?.focus(), 100);
+  };
+
+  function statusClass(s) {
+    return s==='open'?'s-open':s==='in progress'?'s-progress':s==='review'?'s-review':'s-done';
+  }
+  function priorityBadgeClass(p) {
+    return p==='high'?'pb-high':p==='medium'?'pb-medium':'pb-low';
+  }
+  function priorityOrder(p) { return p==='high'?0:p==='medium'?1:2; }
+
+  window.renderList = function() {
+    const search = document.getElementById('search-input')?.value.toLowerCase() || '';
+    const list = document.getElementById('ticket-list');
+    const tickets = Object.entries(allTickets)
+      .filter(([,t]) => currentFilter==='all' || t.status===currentFilter)
+      .filter(([,t]) => !search || t.title.toLowerCase().includes(search) || (t.assignee||'').toLowerCase().includes(search))
+      .sort((a,b) => priorityOrder(a[1].priority)-priorityOrder(b[1].priority) || (b[1].createdTs||0)-(a[1].createdTs||0));
+
+    if (tickets.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div style="font-size:28px;opacity:0.3">◎</div><p>${Object.keys(allTickets).length===0?'No tickets yet. Create your first one!':'No tickets match this filter.'}</p></div>`;
+      return;
+    }
+
+    const avatarColors = ['#7c6ff7','#6fd4a8','#f7a86f','#6fa8f7','#f7706f','#f7d46f'];
+    list.innerHTML = tickets.map(([id, t]) => {
+      const commentCount = t.comments ? Object.keys(t.comments).length : 0;
+      const initials = (t.assignee||'??').slice(0,2).toUpperCase();
+      const colorIdx = initials.charCodeAt(0) % avatarColors.length;
+      const sc = statusClass(t.status);
+      return `<div class="ticket" onclick="openDetailModal('${id}')">
+        <div class="ticket-left">
+          <div class="priority-bar ${t.priority}"></div>
+        </div>
+        <div class="ticket-body">
+          <div class="ticket-id">#${id.slice(-6).toUpperCase()}</div>
+          <div class="ticket-title">${t.title}</div>
+          <div class="ticket-meta">
+            <span class="avatar" style="background:${avatarColors[colorIdx]}22;color:${avatarColors[colorIdx]}">${initials}</span>
+            <span>${t.assignee||'Unassigned'}</span>
+            <span>·</span><span>${t.created||''}</span>
+            ${commentCount>0?`<span>· ${commentCount} comment${commentCount>1?'s':''}</span>`:''}
+          </div>
+        </div>
+        <div class="ticket-right">
+          <span class="status-badge ${sc}">${t.status}</span>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  window.updateStats = function() {
+    const tickets = Object.values(allTickets);
+    document.getElementById('s-total').textContent = tickets.length;
+    document.getElementById('s-open').textContent = tickets.filter(t=>t.status==='open').length;
+    document.getElementById('s-prog').textContent = tickets.filter(t=>t.status==='in progress').length;
+    document.getElementById('s-done').textContent = tickets.filter(t=>t.status==='done').length;
+    document.getElementById('ticket-count-sub').textContent = `${tickets.length} ticket${tickets.length!==1?'s':''} total`;
+  };
+
+  window.updateCounts = function() {
+    const tickets = Object.values(allTickets);
+    document.getElementById('cnt-all').textContent = tickets.length;
+    document.getElementById('cnt-open').textContent = tickets.filter(t=>t.status==='open').length;
+    document.getElementById('cnt-in progress').textContent = tickets.filter(t=>t.status==='in progress').length;
+    document.getElementById('cnt-review').textContent = tickets.filter(t=>t.status==='review').length;
+    document.getElementById('cnt-done').textContent = tickets.filter(t=>t.status==='done').length;
+  };
+
+  window.setFilter = function(f, el, isPill) {
+    currentFilter = f;
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    const navEl = document.getElementById(`nav-${f}`);
+    const pillEl = document.getElementById(`pill-${f}`);
+    if (navEl) navEl.classList.add('active');
+    if (pillEl) pillEl.classList.add('active');
+    renderList();
+  };
+</script>
+
+<script>
+  function openNewModal() {
+    document.getElementById('new-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('nt-title').focus(), 100);
+  }
+  function closeNewModal() {
+    document.getElementById('new-modal').style.display = 'none';
+    document.getElementById('nt-title').value = '';
+    document.getElementById('nt-desc').value = '';
+    document.getElementById('nt-assignee').value = '';
+  }
+  function closeDetailModal() {
+    document.getElementById('detail-modal').style.display = 'none';
+  }
+</script>
+</body>
+</html>
