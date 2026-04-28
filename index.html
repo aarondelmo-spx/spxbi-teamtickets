@@ -459,8 +459,8 @@ window.saveName = function(){
   var ev = new Event('nameSet'); document.dispatchEvent(ev);
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 window.addEventListener('load', function() {
 
@@ -944,7 +944,7 @@ window.addEventListener('load', function() {
     wlPopoverOpen = false;
   };
 
-  window.showWlPopover = function(memberName, bucket, btnEl){
+  window.showWlPopover = function(memberName, bucket, btnEl){ memberName = String(memberName).replace(/&quot;/g,'');
     var color = bucket==='overdue'?'var(--overdue)':bucket==='soon'?'var(--warn)':bucket==='done'?'var(--done)':'var(--accent)';
     var bucketLabel = bucket==='overdue'?'Overdue':bucket==='soon'?'Due soon':bucket==='done'?'Done':'On time';
 
@@ -990,7 +990,7 @@ window.addEventListener('load', function() {
 
     document.getElementById('wl-popover-title').textContent = memberName + ' · ' + bucketLabel;
     document.getElementById('wl-popover-body').innerHTML = items.map(function(item){
-      return '<div class="wl-popover-item" onclick="closeWlPopover();openDetailModal(''+item.id+'')">'
+      return '<div class="wl-popover-item" onclick="closeWlPopover();openDetailModal(&quot;'+item.id+'&quot;)">'
         +'<div class="wl-item-dot" style="background:'+color+'"></div>'
         +'<div><div class="wl-item-title">'+item.title+'</div><div class="wl-item-sub">'+item.sub+(item.isSubtask?' · subtask':'')+'</div></div>'
         +'</div>';
@@ -1081,10 +1081,10 @@ window.addEventListener('load', function() {
         +(s.done?'<div class="workload-seg" style="background:var(--done);opacity:.4;width:'+donePct+'%;min-width:4px" title="'+s.done+' done"></div>':'')
         +'</div>'
         +'<div class="workload-pills">'
-        +(s.overdue?'<button class="workload-pill wp-over" onclick="event.stopPropagation();showWlPopover(''+m.name+'','overdue',this)">'+s.overdue+' overdue</button>':'')
-        +(s.soon?'<button class="workload-pill wp-soon" onclick="event.stopPropagation();showWlPopover(''+m.name+'','soon',this)">'+s.soon+' due soon</button>':'')
-        +(s.ontime?'<button class="workload-pill wp-ok" onclick="event.stopPropagation();showWlPopover(''+m.name+'','ontime',this)">'+s.ontime+' on time</button>':'')
-        +(s.done?'<button class="workload-pill wp-none" onclick="event.stopPropagation();showWlPopover(''+m.name+'','done',this)">'+s.done+' done</button>':'')
+        +(s.overdue?'<button class="workload-pill wp-over" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;overdue&quot;,this)">'+s.overdue+' overdue</button>':'')
+        +(s.soon?'<button class="workload-pill wp-soon" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;soon&quot;,this)">'+s.soon+' due soon</button>':'')
+        +(s.ontime?'<button class="workload-pill wp-ok" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;ontime&quot;,this)">'+s.ontime+' on time</button>':'')
+        +(s.done?'<button class="workload-pill wp-none" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;done&quot;,this)">'+s.done+' done</button>':'')
         +'</div>'
         +'</div>';
     }).join('');
