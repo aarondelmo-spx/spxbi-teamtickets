@@ -166,7 +166,8 @@
   .subtask-check:hover{border-color:var(--accent)}
   .subtask-check.checked{background:var(--done);border-color:var(--done)}
   .subtask-check.checked::after{content:'✓';font-size:10px;color:#0f0f11;font-weight:700}
-  .subtask-text{flex:1;min-width:0;color:var(--text)}
+  .subtask-text{flex:1;min-width:0;color:var(--text);cursor:text}
+  .subtask-edit{flex:1;min-width:0;padding:2px 6px;border-radius:4px;border:1px solid var(--accent);background:var(--surface3);color:var(--text);font-family:var(--font);font-size:13px;outline:none}
   .subtask-item.done-task .subtask-text{text-decoration:line-through;color:var(--text3)}
   .subtask-meta{display:flex;align-items:center;gap:6px;margin-left:auto}
   .subtask-progress{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px}
@@ -212,6 +213,7 @@
   /* Workload panel */
   .workload-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.875rem 1rem;min-height:60px}
   #activity-panel{overflow:hidden}
+  #activity-list{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
   .workload-title{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
   .workload-member{margin-bottom:.75rem}
   .workload-member:last-child{margin-bottom:0}
@@ -361,7 +363,7 @@
   <div class="modal">
     <div class="modal-header"><h3>New Project</h3><button class="modal-close" onclick="closeNewModal()">×</button></div>
     <div class="modal-body">
-      <div class="field"><label>Title</label><input id="nt-title" placeholder="What needs to be done?" /></div>
+      <div class="field"><label>Title</label><input id="nt-title" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter')createTicket()" /></div>
       <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add more context..."></textarea></div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
@@ -375,7 +377,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeNewModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createTicket()">Create Ticket</button>
+      <button class="btn btn-primary" onclick="createTicket()">Create Project</button>
     </div>
   </div>
 </div>
@@ -392,23 +394,28 @@
       <button class="modal-close" onclick="closeDetailModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="detail-title" id="d-title"></div>
-      <div class="detail-desc" id="d-desc"></div>
+      <div class="detail-title" id="d-title" title="Double-click to edit" ondblclick="editDetailField('title')" style="cursor:text"></div>
+      <div class="detail-desc" id="d-desc" title="Double-click to edit" ondblclick="editDetailField('desc')" style="cursor:text"></div>
 
-      <div class="form-row" style="margin-bottom:1rem">
+      <div class="form-row" style="margin-bottom:.75rem">
         <div class="field"><label>Status</label>
           <select id="d-status-sel" onchange="updateTicketField('status',this.value)">
             <option value="open">Open</option><option value="in progress">In Progress</option><option value="review">Review</option><option value="done">Done</option>
           </select>
         </div>
-        <div class="field">
-          <label>Deadline</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
-            <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
-          </div>
-          <div id="d-deadline-status"></div>
+        <div class="field"><label>Priority</label>
+          <select id="d-priority-sel" onchange="updateTicketField('priority',this.value)">
+            <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+          </select>
         </div>
+      </div>
+      <div class="field">
+        <label>Deadline</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
+          <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+        </div>
+        <div id="d-deadline-status"></div>
       </div>
 
       <div class="field">
@@ -628,6 +635,8 @@ window.addEventListener('load', function() {
       contributors: dSelectedContribs.length ? dSelectedContribs : null,
       assignee: dSelectedContribs[0]||'Unassigned'
     });
+    var t=allTickets[selectedTicketId];
+    if(t) logActivity('updatedcontribs',t.title,dSelectedContribs.join(', ')||'none',selectedTicketId);
   }
 
   function renderContributorsDisplay(){
@@ -668,22 +677,30 @@ window.addEventListener('load', function() {
 
   // ── Warning banner ────────────────────────────────────────
   // ── Activity feed ────────────────────────────────────────
-  function logActivity(type, ticketTitle, detail, ticketId){
+  function logActivity(type, ticketTitle, detail, ticketId, from, to){
     activityRef.push({
       type: type,
       who: currentUser||'Someone',
       ticketTitle: ticketTitle||'',
       detail: detail||'',
       ticketId: ticketId||selectedTicketId||'',
+      from: from||'',
+      to: to||'',
       ts: Date.now()
     });
-    // Keep only latest 50 entries
+    // Keep max 100 entries AND purge entries older than 30 days
+    var thirtyDaysAgo = Date.now() - (30*24*60*60*1000);
     activityRef.once('value', function(snap){
       var entries = snap.val();
       if(!entries) return;
       var keys = Object.keys(entries).sort();
-      if(keys.length > 50){
-        keys.slice(0, keys.length-50).forEach(function(k){ activityRef.child(k).remove(); });
+      // Remove expired entries
+      keys.forEach(function(k){
+        if(entries[k].ts < thirtyDaysAgo) activityRef.child(k).remove();
+      });
+      // Also cap at 100
+      if(keys.length > 100){
+        keys.slice(0, keys.length-100).forEach(function(k){ activityRef.child(k).remove(); });
       }
     });
   }
@@ -696,12 +713,30 @@ window.addEventListener('load', function() {
     return Math.round(diff/86400)+'d ago';
   }
 
-  activityRef.limitToLast(50).on('value', function(snap){
+  activityRef.limitToLast(100).on('value', function(snap){
     var data = snap.val()||{};
     var items = Object.values(data).sort(function(a,b){return b.ts-a.ts;});
     var el = document.getElementById('activity-list'); if(!el) return;
     if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No activity yet.</div>'; return; }
-    var typeMap = {comment:{label:'commented',cls:'ab-comment'},done:{label:'completed subtask',cls:'ab-done'},created:{label:'created project',cls:'ab-created'},status:{label:'updated status',cls:'ab-status'},subtask:{label:'added subtask',cls:'ab-subtask'}};
+    var typeMap = {
+      comment:{label:'commented',cls:'ab-comment'},
+      replied:{label:'replied',cls:'ab-comment'},
+      done:{label:'completed subtask',cls:'ab-done'},
+      created:{label:'created project',cls:'ab-created'},
+      deleted:{label:'deleted project',cls:'ab-status'},
+      status:{label:'updated status',cls:'ab-status'},
+      subtask:{label:'added subtask',cls:'ab-subtask'},
+      deletedsubtask:{label:'removed subtask',cls:'ab-status'},
+      addedlink:{label:'added link',cls:'ab-subtask'},
+      deletedlink:{label:'removed link',cls:'ab-status'},
+      setdeadline:{label:'set deadline',cls:'ab-status'},
+      cleareddeadline:{label:'cleared deadline',cls:'ab-status'},
+      updatedcontribs:{label:'updated contributors',cls:'ab-subtask'},
+      priority:{label:'changed priority',cls:'ab-status'},
+      editedsubtask:{label:'edited subtask',cls:'ab-subtask'},
+      editedtitle:{label:'edited title',cls:'ab-status'},
+      editeddesc:{label:'edited description',cls:'ab-status'}
+    };
     el.innerHTML = '';
     items.forEach(function(item){
       var c = colorFor(item.who);
@@ -711,7 +746,11 @@ window.addEventListener('load', function() {
       if(item.ticketId) div.style.cursor='pointer';
       div.innerHTML = '<div class="activity-av" style="background:'+c+'22;color:'+c+'">'+initials(item.who)+'</div>'
         +'<div class="activity-body">'
-        +'<div class="activity-text"><span class="activity-who">'+item.who+'</span> <span class="activity-badge '+t.cls+'">'+t.label+'</span> <span class="activity-ticket">'+item.ticketTitle+'</span>'+(item.detail?'<span style="color:var(--text3)"> &rsaquo; '+item.detail+'</span>':'')+'</div>'
+        +'<div class="activity-text"><span class="activity-who">'+item.who+'</span>'
+        +' <span class="activity-badge '+t.cls+'">'+t.label+'</span>'
+        +' <span class="activity-ticket">'+item.ticketTitle+'</span>'
+        +(item.from&&item.to?'<span style="color:var(--text3);font-size:11px"> '+item.from+' &rarr; '+item.to+'</span>':(item.detail?'<span style="color:var(--text3)"> &rsaquo; '+item.detail+'</span>':''))
+        +'</div>'
         +'<div class="activity-time">'+timeAgo(item.ts)+'</div>'
         +'</div>';
       if(item.ticketId){
@@ -723,16 +762,20 @@ window.addEventListener('load', function() {
       }
       el.appendChild(div);
     });
-    // Cap height to match the taller of warn-banner and workload-panel
+    // Cap activity list height to match taller sibling, but allow scroll
     setTimeout(function(){
       var warnEl = document.getElementById('warn-banner');
       var workloadEl = document.getElementById('workload-panel');
       var activityPanel = document.getElementById('activity-panel');
-      if(!warnEl||!workloadEl||!activityPanel) return;
+      var activityList = document.getElementById('activity-list');
+      if(!warnEl||!workloadEl||!activityPanel||!activityList) return;
+      var panelPadding = 60; // title + padding
       var maxH = Math.max(warnEl.offsetHeight, workloadEl.offsetHeight);
       if(maxH > 0){
         activityPanel.style.maxHeight = maxH + 'px';
         activityPanel.style.overflow = 'hidden';
+        activityList.style.maxHeight = (maxH - panelPadding) + 'px';
+        activityList.style.overflowY = 'auto';
       }
     }, 100);
   });
@@ -820,6 +863,7 @@ window.addEventListener('load', function() {
       var t=allTickets[selectedTicketId];
       if(t){
         document.getElementById('d-status-sel').value=t.status;
+    document.getElementById('d-priority-sel').value=t.priority||'medium';
         document.getElementById('d-deadline-inp').value=t.deadline||'';
         renderDeadlineStatus(t.deadline,t.status);
         renderSubtasks(selectedTicketId);
@@ -852,10 +896,31 @@ window.addEventListener('load', function() {
       renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);
       var t2=allTickets[selectedTicketId]; if(t2) logActivity('status',t2.title,value);
     }
-    if(field==='deadline') renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
+    if(field==='deadline'){
+      renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
+      if(value){var t3=allTickets[selectedTicketId];if(t3) logActivity('setdeadline',t3.title,'',selectedTicketId,t3.deadline||'none',value);}
+    }
+    if(field==='priority'){
+      var pb=document.getElementById('d-priority-badge');
+      if(pb){pb.className='priority-badge '+pbClass(value);pb.textContent=value;}
+      var t2b=allTickets[selectedTicketId]; if(t2b) logActivity('priority',t2b.title,'',selectedTicketId,t2b.priority,value);
+    }
   };
-  window.clearDeadline=function(){document.getElementById('d-deadline-inp').value='';updateTicketField('deadline','');document.getElementById('d-deadline-status').innerHTML='';};
-  window.deleteTicket=function(){ if(!selectedTicketId)return; if(!confirm('Delete this ticket? This cannot be undone.'))return; db.ref('tickets/'+selectedTicketId).remove(); closeDetailModal(); };
+  window.clearDeadline=function(){
+    document.getElementById('d-deadline-inp').value='';
+    var t=allTickets[selectedTicketId];
+    if(t) logActivity('cleareddeadline',t.title,'',selectedTicketId);
+    updateTicketField('deadline','');
+    document.getElementById('d-deadline-status').innerHTML='';
+  };
+  window.deleteTicket=function(){
+    if(!selectedTicketId)return;
+    if(!confirm('Delete this project? This cannot be undone.'))return;
+    var t=allTickets[selectedTicketId];
+    if(t) logActivity('deleted',t.title,'',selectedTicketId);
+    db.ref('tickets/'+selectedTicketId).remove();
+    closeDetailModal();
+  };
 
   function renderDeadlineStatus(dl,status){
     var el=document.getElementById('d-deadline-status'); if(!el)return;
@@ -903,7 +968,60 @@ window.addEventListener('load', function() {
       if(tt&&sub) logActivity('done',tt.title,sub.text);
     }
   };
-  window.deleteSubtask=function(sid){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).remove(); };
+  window.deleteSubtask=function(sid){
+    if(!selectedTicketId)return;
+    var t=allTickets[selectedTicketId];
+    var sub=t&&t.subtasks&&t.subtasks[sid];
+    if(t&&sub) logActivity('deletedsubtask',t.title,sub.text,selectedTicketId);
+    db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).remove();
+  };
+
+  window.editDetailField=function(field){
+    var el=document.getElementById('d-'+field); if(!el) return;
+    var current=el.textContent;
+    var isTitle=field==='title';
+    var input=document.createElement(isTitle?'input':'textarea');
+    input.value=current;
+    input.style.cssText='width:100%;padding:6px 8px;border-radius:var(--radius);border:1px solid var(--accent);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:'+(isTitle?'17px':'13px')+';font-weight:'+(isTitle?'500':'400')+';outline:none;resize:vertical';
+    if(!isTitle) input.rows=3;
+    el.replaceWith(input);
+    input.focus();
+    input.select();
+    function save(){
+      var newVal=input.value.trim()||current;
+      var dbField=field==='title'?'title':'desc';
+      db.ref('tickets/'+selectedTicketId).update({[dbField]:newVal});
+      var t=allTickets[selectedTicketId];
+      if(t&&newVal!==current) logActivity('edited'+dbField,t.title,'',selectedTicketId,current.slice(0,40),newVal.slice(0,40));
+    }
+    input.addEventListener('blur',save);
+    input.addEventListener('keydown',function(e){
+      if(isTitle&&e.key==='Enter'){e.preventDefault();save();input.blur();}
+      if(e.key==='Escape'){input.value=current;input.blur();}
+    });
+  };
+
+  window.editSubtask=function(sid){
+    var span=document.getElementById('sttext-'+sid); if(!span) return;
+    var current=span.textContent;
+    var input=document.createElement('input');
+    input.className='subtask-edit';
+    input.value=current;
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+    function save(){
+      var newText=input.value.trim()||current;
+      db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).update({text:newText});
+      var t=allTickets[selectedTicketId];
+      if(t&&newText!==current) logActivity('editedsubtask',t.title,'',selectedTicketId,current.slice(0,40),newText.slice(0,40));
+    }
+    input.addEventListener('blur',save);
+    input.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){e.preventDefault();save();input.blur();}
+      if(e.key==='Escape'){input.value=current;input.blur();}
+    });
+  };
 
   function renderSubtasks(ticketId){
     var t=allTickets[ticketId]; if(!t) return;
@@ -929,7 +1047,7 @@ window.addEventListener('load', function() {
       var contribHtml=s.contributors&&s.contributors.length?avatarStackHtml(s.contributors,18):'';
       return '<div class="subtask-item'+(s.done?' done-task':'')+'">'
         +'<div class="subtask-check'+(s.done?' checked':'')+'" onclick="toggleSubtask(\''+sid+'\','+s.done+')"></div>'
-        +'<span class="subtask-text">'+s.text+'</span>'
+        +'<span class="subtask-text" id="sttext-'+sid+'" ondblclick="editSubtask(\''+sid+'\')" title="Double-click to edit">'+s.text+'</span>'
         +'<div class="subtask-meta">'
         +(dlTag?dlTag:'')
         +(contribHtml?contribHtml:'')
@@ -946,10 +1064,18 @@ window.addEventListener('load', function() {
     var url=urlInput.value.trim(); if(!url) return;
     url=ensureHttp(url);
     var label=labelInput.value.trim()||url;
+    var t=allTickets[selectedTicketId];
     db.ref('tickets/'+selectedTicketId+'/links').push({url:url,label:label,addedBy:currentUser||'Unknown',ts:Date.now()});
+    if(t) logActivity('addedlink',t.title,label,selectedTicketId);
     urlInput.value=''; labelInput.value='';
   };
-  window.deleteLink=function(lid){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/links/'+lid).remove(); };
+  window.deleteLink=function(lid){
+    if(!selectedTicketId)return;
+    var t=allTickets[selectedTicketId];
+    var lnk=t&&t.links&&t.links[lid];
+    if(t&&lnk) logActivity('deletedlink',t.title,lnk.label||lnk.url,selectedTicketId);
+    db.ref('tickets/'+selectedTicketId+'/links/'+lid).remove();
+  };
   function renderLinks(ticketId){
     var t=allTickets[ticketId]; if(!t) return;
     var links=t.links?Object.entries(t.links).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
@@ -977,7 +1103,9 @@ window.addEventListener('load', function() {
   window.postReply=function(cid){
     var input=document.getElementById('reply-input-'+cid); if(!input)return;
     var text=input.value.trim(); if(!text)return;
+    var t=allTickets[selectedTicketId];
     db.ref('tickets/'+selectedTicketId+'/comments/'+cid+'/replies').push({author:currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
+    if(t) logActivity('replied',t.title,'',selectedTicketId);
     input.value=''; replyingTo=null;
   };
   window.toggleReplyBox=function(cid){
@@ -1012,6 +1140,7 @@ window.addEventListener('load', function() {
     document.getElementById('d-status-badge').className='status-badge '+statusClass(t.status);
     document.getElementById('d-status-badge').textContent=t.status;
     document.getElementById('d-status-sel').value=t.status;
+    document.getElementById('d-priority-sel').value=t.priority||'medium';
     document.getElementById('d-deadline-inp').value=t.deadline||'';
     renderDeadlineStatus(t.deadline,t.status);
     // Load contributors
