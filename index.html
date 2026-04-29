@@ -7,6 +7,28 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#0f0f11;--surface:#17171a;--surface2:#1e1e23;--surface3:#222228;--border:#2a2a32;--border2:#36363f;--text:#e8e8ed;--text2:#8888a0;--text3:#55555f;--accent:#7c6ff7;--accent2:#5a54c4;--high:#f7706f;--med:#f7a86f;--low:#6fd4a8;--open:#6fa8f7;--prog:#b86ff7;--review:#f7d46f;--done:#6fd4a8;--warn:#f7d46f;--overdue:#f7706f;--font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;--radius:8px;--radius-lg:12px}
+  .light{--bg:#f5f5f7;--surface:#ffffff;--surface2:#f0f0f5;--surface3:#e8e8ee;--border:#dddde8;--border2:#c8c8d8;--text:#1a1a2e;--text2:#555577;--text3:#9999b0;--accent:#5a4fd4;--accent2:#3d34a8}
+  .light .s-open{background:rgba(58,122,220,.1);color:#1a5cbf;border-color:rgba(58,122,220,.25)}
+  .light .s-progress{background:rgba(130,68,220,.1);color:#6230b8;border-color:rgba(130,68,220,.25)}
+  .light .s-review{background:rgba(180,140,20,.1);color:#7a5c00;border-color:rgba(180,140,20,.25)}
+  .light .s-done{background:rgba(30,160,100,.1);color:#0e6b3f;border-color:rgba(30,160,100,.25)}
+  .light .pb-high{background:rgba(220,60,60,.1);color:#b52020;border-color:rgba(220,60,60,.2)}
+  .light .pb-medium{background:rgba(200,120,20,.1);color:#8a4e00;border-color:rgba(200,120,20,.2)}
+  .light .pb-low{background:rgba(30,160,100,.1);color:#0e6b3f;border-color:rgba(30,160,100,.2)}
+  .light .badge-overdue{background:rgba(220,60,60,.1);color:#b52020;border-color:rgba(220,60,60,.2)}
+  .light .badge-soon{background:rgba(180,140,20,.1);color:#7a5c00;border-color:rgba(180,140,20,.2)}
+  .light .warn-banner{background:rgba(180,140,20,.06);border-color:rgba(180,140,20,.2)}
+  .light .warn-banner-title{color:#7a5c00}
+  .light .warn-item{color:#5a5a7a}
+  .light .dl-soon{color:#7a5c00;background:rgba(180,140,20,.08);border-color:rgba(180,140,20,.2)}
+  .light .dl-overdue{color:#b52020;background:rgba(220,60,60,.08);border-color:rgba(220,60,60,.2)}
+  .light .deadline-status.warn{color:#7a5c00;background:rgba(180,140,20,.07);border-color:rgba(180,140,20,.2)}
+  .light .deadline-status.over{color:#b52020;background:rgba(220,60,60,.07);border-color:rgba(220,60,60,.2)}
+  .light .ticket.is-overdue{border-color:rgba(220,60,60,.3)}
+  .light .ticket.is-soon{border-color:rgba(180,140,20,.3)}
+  .light .subtask-bar{background:#dddde8}
+  
+  .light input[type=date]{color-scheme:light}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
   .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
@@ -186,6 +208,63 @@
   .name-modal p{font-size:13px;color:var(--text2);margin-bottom:1.25rem;line-height:1.6}
   .team-member-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
   .team-member-row:last-child{border-bottom:none}
+
+  /* Workload panel */
+  .workload-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.875rem 1rem;min-height:60px}
+  .workload-title{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
+  .workload-member{margin-bottom:.75rem}
+  .workload-member:last-child{margin-bottom:0}
+  .workload-member-header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .workload-member-name{font-size:12px;font-weight:500;color:var(--text);flex:1}
+  .workload-member-total{font-size:11px;color:var(--text3);font-family:var(--mono)}
+  .workload-bar-row{display:flex;gap:3px;height:6px;border-radius:3px;overflow:hidden}
+  .workload-seg{height:100%;transition:width .3s;min-width:0}
+  .workload-pills{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+  .workload-pill{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:8px;white-space:nowrap;cursor:pointer;border:none;transition:filter .15s}
+  .workload-pill:hover{filter:brightness(1.2)}
+  .wp-ok{background:rgba(111,212,168,.12);color:var(--done)}
+  .wp-soon{background:rgba(247,212,111,.12);color:var(--warn)}
+  .wp-over{background:rgba(247,112,111,.12);color:var(--overdue)}
+  .wp-none{background:var(--surface2);color:var(--text3)}
+  .light .workload-panel{border-color:var(--border)}
+  .light .wp-ok{background:rgba(30,160,100,.1);color:#0e6b3f}
+  .light .wp-soon{background:rgba(180,140,20,.1);color:#7a5c00}
+  .light .wp-over{background:rgba(220,60,60,.1);color:#b52020}
+  @media(max-width:1100px){#dashboard-row{grid-template-columns:1fr 1fr}}
+  @media(max-width:700px){#dashboard-row{grid-template-columns:1fr}}
+
+  /* Activity feed */
+  .activity-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .activity-item:last-child{border-bottom:none}
+  .activity-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0;margin-top:1px}
+  .activity-body{flex:1;min-width:0}
+  .activity-text{font-size:12px;color:var(--text);line-height:1.5}
+  .activity-text .activity-who{font-weight:500}
+  .activity-text .activity-ticket{color:var(--text2)}
+  .activity-time{font-size:10px;color:var(--text3);font-family:var(--mono);white-space:nowrap;margin-top:2px}
+  .activity-badge{display:inline;font-size:10px;padding:1px 6px;border-radius:8px;margin:0 2px}
+  .ab-comment{background:rgba(111,168,247,.15);color:var(--open)}
+  .ab-done{background:rgba(111,212,168,.15);color:var(--done)}
+  .ab-created{background:rgba(124,111,247,.15);color:var(--accent)}
+  .ab-status{background:rgba(247,168,111,.15);color:var(--med)}
+  .ab-subtask{background:rgba(184,111,247,.15);color:var(--prog)}
+  .light .ab-comment{background:rgba(58,122,220,.1);color:#185FA5}
+  .light .ab-done{background:rgba(30,160,100,.1);color:#0e6b3f}
+  .light .ab-created{background:rgba(90,84,196,.1);color:#3C3489}
+  .light .ab-status{background:rgba(200,120,20,.1);color:#8a4e00}
+  .light .ab-subtask{background:rgba(130,68,220,.1);color:#6230b8}
+
+  /* Workload popover */
+  .wl-popover{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:.875rem 1rem;min-width:220px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.35);display:none}
+  .wl-popover.open{display:block}
+  .wl-popover-title{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+  .wl-popover-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .wl-popover-item:last-child{border-bottom:none}
+  .wl-popover-item:hover .wl-item-title{color:var(--accent)}
+  .wl-item-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .wl-item-title{font-size:12px;color:var(--text);line-height:1.4;flex:1}
+  .wl-item-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .light .wl-popover{box-shadow:0 8px 32px rgba(0,0,0,.12)}
 </style>
 </head>
 <body>
@@ -193,10 +272,10 @@
 <!-- Name prompt -->
 <div class="modal-overlay" id="name-modal-overlay">
   <div class="name-modal">
-    <h3>What's your name?</h3>
-    <p>Shows up on your comments so your team knows who said what.</p>
-    <div class="field"><input id="name-input" placeholder="e.g. Alex, Jordan, Sam..." maxlength="30" onkeydown="if(event.key==='Enter')saveName()" autofocus /></div>
-    <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="saveName()">Let's go</button></div>
+    <h3>Who are you?</h3>
+    <p>Pick your name so your team knows who said what.</p>
+    <div id="name-picker" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem"></div>
+    <div id="name-no-team" style="display:none;font-size:13px;color:var(--text3);margin-bottom:1.25rem">No team members yet. Ask your admin to add names via "Manage team" first.</div>
   </div>
 </div>
 
@@ -225,6 +304,7 @@
     </div>
     <button class="new-btn" onclick="openNewModal()">+ New Ticket</button>
     <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
+    <button class="team-btn" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
     <div class="sidebar-section">Filter by status</div>
     <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All tickets<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
@@ -244,9 +324,19 @@
       <div class="stat"><div class="stat-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
       <div class="stat"><div class="stat-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
     </div>
-    <div class="warn-banner" id="warn-banner">
-      <div class="warn-banner-title">⚠ Deadline alerts</div>
-      <div id="warn-list"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 300px;gap:14px;margin-bottom:1.25rem;align-items:start" id="dashboard-row">
+      <div class="warn-banner" id="warn-banner" style="margin-bottom:0">
+        <div class="warn-banner-title">⚠ Deadline alerts</div>
+        <div id="warn-list"></div>
+      </div>
+      <div class="workload-panel" id="workload-panel">
+        <div class="workload-title">Team workload</div>
+        <div id="workload-list"><div style="font-size:12px;color:var(--text3)">No team members yet.</div></div>
+      </div>
+      <div class="workload-panel" id="activity-panel">
+        <div class="workload-title">Recent activity</div>
+        <div id="activity-list"><div style="font-size:12px;color:var(--text3)">No activity yet.</div></div>
+      </div>
     </div>
     <div class="toolbar">
       <input class="search" placeholder="Search tickets..." id="search-input" oninput="renderList()" />
@@ -255,6 +345,11 @@
       <button class="filter-pill" id="pill-in progress" onclick="setFilter('in progress')">In Progress</button>
       <button class="filter-pill" id="pill-review" onclick="setFilter('review')">Review</button>
       <button class="filter-pill" id="pill-done" onclick="setFilter('done')">Done</button>
+    </div>
+    <div class="toolbar" id="contrib-filter-row" style="margin-top:-4px">
+      <span style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:5px 0">Contributor:</span>
+      <button class="filter-pill active" id="cpill-all" onclick="setContribFilter('all')">All</button>
+      <div id="contrib-pills" style="display:flex;gap:8px;flex-wrap:wrap"></div>
     </div>
     <div class="ticket-list" id="ticket-list"><div class="loading">Connecting to database...</div></div>
   </main>
@@ -384,8 +479,17 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.js"></script>
+<script>
+// Early globals so onclick handlers work before the main module loads
+window.saveName = function(name){
+  if(!name) return;
+  localStorage.setItem('spxbi_username', name);
+  document.getElementById('name-modal-overlay').style.display = 'none';
+  var ev = new Event('nameSet'); document.dispatchEvent(ev);
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 window.addEventListener('load', function() {
 
@@ -402,10 +506,12 @@ window.addEventListener('load', function() {
   var db = firebase.database();
   var ticketsRef = db.ref('tickets');
   var teamRef = db.ref('team');
+  var activityRef = db.ref('activity');
 
   var allTickets = {};
   var teamMembers = []; // [{id, name}]
   var currentFilter = 'all';
+  var currentContrib = 'all';
   var selectedTicketId = null;
   var currentUser = localStorage.getItem('spxbi_username') || '';
   var replyingTo = null;
@@ -454,7 +560,33 @@ window.addEventListener('load', function() {
       .sort(function(a,b){ return a.name.localeCompare(b.name); });
     refreshAllPickers();
     renderTeamList();
+    renderWorkload();
+    renderContribPills();
+    renderNamePicker();
   });
+
+  function renderNamePicker(){
+    var picker = document.getElementById('name-picker'); if(!picker) return;
+    var noTeam = document.getElementById('name-no-team');
+    if(!teamMembers.length){
+      picker.style.display='none';
+      if(noTeam) noTeam.style.display='block';
+      return;
+    }
+    if(noTeam) noTeam.style.display='none';
+    picker.style.display='flex';
+    picker.innerHTML = '';
+    teamMembers.forEach(function(m){
+      var c=colorFor(m.name);
+      var btn=document.createElement('button');
+      btn.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;cursor:pointer;transition:all .15s';
+      btn.innerHTML='<div style="width:24px;height:24px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500">'+initials(m.name)+'</div>'+m.name;
+      btn.addEventListener('mouseover',function(){this.style.borderColor='var(--accent)';this.style.background='var(--surface3)';});
+      btn.addEventListener('mouseout',function(){this.style.borderColor='var(--border2)';this.style.background='var(--surface2)';});
+      (function(name){btn.addEventListener('click',function(){saveName(name);});})(m.name);
+      picker.appendChild(btn);
+    });
+  }
 
   function refreshAllPickers(){
     renderContribPicker('nt-contributor-picker', ntSelectedContribs, function(sel){ ntSelectedContribs=sel; });
@@ -534,22 +666,80 @@ window.addEventListener('load', function() {
   }
 
   // ── Warning banner ────────────────────────────────────────
+  // ── Activity feed ────────────────────────────────────────
+  function logActivity(type, ticketTitle, detail){
+    activityRef.push({
+      type: type,
+      who: currentUser||'Someone',
+      ticketTitle: ticketTitle||'',
+      detail: detail||'',
+      ts: Date.now()
+    });
+    // Keep only latest 50 entries
+    activityRef.once('value', function(snap){
+      var entries = snap.val();
+      if(!entries) return;
+      var keys = Object.keys(entries).sort();
+      if(keys.length > 50){
+        keys.slice(0, keys.length-50).forEach(function(k){ activityRef.child(k).remove(); });
+      }
+    });
+  }
+
+  function timeAgo(ts){
+    var diff = Math.round((Date.now()-ts)/1000);
+    if(diff<60) return diff+'s ago';
+    if(diff<3600) return Math.round(diff/60)+'m ago';
+    if(diff<86400) return Math.round(diff/3600)+'h ago';
+    return Math.round(diff/86400)+'d ago';
+  }
+
+  activityRef.limitToLast(20).on('value', function(snap){
+    var data = snap.val()||{};
+    var items = Object.values(data).sort(function(a,b){return b.ts-a.ts;});
+    var el = document.getElementById('activity-list'); if(!el) return;
+    if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No activity yet.</div>'; return; }
+    var typeMap = {comment:{label:'commented',cls:'ab-comment'},done:{label:'completed subtask',cls:'ab-done'},created:{label:'created',cls:'ab-created'},status:{label:'updated status',cls:'ab-status'},subtask:{label:'added subtask',cls:'ab-subtask'}};
+    el.innerHTML = items.map(function(item){
+      var c = colorFor(item.who);
+      var t = typeMap[item.type]||{label:item.type,cls:'ab-status'};
+      return '<div class="activity-item">'
+        +'<div class="activity-av" style="background:'+c+'22;color:'+c+'">'+initials(item.who)+'</div>'
+        +'<div class="activity-body">'
+        +'<div class="activity-text"><span class="activity-who">'+item.who+'</span> <span class="activity-badge '+t.cls+'">'+t.label+'</span> <span class="activity-ticket">'+item.ticketTitle+'</span>'+(item.detail?'<span style="color:var(--text3)"> · '+item.detail+'</span>':'')+'</div>'
+        +'<div class="activity-time">'+timeAgo(item.ts)+'</div>'
+        +'</div></div>';
+    }).join('');
+  });
+
+  function contribAvatarsHtml(contribs){
+    if(!contribs||!contribs.length) return '';
+    return '<span style="display:inline-flex;align-items:center;gap:3px;margin-left:4px">'
+      +contribs.slice(0,3).map(function(n){
+        var c=colorFor(n);
+        return '<span title="'+n+'" style="width:16px;height:16px;border-radius:50%;background:'+c+'22;color:'+c+';display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:500">'+initials(n)+'</span>';
+      }).join('')
+      +(contribs.length>3?'<span style="font-size:10px;color:var(--text3)">+' +(contribs.length-3)+'</span>':'')
+      +'</span>';
+  }
   function updateWarnings(){
     var ticketItems=[],subtaskItems=[];
     Object.entries(allTickets).forEach(function(e){
       var id=e[0],t=e[1];
       if(!t.deadline||t.status==='done') return;
       var diff=deadlineDiff(t.deadline); if(diff===null) return;
-      if(diff<0) ticketItems.push({id:id,title:t.title,diff:diff,type:'overdue'});
-      else if(diff<=3) ticketItems.push({id:id,title:t.title,diff:diff,type:'soon'});
+      var contribs=t.contributors&&t.contributors.length?t.contributors:(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
+      if(diff<0) ticketItems.push({id:id,title:t.title,diff:diff,type:'overdue',contribs:contribs});
+      else if(diff<=3) ticketItems.push({id:id,title:t.title,diff:diff,type:'soon',contribs:contribs});
     });
     Object.entries(allTickets).forEach(function(e){
       var id=e[0],t=e[1]; if(!t.subtasks) return;
       Object.entries(t.subtasks).forEach(function(se){
         var s=se[1]; if(!s.deadline||s.done) return;
         var diff=deadlineDiff(s.deadline); if(diff===null) return;
-        if(diff<0) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'overdue'});
-        else if(diff<=3) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'soon'});
+        var contribs=s.contributors&&s.contributors.length?s.contributors:[];
+        if(diff<0) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'overdue',contribs:contribs});
+        else if(diff<=3) subtaskItems.push({id:id,ticketTitle:t.title,subtaskTitle:s.text,diff:diff,type:'soon',contribs:contribs});
       });
     });
     ticketItems.sort(function(a,b){return a.diff-b.diff;});
@@ -563,7 +753,7 @@ window.addEventListener('load', function() {
       html+=ticketItems.map(function(it){
         var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
         var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
-        return '<div class="warn-item" onclick="openDetailModal(\''+it.id+'\')"><span class="warn-badge '+badge+'">'+label+'</span><span>'+it.title+'</span></div>';
+        return '<div class="warn-item" onclick="openDetailModal(&quot;'+it.id+'&quot;)"><span class="warn-badge '+badge+'">'+label+'</span>'+contribAvatarsHtml(it.contribs)+'<span style="flex:1">'+it.title+'</span></div>';
       }).join('');
     }
     if(subtaskItems.length){
@@ -571,7 +761,7 @@ window.addEventListener('load', function() {
       html+=subtaskItems.map(function(it){
         var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
         var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
-        return '<div class="warn-item" onclick="openDetailModal(\''+it.id+'\')"><span class="warn-badge '+badge+'">'+label+'</span><span style="color:var(--text3)">'+it.ticketTitle+' ›</span><span>'+it.subtaskTitle+'</span></div>';
+        return '<div class="warn-item" onclick="openDetailModal(&quot;'+it.id+'&quot;)"><span class="warn-badge '+badge+'">'+label+'</span>'+contribAvatarsHtml(it.contribs)+'<span style="color:var(--text3)">'+it.ticketTitle+' &rsaquo;</span><span style="flex:1">'+it.subtaskTitle+'</span></div>';
       }).join('');
     }
     list.innerHTML=html;
@@ -588,13 +778,17 @@ window.addEventListener('load', function() {
     if(da) da.innerHTML=avatarHtml(currentUser,22);
   }
   if(currentUser){document.getElementById('name-modal-overlay').style.display='none';updateWho();}
-  window.saveName=function(){ var v=document.getElementById('name-input').value.trim(); if(!v)return; currentUser=v; localStorage.setItem('spxbi_username',v); document.getElementById('name-modal-overlay').style.display='none'; updateWho(); };
+  document.addEventListener('nameSet', function(){
+    currentUser = localStorage.getItem('spxbi_username')||'';
+    updateWho();
+  });
+  window.saveName=function(name){ if(!name)return; currentUser=name; localStorage.setItem('spxbi_username',name); document.getElementById('name-modal-overlay').style.display='none'; updateWho(); };
   window.changeName=function(){ var n=prompt('Change your name:',currentUser); if(n&&n.trim()){currentUser=n.trim();localStorage.setItem('spxbi_username',currentUser);updateWho();} };
 
   // ── Firebase ──────────────────────────────────────────────
   ticketsRef.on('value',function(snap){
     allTickets=snap.val()||{};
-    updateStats();renderList();updateCounts();updateWarnings();
+    updateStats();renderList();updateCounts();updateWarnings();renderWorkload();
     document.getElementById('sync-dot').className='sync-dot online';
     document.getElementById('sync-label').textContent='Synced live';
     if(selectedTicketId&&document.getElementById('detail-modal').style.display!=='none'){
@@ -619,6 +813,7 @@ window.addEventListener('load', function() {
       priority:document.getElementById('nt-priority').value,status:'open',
       assignee:assignee,contributors:ntSelectedContribs.length?ntSelectedContribs:null,
       deadline:dl||null,created:fmtDate(),createdTs:Date.now()});
+    logActivity('created',title,'');
     closeNewModal();
   };
 
@@ -626,7 +821,12 @@ window.addEventListener('load', function() {
     if(!selectedTicketId) return;
     var upd={}; upd[field]=(value===''?null:value);
     db.ref('tickets/'+selectedTicketId).update(upd);
-    if(field==='status'){document.getElementById('d-status-badge').className='status-badge '+statusClass(value);document.getElementById('d-status-badge').textContent=value;renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);}
+    if(field==='status'){
+      document.getElementById('d-status-badge').className='status-badge '+statusClass(value);
+      document.getElementById('d-status-badge').textContent=value;
+      renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);
+      var t2=allTickets[selectedTicketId]; if(t2) logActivity('status',t2.title,value);
+    }
     if(field==='deadline') renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
   };
   window.clearDeadline=function(){document.getElementById('d-deadline-inp').value='';updateTicketField('deadline','');document.getElementById('d-deadline-status').innerHTML='';};
@@ -662,12 +862,22 @@ window.addEventListener('load', function() {
     var text=input.value.trim(); if(!text) return;
     var dl=dlInput?dlInput.value:'';
     var contribs=stSelectedContribs.slice();
+    var st=allTickets[selectedTicketId];
     db.ref('tickets/'+selectedTicketId+'/subtasks').push({text:text,done:false,deadline:dl||null,contributors:contribs.length?contribs:null,createdBy:currentUser||'Unknown',ts:Date.now()});
+    if(st) logActivity('subtask',st.title,text);
     input.value=''; if(dlInput)dlInput.value='';
     stSelectedContribs=[];
     renderContribPicker('subtask-contributor-picker',stSelectedContribs,function(sel){stSelectedContribs=sel;});
   };
-  window.toggleSubtask=function(sid,cur){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).update({done:!cur}); };
+  window.toggleSubtask=function(sid,cur){
+    if(!selectedTicketId)return;
+    db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).update({done:!cur});
+    if(!cur){
+      var tt=allTickets[selectedTicketId];
+      var sub=tt&&tt.subtasks&&tt.subtasks[sid];
+      if(tt&&sub) logActivity('done',tt.title,sub.text);
+    }
+  };
   window.deleteSubtask=function(sid){ if(!selectedTicketId)return; db.ref('tickets/'+selectedTicketId+'/subtasks/'+sid).remove(); };
 
   function renderSubtasks(ticketId){
@@ -734,7 +944,9 @@ window.addEventListener('load', function() {
     if(!selectedTicketId) return;
     var input=document.getElementById('d-comment-input');
     var text=input.value.trim(); if(!text) return;
+    var ct=allTickets[selectedTicketId];
     db.ref('tickets/'+selectedTicketId+'/comments').push({author:currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
+    if(ct) logActivity('comment',ct.title,'');
     input.value=''; replyingTo=null;
   };
   window.postReply=function(cid){
@@ -797,6 +1009,12 @@ window.addEventListener('load', function() {
     var list=document.getElementById('ticket-list');
     var tickets=Object.entries(allTickets)
       .filter(function(e){return currentFilter==='all'||e[1].status===currentFilter;})
+      .filter(function(e){
+        if(currentContrib==='all') return true;
+        var t=e[1];
+        var contribs=t.contributors&&t.contributors.length?t.contributors:(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
+        return contribs.indexOf(currentContrib)>-1;
+      })
       .filter(function(e){return !search||e[1].title.toLowerCase().includes(search)||(e[1].assignee||'').toLowerCase().includes(search);})
       .sort(function(a,b){return pOrder(a[1].priority)-pOrder(b[1].priority)||(b[1].createdTs||0)-(a[1].createdTs||0);});
     if(!tickets.length){
@@ -843,6 +1061,28 @@ window.addEventListener('load', function() {
     if(n)n.classList.add('active');if(p)p.classList.add('active');
     renderList();
   };
+  window.setContribFilter=function(name){
+    currentContrib=name;
+    document.getElementById('cpill-all').classList.toggle('active',name==='all');
+    document.querySelectorAll('.cpill-member').forEach(function(b){
+      b.classList.toggle('active', b.dataset.name===name);
+    });
+    renderList();
+  };
+  function renderContribPills(){
+    var el=document.getElementById('contrib-pills'); if(!el) return;
+    el.innerHTML=teamMembers.map(function(m){
+      var c=colorFor(m.name);
+      var isActive=currentContrib===m.name;
+      return '<button class="filter-pill cpill-member'+(isActive?' active':'')+'" data-name="'+m.name+'" style="display:flex;align-items:center;gap:5px">'
+        +'<div style="width:12px;height:12px;border-radius:50%;background:'+c+';flex-shrink:0"></div>'
+        +m.name+'</button>';
+    }).join('');
+    // Attach click handlers after rendering
+    el.querySelectorAll('.cpill-member').forEach(function(btn){
+      btn.addEventListener('click', function(){ setContribFilter(this.dataset.name); });
+    });
+  }
   window.openNewModal=function(){
     ntSelectedContribs=[];
     renderContribPicker('nt-contributor-picker',ntSelectedContribs,function(sel){ntSelectedContribs=sel;});
@@ -856,7 +1096,175 @@ window.addEventListener('load', function() {
   };
   window.closeDetailModal=function(){ document.getElementById('detail-modal').style.display='none'; selectedTicketId=null; };
 
+  // Escape key to close modals
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    if(document.getElementById('detail-modal').style.display!=='none'){ closeDetailModal(); return; }
+    if(document.getElementById('new-modal').style.display!=='none'){ closeNewModal(); return; }
+    if(document.getElementById('team-modal').style.display!=='none'){ closeTeamModal(); return; }
+    if(wlPopoverOpen){ closeWlPopover(); }
+  });
+
+  // ── Workload panel ───────────────────────────────────────
+  var wlPopoverOpen = false;
+
+  window.closeWlPopover = function(){
+    document.getElementById('wl-popover').classList.remove('open');
+    wlPopoverOpen = false;
+  };
+
+  // Helper: classify a ticket into a bucket for a given member
+  function ticketBucket(t){
+    if(t.status==='done') return 'done';
+    if(!t.deadline) return 'ontime';
+    var diff=deadlineDiff(t.deadline);
+    if(diff===null) return 'ontime';
+    if(diff<0) return 'overdue';
+    if(diff<=3) return 'soon';
+    return 'ontime';
+  }
+  function subtaskBucket(sub){
+    if(sub.done) return 'done';
+    if(!sub.deadline) return 'ontime';
+    var diff=deadlineDiff(sub.deadline);
+    if(diff===null) return 'ontime';
+    if(diff<0) return 'overdue';
+    if(diff<=3) return 'soon';
+    return 'ontime';
+  }
+  function dlLabel(deadline, done){
+    if(done) return 'Done';
+    if(!deadline) return 'No deadline';
+    var diff=deadlineDiff(deadline);
+    if(diff===null) return deadline;
+    if(diff<0) return 'Overdue '+Math.abs(diff)+'d';
+    if(diff===0) return 'Due today';
+    return 'Due in '+diff+'d';
+  }
+
+  window.showWlPopover = function(memberName, bucket, btnEl){
+    memberName = String(memberName).replace(/&quot;/g,'');
+    var color = bucket==='overdue'?'var(--overdue)':bucket==='soon'?'var(--warn)':bucket==='done'?'var(--done)':'var(--accent)';
+    var bucketLabel = bucket==='overdue'?'Overdue':bucket==='soon'?'Due soon':bucket==='done'?'Done':'On time';
+    var items = [];
+
+    // Subtasks only
+    Object.entries(allTickets).forEach(function(e){
+      var tid=e[0],t=e[1];
+      if(!t.subtasks) return;
+      Object.entries(t.subtasks).forEach(function(se){
+        var sub=se[1];
+        if(!sub.contributors||sub.contributors.indexOf(memberName)===-1) return;
+        if(subtaskBucket(sub)!==bucket) return;
+        items.push({id:tid,title:t.title+' › '+sub.text,sub:dlLabel(sub.deadline,sub.done),isSubtask:true});
+      });
+    });
+
+    if(!items.length) return;
+    document.getElementById('wl-popover-title').textContent = memberName + ' · ' + bucketLabel;
+    document.getElementById('wl-popover-body').innerHTML = items.map(function(item){
+      return '<div class="wl-popover-item" onclick="closeWlPopover();openDetailModal(&quot;'+item.id+'&quot;)">'
+        +'<div class="wl-item-dot" style="background:'+color+'"></div>'
+        +'<div><div class="wl-item-title">'+item.title+'</div><div class="wl-item-sub">'+item.sub+(item.isSubtask?' · subtask':'')+'</div></div>'
+        +'</div>';
+    }).join('');
+
+    var pop = document.getElementById('wl-popover');
+    pop.classList.add('open');
+    var rect = btnEl.getBoundingClientRect();
+    var popW = 260;
+    var left = rect.left - popW - 8;
+    if(left < 8) left = rect.right + 8;
+    var top = rect.top;
+    if(top + 200 > window.innerHeight) top = window.innerHeight - 210;
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    wlPopoverOpen = true;
+  };
+
+  document.addEventListener('click', function(){ if(wlPopoverOpen) closeWlPopover(); });
+
+  function renderWorkload(){
+    var el = document.getElementById('workload-list'); if(!el) return;
+    if(!teamMembers.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">Add team members to track workload.</div>'; return; }
+
+    // Build stats: only count active (non-done) tasks
+    var stats = {};
+    teamMembers.forEach(function(m){ stats[m.name]={total:0,ontime:0,soon:0,overdue:0}; });
+
+    // Count subtasks only (not parent tickets)
+    Object.entries(allTickets).forEach(function(e){
+      var t=e[1];
+      if(!t.subtasks) return;
+      Object.entries(t.subtasks).forEach(function(se){
+        var sub=se[1];
+        if(!sub.contributors) return;
+        var sbucket=subtaskBucket(sub);
+        if(sbucket==='done') return;
+        sub.contributors.forEach(function(name){
+          if(!stats[name]) return;
+          stats[name].total++;
+          stats[name][sbucket]++;
+        });
+      });
+    });
+
+    el.innerHTML = teamMembers.map(function(m){
+      var s = stats[m.name];
+      var c = colorFor(m.name);
+      if(!s||s.total===0){
+        return '<div class="workload-member">'
+          +'<div class="workload-member-header">'
+          +'<div style="width:20px;height:20px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0">'+initials(m.name)+'</div>'
+          +'<span class="workload-member-name">'+m.name+'</span>'
+          +'<span class="workload-member-total" style="color:var(--text3)">no active tasks</span>'
+          +'</div>'
+          +'</div>';
+      }
+      var total=s.total;
+      var okPct=Math.round(s.ontime/total*100);
+      var soonPct=Math.round(s.soon/total*100);
+      var overPct=Math.round(s.overdue/total*100);
+      return '<div class="workload-member">'
+        +'<div class="workload-member-header">'
+        +'<div style="width:20px;height:20px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0">'+initials(m.name)+'</div>'
+        +'<span class="workload-member-name">'+m.name+'</span>'
+        +'<span class="workload-member-total">'+total+' active task'+(total>1?'s':'')+'</span>'
+        +'</div>'
+        +'<div class="workload-bar-row">'
+        +(s.overdue?'<div class="workload-seg" style="background:var(--overdue);width:'+overPct+'%;min-width:4px" title="'+s.overdue+' overdue"></div>':'')
+        +(s.soon?'<div class="workload-seg" style="background:var(--warn);width:'+soonPct+'%;min-width:4px" title="'+s.soon+' due soon"></div>':'')
+        +(s.ontime?'<div class="workload-seg" style="background:var(--accent);opacity:.5;width:'+okPct+'%;min-width:4px" title="'+s.ontime+' on time"></div>':'')
+        +'</div>'
+        +'<div class="workload-pills">'
+        +(s.overdue?'<button class="workload-pill wp-over" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;overdue&quot;,this)">'+s.overdue+' overdue</button>':'')
+        +(s.soon?'<button class="workload-pill wp-soon" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;soon&quot;,this)">'+s.soon+' due soon</button>':'')
+        +(s.ontime?'<button class="workload-pill wp-ok" onclick="event.stopPropagation();showWlPopover(&quot;'+m.name+'&quot;,&quot;ontime&quot;,this)">'+s.ontime+' on time</button>':'')
+
+        +'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  // ── Theme toggle ──────────────────────────────────────────  // ── Theme toggle ──────────────────────────────────────────
+  var isDark = localStorage.getItem('spxbi_theme') !== 'light';
+  function applyTheme(){
+    document.body.classList.toggle('light', !isDark);
+    var btn = document.getElementById('theme-btn');
+    if(btn) btn.textContent = isDark ? '☀ Light mode' : '🌙 Dark mode';
+  }
+  window.toggleTheme = function(){
+    isDark = !isDark;
+    localStorage.setItem('spxbi_theme', isDark ? 'dark' : 'light');
+    applyTheme();
+  };
+  applyTheme();
+
 }); // end load
 </script>
+<div id="wl-popover" class="wl-popover" onclick="event.stopPropagation()">
+  <div class="wl-popover-title" id="wl-popover-title"></div>
+  <div id="wl-popover-body"></div>
+</div>
 </body>
 </html>
