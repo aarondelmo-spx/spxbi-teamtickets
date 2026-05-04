@@ -290,58 +290,61 @@
   .whitelist-name{color:var(--text);font-weight:500;min-width:60px}
 
   /* ── Calendar View ───────────────────────────── */
-  .cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:150;display:flex;align-items:flex-start;justify-content:center;padding:2.5rem 1rem;backdrop-filter:blur(3px);overflow-y:auto}
-  .cal-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:860px;display:flex;flex-direction:column;gap:0}
-  .cal-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:150;display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(3px)}
+  .cal-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:980px;max-height:calc(100vh - 3rem);display:flex;flex-direction:column;overflow:hidden}
+  .cal-header{padding:1rem 1.25rem .875rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
   .cal-header-left{display:flex;align-items:center;gap:10px}
-  .cal-month-label{font-size:16px;font-weight:500;font-family:var(--mono);min-width:140px}
+  .cal-month-label{font-size:15px;font-weight:500;font-family:var(--mono);min-width:150px}
   .cal-nav{display:flex;align-items:center;gap:4px}
-  .cal-nav button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:4px 10px;cursor:pointer;font-size:13px;transition:all .15s;font-family:var(--font)}
+  .cal-nav button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:4px 11px;cursor:pointer;font-size:14px;transition:all .15s;font-family:var(--font);line-height:1}
   .cal-nav button:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
   .cal-nav .cal-today-btn{font-size:11px;color:var(--text3);border-color:transparent;padding:4px 8px}
   .cal-nav .cal-today-btn:hover{border-color:var(--border);color:var(--text)}
-  .cal-body{padding:1rem 1.25rem 1.5rem;display:flex;gap:14px}
-  .cal-grid-wrap{flex:1;min-width:0}
-  .cal-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
-  .cal-day-label{text-align:center;font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:3px 0}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .cal-cell{min-height:72px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:4px 5px;cursor:default;transition:border-color .15s;position:relative}
-  .cal-cell.has-items{cursor:pointer}
-  .cal-cell.has-items:hover{border-color:var(--border2);background:var(--surface3)}
-  .cal-cell.today{border-color:var(--accent);background:rgba(124,111,247,.06)}
-  .cal-cell.other-month{opacity:.38}
-  .cal-cell.overdue-day{border-color:rgba(247,112,111,.35);background:rgba(247,112,111,.04)}
-  .cal-cell-num{font-size:10px;font-family:var(--mono);color:var(--text3);line-height:1;margin-bottom:3px}
-  .cal-cell.today .cal-cell-num{color:var(--accent);font-weight:700}
-  .cal-dot-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
-  .cal-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-  .cal-chips{display:flex;flex-direction:column;gap:2px;margin-top:2px}
-  .cal-chip{font-size:9px;line-height:1.3;padding:1px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);max-width:100%}
-  .cal-chip.overdue{background:rgba(247,112,111,.18);color:var(--overdue)}
-  .cal-chip.soon{background:rgba(247,212,111,.15);color:var(--warn)}
-  .cal-chip.ok{background:rgba(111,212,168,.12);color:var(--done)}
-  .cal-chip.sub{background:rgba(184,111,247,.12);color:var(--prog)}
 
-  /* Calendar sidebar detail panel */
-  .cal-detail-pane{width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:0;border-left:1px solid var(--border);padding-left:14px}
-  .cal-detail-date{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
-  .cal-detail-empty{font-size:12px;color:var(--text3);padding:1rem 0;text-align:center}
-  .cal-detail-item{display:flex;flex-direction:column;gap:3px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  /* Two-column body: left = grid, right = detail */
+  .cal-body{display:flex;flex:1;min-height:0;overflow:hidden}
+  .cal-grid-wrap{flex:1;min-width:0;padding:1rem 1.25rem 1rem;display:flex;flex-direction:column;overflow:hidden}
+  .cal-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px;flex-shrink:0}
+  .cal-day-label{text-align:center;font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:2px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;flex:1;grid-template-rows:repeat(6,1fr)}
+  .cal-cell{background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:5px 6px;cursor:default;transition:all .15s;position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .cal-cell.has-items{cursor:pointer}
+  .cal-cell.has-items:hover{border-color:var(--accent);background:var(--surface3)}
+  .cal-cell.today{border-color:var(--accent)!important;background:rgba(124,111,247,.07)}
+  .cal-cell.other-month .cal-cell-num{color:var(--text3);opacity:.4}
+  .cal-cell.other-month .cal-chip{opacity:.4}
+  .cal-cell.overdue-day{border-color:rgba(247,112,111,.4)}
+  .cal-cell.cal-selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .cal-cell-num{font-size:10px;font-family:var(--mono);color:var(--text2);line-height:1;margin-bottom:3px;flex-shrink:0}
+  .cal-cell.today .cal-cell-num{color:var(--accent);font-weight:700}
+  .cal-chip{font-size:9px;line-height:1.35;padding:1px 5px;border-radius:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);margin-bottom:2px;flex-shrink:0}
+  .cal-chip.overdue{background:rgba(247,112,111,.2);color:var(--overdue)}
+  .cal-chip.soon{background:rgba(247,212,111,.18);color:var(--warn)}
+  .cal-chip.ok{background:rgba(111,212,168,.14);color:var(--done)}
+  .cal-chip.sub{background:rgba(184,111,247,.16);color:var(--prog)}
+  .cal-chip.more{background:transparent;color:var(--text3)}
+
+  /* Detail pane */
+  .cal-detail-pane{width:260px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+  .cal-detail-header{padding:.875rem 1rem .625rem;border-bottom:1px solid var(--border);flex-shrink:0}
+  .cal-detail-date{font-size:12px;font-family:var(--mono);color:var(--text2);font-weight:500;letter-spacing:.03em}
+  .cal-detail-scroll{flex:1;overflow-y:auto;padding:.75rem 1rem;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+  .cal-detail-empty{font-size:12px;color:var(--text3);padding:.5rem 0;text-align:center;line-height:1.6}
+  .cal-detail-item{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:opacity .15s}
   .cal-detail-item:last-child{border-bottom:none}
   .cal-detail-item:hover .cal-di-title{color:var(--accent)}
   .cal-di-title{font-size:12px;font-weight:500;color:var(--text);line-height:1.4}
-  .cal-di-sub{font-size:10px;color:var(--text3);font-family:var(--mono)}
-  .cal-di-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
-  .cal-di-badge{font-size:9px;padding:1px 6px;border-radius:8px;font-family:var(--mono)}
-  .cal-di-sub-label{font-size:9px;font-family:var(--mono);color:var(--prog);background:rgba(184,111,247,.12);padding:1px 5px;border-radius:4px;margin-top:1px;display:inline-block}
+  .cal-di-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .cal-di-badge{font-size:9px;padding:1px 6px;border-radius:8px;font-family:var(--mono);border:1px solid transparent}
+  .cal-di-sub-label{font-size:9px;font-family:var(--mono);color:var(--prog);background:rgba(184,111,247,.14);padding:1px 6px;border-radius:4px;border:1px solid rgba(184,111,247,.2)}
 
   /* Legend */
-  .cal-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:.75rem 1.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+  .cal-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:.6rem 1.25rem;border-top:1px solid var(--border);font-size:10px;color:var(--text3);flex-shrink:0;background:var(--surface)}
   .cal-legend-item{display:flex;align-items:center;gap:5px}
-  .cal-legend-dot{width:8px;height:8px;border-radius:50%}
+  .cal-legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 
   .light .cal-cell{background:var(--surface2)}
-  .light .cal-cell.today{background:rgba(90,79,212,.06)}
+  .light .cal-cell.today{background:rgba(90,79,212,.05)}
 </style>
 </head>
 <body>
@@ -1725,17 +1728,15 @@ window.addEventListener('load', function() {
       // Chips: show up to 2 items
       var chips = items.slice(0,2).map(function(it){
         var chipCls = 'cal-chip ';
-        var d2 = Math.round((new Date(it.id?allTickets[it.id]?allTickets[it.id].deadline||cell.dateStr:cell.dateStr:cell.dateStr+'T00:00:00') - today)/86400000);
         if(it.status==='done') chipCls+='ok';
         else if(diffDays<0) chipCls+='overdue';
         else if(diffDays<=3) chipCls+='soon';
-        else chipCls+='ok';
-        if(it.isSubtask) chipCls = chipCls.replace(/overdue|soon|ok/,'sub');
-        var label = it.isSubtask ? '↳ '+it.title : it.title;
-        return '<div class="'+chipCls+'" title="'+escHtml(it.title)+'">'+escHtml(label.slice(0,18))+'</div>';
+        else chipCls += it.isSubtask ? 'sub' : 'ok';
+        var label = (it.isSubtask ? '↳ ' : '') + it.title;
+        return '<div class="'+chipCls+'" title="'+escHtml(it.title)+'">'+escHtml(label.slice(0,20))+'</div>';
       }).join('');
       if(items.length>2){
-        chips += '<div class="cal-chip ok" style="color:var(--text3);background:transparent">+' + (items.length-2) + ' more</div>';
+        chips += '<div class="cal-chip more">+' + (items.length-2) + ' more</div>';
       }
 
       var onclick = items.length ? 'onclick="calSelectDate(\''+cell.dateStr+'\')"' : '';
@@ -1749,7 +1750,7 @@ window.addEventListener('load', function() {
 
     // Restore selected
     if(calSelectedDate) renderCalDetail(calSelectedDate, deadlines[calSelectedDate]||[]);
-    else { document.getElementById('cal-detail-date').textContent='Select a date'; document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">Click a day to see deliverables</div>'; }
+    else { document.getElementById('cal-detail-date').textContent='Select a date'; document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">Click a day to see<br>deliverables &amp; subtasks</div>'; }
   }
 
   window.calSelectDate = function(dateStr){
@@ -1826,7 +1827,7 @@ window.addEventListener('load', function() {
   <div class="cal-panel" onclick="event.stopPropagation()">
     <div class="cal-header">
       <div class="cal-header-left">
-        <div class="cal-month-label" id="cal-month-label">May 2025</div>
+        <div class="cal-month-label" id="cal-month-label">May 2026</div>
         <div class="cal-nav">
           <button onclick="calMove(-1)">‹</button>
           <button class="cal-today-btn" onclick="calToday()">Today</button>
@@ -1846,12 +1847,16 @@ window.addEventListener('load', function() {
         <div class="cal-grid" id="cal-grid"></div>
       </div>
       <div class="cal-detail-pane">
-        <div class="cal-detail-date" id="cal-detail-date">Select a date</div>
-        <div id="cal-detail-body"><div class="cal-detail-empty">Click a day to see deliverables</div></div>
+        <div class="cal-detail-header">
+          <div class="cal-detail-date" id="cal-detail-date">Select a date</div>
+        </div>
+        <div class="cal-detail-scroll" id="cal-detail-body">
+          <div class="cal-detail-empty">Click a day to see<br>deliverables &amp; subtasks</div>
+        </div>
       </div>
     </div>
     <div class="cal-legend">
-      <span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em">Legend:</span>
+      <span style="font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em">Legend:</span>
       <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--overdue)"></span>Overdue</span>
       <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--warn)"></span>Due soon / today</span>
       <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--done)"></span>Project deadline</span>
