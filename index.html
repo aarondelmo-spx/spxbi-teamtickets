@@ -288,6 +288,60 @@
   .whitelist-row:last-child{border-bottom:none}
   .whitelist-email{flex:1;color:var(--text2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .whitelist-name{color:var(--text);font-weight:500;min-width:60px}
+
+  /* ── Calendar View ───────────────────────────── */
+  .cal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:150;display:flex;align-items:flex-start;justify-content:center;padding:2.5rem 1rem;backdrop-filter:blur(3px);overflow-y:auto}
+  .cal-panel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:860px;display:flex;flex-direction:column;gap:0}
+  .cal-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .cal-header-left{display:flex;align-items:center;gap:10px}
+  .cal-month-label{font-size:16px;font-weight:500;font-family:var(--mono);min-width:140px}
+  .cal-nav{display:flex;align-items:center;gap:4px}
+  .cal-nav button{background:none;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:4px 10px;cursor:pointer;font-size:13px;transition:all .15s;font-family:var(--font)}
+  .cal-nav button:hover{border-color:var(--border2);color:var(--text);background:var(--surface2)}
+  .cal-nav .cal-today-btn{font-size:11px;color:var(--text3);border-color:transparent;padding:4px 8px}
+  .cal-nav .cal-today-btn:hover{border-color:var(--border);color:var(--text)}
+  .cal-body{padding:1rem 1.25rem 1.5rem;display:flex;gap:14px}
+  .cal-grid-wrap{flex:1;min-width:0}
+  .cal-days-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px}
+  .cal-day-label{text-align:center;font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:3px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .cal-cell{min-height:72px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);padding:4px 5px;cursor:default;transition:border-color .15s;position:relative}
+  .cal-cell.has-items{cursor:pointer}
+  .cal-cell.has-items:hover{border-color:var(--border2);background:var(--surface3)}
+  .cal-cell.today{border-color:var(--accent);background:rgba(124,111,247,.06)}
+  .cal-cell.other-month{opacity:.38}
+  .cal-cell.overdue-day{border-color:rgba(247,112,111,.35);background:rgba(247,112,111,.04)}
+  .cal-cell-num{font-size:10px;font-family:var(--mono);color:var(--text3);line-height:1;margin-bottom:3px}
+  .cal-cell.today .cal-cell-num{color:var(--accent);font-weight:700}
+  .cal-dot-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+  .cal-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .cal-chips{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+  .cal-chip{font-size:9px;line-height:1.3;padding:1px 4px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);max-width:100%}
+  .cal-chip.overdue{background:rgba(247,112,111,.18);color:var(--overdue)}
+  .cal-chip.soon{background:rgba(247,212,111,.15);color:var(--warn)}
+  .cal-chip.ok{background:rgba(111,212,168,.12);color:var(--done)}
+  .cal-chip.sub{background:rgba(184,111,247,.12);color:var(--prog)}
+
+  /* Calendar sidebar detail panel */
+  .cal-detail-pane{width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:0;border-left:1px solid var(--border);padding-left:14px}
+  .cal-detail-date{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+  .cal-detail-empty{font-size:12px;color:var(--text3);padding:1rem 0;text-align:center}
+  .cal-detail-item{display:flex;flex-direction:column;gap:3px;padding:7px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .cal-detail-item:last-child{border-bottom:none}
+  .cal-detail-item:hover .cal-di-title{color:var(--accent)}
+  .cal-di-title{font-size:12px;font-weight:500;color:var(--text);line-height:1.4}
+  .cal-di-sub{font-size:10px;color:var(--text3);font-family:var(--mono)}
+  .cal-di-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+  .cal-di-badge{font-size:9px;padding:1px 6px;border-radius:8px;font-family:var(--mono)}
+  .cal-di-sub-label{font-size:9px;font-family:var(--mono);color:var(--prog);background:rgba(184,111,247,.12);padding:1px 5px;border-radius:4px;margin-top:1px;display:inline-block}
+
+  /* Legend */
+  .cal-legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:.75rem 1.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+  .cal-legend-item{display:flex;align-items:center;gap:5px}
+  .cal-legend-dot{width:8px;height:8px;border-radius:50%}
+
+  .light .cal-cell{background:var(--surface2)}
+  .light .cal-cell.today{background:rgba(90,79,212,.06)}
 </style>
 </head>
 <body>
@@ -349,6 +403,7 @@
     <button class="new-btn" onclick="openNewModal()">+ New Project</button>
     <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
     <button class="team-btn" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
+    <button class="team-btn" onclick="openCalendar()" style="margin-top:2px">📅 Calendar view</button>
     <div class="sidebar-section">Filter by status</div>
     <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
@@ -1572,8 +1627,239 @@ window.addEventListener('load', function() {
   };
   applyTheme();
 
+  // ── Calendar View ──────────────────────────────────────────
+  var calYear = new Date().getFullYear();
+  var calMonth = new Date().getMonth(); // 0-indexed
+  var calSelectedDate = null;
+
+  window.openCalendar = function(){
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+    calSelectedDate = null;
+    renderCalendar();
+    document.getElementById('cal-overlay').style.display = 'flex';
+  };
+  window.closeCalendar = function(){
+    document.getElementById('cal-overlay').style.display = 'none';
+  };
+  window.calMove = function(dir){
+    calMonth += dir;
+    if(calMonth > 11){ calMonth = 0; calYear++; }
+    if(calMonth < 0){ calMonth = 11; calYear--; }
+    renderCalendar();
+  };
+  window.calToday = function(){
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+    calSelectedDate = null;
+    renderCalendar();
+  };
+
+  function calCollectDeadlines(){
+    // Returns map: 'YYYY-MM-DD' -> [{title, isSubtask, parentTitle, status, priority, id, subId}]
+    var map = {};
+    function add(dateStr, item){
+      if(!dateStr) return;
+      if(!map[dateStr]) map[dateStr] = [];
+      map[dateStr].push(item);
+    }
+    Object.entries(allTickets).forEach(function(e){
+      var id = e[0], t = e[1];
+      if(t.deadline){
+        add(t.deadline, {title:t.title, isSubtask:false, status:t.status, priority:t.priority||'medium', id:id, subId:null});
+      }
+      if(t.subtasks){
+        Object.entries(t.subtasks).forEach(function(se){
+          var sid=se[0], sub=se[1];
+          if(sub.deadline){
+            add(sub.deadline, {title:sub.text||sub.title||'Subtask', isSubtask:true, parentTitle:t.title, status:sub.done?'done':'open', priority:'medium', id:id, subId:sid, contributors: sub.contributors||[]});
+          }
+        });
+      }
+    });
+    return map;
+  }
+
+  function renderCalendar(){
+    var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('cal-month-label').textContent = MONTHS[calMonth] + ' ' + calYear;
+
+    var today = new Date(); today.setHours(0,0,0,0);
+    var todayStr = today.toISOString().slice(0,10);
+    var deadlines = calCollectDeadlines();
+
+    var firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+    var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    var daysInPrev = new Date(calYear, calMonth, 0).getDate();
+
+    var cells = [];
+    // Prev month fill
+    for(var i = firstDay-1; i >= 0; i--){
+      cells.push({day: daysInPrev-i, otherMonth: true, dateStr: isoDate(calYear, calMonth-1, daysInPrev-i)});
+    }
+    // Current month
+    for(var d = 1; d <= daysInMonth; d++){
+      cells.push({day: d, otherMonth: false, dateStr: isoDate(calYear, calMonth, d)});
+    }
+    // Next month fill
+    var remaining = 42 - cells.length;
+    for(var n = 1; n <= remaining; n++){
+      cells.push({day: n, otherMonth: true, dateStr: isoDate(calYear, calMonth+1, n)});
+    }
+
+    var html = cells.map(function(cell){
+      var items = deadlines[cell.dateStr] || [];
+      var dateObj = new Date(cell.dateStr+'T00:00:00'); dateObj.setHours(0,0,0,0);
+      var diffDays = Math.round((dateObj - today)/86400000);
+      var isToday = cell.dateStr === todayStr;
+      var isOverdue = !cell.otherMonth && diffDays < 0 && items.some(function(x){return x.status!=='done';});
+      var isSelected = cell.dateStr === calSelectedDate;
+
+      var cls = 'cal-cell';
+      if(cell.otherMonth) cls += ' other-month';
+      if(isToday) cls += ' today';
+      if(isOverdue) cls += ' overdue-day';
+      if(items.length) cls += ' has-items';
+      if(isSelected) cls += ' selected';
+
+      // Chips: show up to 2 items
+      var chips = items.slice(0,2).map(function(it){
+        var chipCls = 'cal-chip ';
+        var d2 = Math.round((new Date(it.id?allTickets[it.id]?allTickets[it.id].deadline||cell.dateStr:cell.dateStr:cell.dateStr+'T00:00:00') - today)/86400000);
+        if(it.status==='done') chipCls+='ok';
+        else if(diffDays<0) chipCls+='overdue';
+        else if(diffDays<=3) chipCls+='soon';
+        else chipCls+='ok';
+        if(it.isSubtask) chipCls = chipCls.replace(/overdue|soon|ok/,'sub');
+        var label = it.isSubtask ? '↳ '+it.title : it.title;
+        return '<div class="'+chipCls+'" title="'+escHtml(it.title)+'">'+escHtml(label.slice(0,18))+'</div>';
+      }).join('');
+      if(items.length>2){
+        chips += '<div class="cal-chip ok" style="color:var(--text3);background:transparent">+' + (items.length-2) + ' more</div>';
+      }
+
+      var onclick = items.length ? 'onclick="calSelectDate(\''+cell.dateStr+'\')"' : '';
+      return '<div class="'+cls+'" '+onclick+'>'
+        +'<div class="cal-cell-num">'+cell.day+'</div>'
+        +chips
+        +'</div>';
+    }).join('');
+
+    document.getElementById('cal-grid').innerHTML = html;
+
+    // Restore selected
+    if(calSelectedDate) renderCalDetail(calSelectedDate, deadlines[calSelectedDate]||[]);
+    else { document.getElementById('cal-detail-date').textContent='Select a date'; document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">Click a day to see deliverables</div>'; }
+  }
+
+  window.calSelectDate = function(dateStr){
+    calSelectedDate = dateStr;
+    // Re-render to show selection
+    var deadlines = calCollectDeadlines();
+    // Update selected cell styling
+    document.querySelectorAll('.cal-cell').forEach(function(el){ el.classList.remove('selected'); });
+    // Find and mark
+    var cells = document.querySelectorAll('.cal-cell');
+    // Re-render full grid for simplicity
+    renderCalendar();
+    renderCalDetail(dateStr, deadlines[dateStr]||[]);
+  };
+
+  function renderCalDetail(dateStr, items){
+    var d = new Date(dateStr+'T00:00:00');
+    var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    document.getElementById('cal-detail-date').textContent = DAYS[d.getDay()]+', '+MONTHS[d.getMonth()]+' '+d.getDate();
+
+    var today = new Date(); today.setHours(0,0,0,0);
+    var diffDays = Math.round((d-today)/86400000);
+
+    if(!items.length){
+      document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">No deliverables on this day.</div>';
+      return;
+    }
+
+    var html = items.map(function(it){
+      var statusCls = it.status==='done'?'s-done':it.status==='in progress'?'s-progress':it.status==='review'?'s-review':'s-open';
+      var priCls = it.priority==='high'?'pb-high':it.priority==='medium'?'pb-medium':'pb-low';
+      var urgencyLabel = '';
+      if(it.status!=='done'){
+        if(diffDays<0) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,112,111,.15);color:var(--overdue)">overdue</span>';
+        else if(diffDays===0) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,212,111,.15);color:var(--warn)">due today</span>';
+        else if(diffDays<=3) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,212,111,.1);color:var(--warn)">in '+diffDays+'d</span>';
+      }
+
+      var contribs = '';
+      if(it.contributors && it.contributors.length){
+        contribs = '<div style="margin-top:3px">'+avatarStackHtml(it.contributors,14)+'</div>';
+      }
+
+      var subLabel = it.isSubtask ? '<span class="cal-di-sub-label">↳ subtask of: '+escHtml((it.parentTitle||'').slice(0,24))+'</span>' : '';
+
+      return '<div class="cal-detail-item" onclick="closeCalendar();openDetailModal(\''+it.id+'\')">'
+        +'<div class="cal-di-title">'+escHtml(it.title)+'</div>'
+        +(subLabel?'<div>'+subLabel+'</div>':'')
+        +'<div class="cal-di-badges">'
+        +'<span class="cal-di-badge status-badge '+statusCls+'">'+it.status+'</span>'
+        +'<span class="cal-di-badge priority-badge '+priCls+'">'+it.priority+'</span>'
+        +urgencyLabel
+        +'</div>'
+        +contribs
+        +'</div>';
+    }).join('');
+
+    document.getElementById('cal-detail-body').innerHTML = html;
+  }
+
+  function isoDate(y, m, d){
+    var mo = ((m%12)+12)%12;
+    var yr = y + Math.floor(m/12);
+    if(m < 0){ yr = y - 1; mo = 12 + m; }
+    return yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  }
+  function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 }); // end load
 </script>
+<!-- Calendar Modal -->
+<div class="cal-overlay" id="cal-overlay" style="display:none" onclick="if(event.target===this)closeCalendar()">
+  <div class="cal-panel" onclick="event.stopPropagation()">
+    <div class="cal-header">
+      <div class="cal-header-left">
+        <div class="cal-month-label" id="cal-month-label">May 2025</div>
+        <div class="cal-nav">
+          <button onclick="calMove(-1)">‹</button>
+          <button class="cal-today-btn" onclick="calToday()">Today</button>
+          <button onclick="calMove(1)">›</button>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeCalendar()">×</button>
+    </div>
+    <div class="cal-body">
+      <div class="cal-grid-wrap">
+        <div class="cal-days-row">
+          <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div>
+          <div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div>
+          <div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+          <div class="cal-day-label">Sat</div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="cal-detail-pane">
+        <div class="cal-detail-date" id="cal-detail-date">Select a date</div>
+        <div id="cal-detail-body"><div class="cal-detail-empty">Click a day to see deliverables</div></div>
+      </div>
+    </div>
+    <div class="cal-legend">
+      <span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em">Legend:</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--overdue)"></span>Overdue</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--warn)"></span>Due soon / today</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--done)"></span>Project deadline</span>
+      <span class="cal-legend-item"><span class="cal-legend-dot" style="background:var(--prog)"></span>Subtask deadline</span>
+    </div>
+  </div>
+</div>
+
 <div id="wl-popover" class="wl-popover" onclick="event.stopPropagation()">
   <div class="wl-popover-title" id="wl-popover-title"></div>
   <div id="wl-popover-body"></div>
