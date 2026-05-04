@@ -412,9 +412,12 @@
     <div class="sidebar-section">Filter by status</div>
     <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
-    <button class="nav-item" id="nav-in progress" onclick="setFilter('in progress')"><span class="nav-dot" style="background:var(--prog)"></span>In progress<span class="nav-count" id="cnt-in progress">0</span></button>
-    <button class="nav-item" id="nav-review" onclick="setFilter('review')"><span class="nav-dot" style="background:var(--review)"></span>Review<span class="nav-count" id="cnt-review">0</span></button>
     <button class="nav-item" id="nav-done" onclick="setFilter('done')"><span class="nav-dot" style="background:var(--done)"></span>Done<span class="nav-count" id="cnt-done">0</span></button>
+    <div class="section-label" style="margin-top:.5rem">Priority</div>
+    <button class="nav-item" id="nav-p0" onclick="setPriorityFilter('p0')"><span class="nav-dot" style="background:var(--high)"></span>P0 — Critical<span class="nav-count" id="cnt-p0">0</span></button>
+    <button class="nav-item" id="nav-p1" onclick="setPriorityFilter('p1')"><span class="nav-dot" style="background:var(--med)"></span>P1 — High<span class="nav-count" id="cnt-p1">0</span></button>
+    <button class="nav-item" id="nav-p2" onclick="setPriorityFilter('p2')"><span class="nav-dot" style="background:#6fa8f7"></span>P2 — Medium<span class="nav-count" id="cnt-p2">0</span></button>
+    <button class="nav-item" id="nav-p3" onclick="setPriorityFilter('p3')"><span class="nav-dot" style="background:var(--low)"></span>P3 — Low<span class="nav-count" id="cnt-p3">0</span></button>
     <div class="sync-status"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Connecting...</span></div>
   </aside>
 
@@ -446,9 +449,12 @@
       <input class="search" placeholder="Search tickets..." id="search-input" oninput="renderList()" />
       <button class="filter-pill active" id="pill-all" onclick="setFilter('all')">All</button>
       <button class="filter-pill" id="pill-open" onclick="setFilter('open')">Open</button>
-      <button class="filter-pill" id="pill-in progress" onclick="setFilter('in progress')">In Progress</button>
-      <button class="filter-pill" id="pill-review" onclick="setFilter('review')">Review</button>
       <button class="filter-pill" id="pill-done" onclick="setFilter('done')">Done</button>
+      <span style="width:1px;height:16px;background:var(--border);display:inline-block;margin:0 2px;vertical-align:middle"></span>
+      <button class="filter-pill" id="pill-p0" onclick="setPriorityFilter('p0')" style="border-color:rgba(247,112,111,.3);color:var(--high)">P0</button>
+      <button class="filter-pill" id="pill-p1" onclick="setPriorityFilter('p1')" style="border-color:rgba(247,168,111,.3);color:var(--med)">P1</button>
+      <button class="filter-pill" id="pill-p2" onclick="setPriorityFilter('p2')" style="border-color:rgba(111,168,247,.3);color:#6fa8f7">P2</button>
+      <button class="filter-pill" id="pill-p3" onclick="setPriorityFilter('p3')" style="border-color:rgba(111,212,168,.3);color:var(--low)">P3</button>
     </div>
     <div class="toolbar" id="contrib-filter-row" style="margin-top:-4px">
       <span style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:5px 0">Contributor:</span>
@@ -618,6 +624,7 @@ window.addEventListener('load', function() {
   var whitelist = {}; // {email: name}
   var teamMembers = [];
   var currentFilter = 'all';
+  var currentPriorityFilter = 'all';
   var currentContrib = 'all';
   var selectedTicketId = null;
   var currentUser = '';
@@ -1381,6 +1388,7 @@ window.addEventListener('load', function() {
     var list=document.getElementById('ticket-list');
     var tickets=Object.entries(allTickets)
       .filter(function(e){return currentFilter==='all'||e[1].status===currentFilter;})
+      .filter(function(e){return currentPriorityFilter==='all'||(e[1].priority||'p1')===currentPriorityFilter;})
       .filter(function(e){
         if(currentContrib==='all') return true;
         var t=e[1];
@@ -1413,7 +1421,7 @@ window.addEventListener('load', function() {
     var t=Object.values(allTickets);
     document.getElementById('s-total').textContent=t.length;
     document.getElementById('s-open').textContent=t.filter(function(x){return x.status==='open';}).length;
-    document.getElementById('s-prog').textContent=t.filter(function(x){return x.status==='in progress';}).length;
+    document.getElementById('s-prog').textContent=t.filter(function(x){return x.status==='in progress'||x.status==='review';}).length;
     document.getElementById('s-done').textContent=t.filter(function(x){return x.status==='done';}).length;
     document.getElementById('ticket-count-sub').textContent=t.length+' project'+(t.length!==1?'s':'')+' total';
   }
@@ -1421,16 +1429,28 @@ window.addEventListener('load', function() {
     var t=Object.values(allTickets);
     document.getElementById('cnt-all').textContent=t.length;
     document.getElementById('cnt-open').textContent=t.filter(function(x){return x.status==='open';}).length;
-    document.getElementById('cnt-in progress').textContent=t.filter(function(x){return x.status==='in progress';}).length;
-    document.getElementById('cnt-review').textContent=t.filter(function(x){return x.status==='review';}).length;
     document.getElementById('cnt-done').textContent=t.filter(function(x){return x.status==='done';}).length;
+    document.getElementById('cnt-p0').textContent=t.filter(function(x){return (x.priority||'p1')==='p0';}).length;
+    document.getElementById('cnt-p1').textContent=t.filter(function(x){return (x.priority||'p1')==='p1';}).length;
+    document.getElementById('cnt-p2').textContent=t.filter(function(x){return (x.priority||'p1')==='p2';}).length;
+    document.getElementById('cnt-p3').textContent=t.filter(function(x){return (x.priority||'p1')==='p3';}).length;
   }
   window.setFilter=function(f){
     currentFilter=f;
+    currentPriorityFilter='all';
     document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
     document.querySelectorAll('.filter-pill').forEach(function(b){b.classList.remove('active');});
     var n=document.getElementById('nav-'+f),p=document.getElementById('pill-'+f);
     if(n)n.classList.add('active');if(p)p.classList.add('active');
+    renderList();
+  };
+  window.setPriorityFilter=function(p){
+    currentPriorityFilter=p;
+    currentFilter='all';
+    document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.filter-pill').forEach(function(b){b.classList.remove('active');});
+    var n=document.getElementById('nav-'+p),pill=document.getElementById('pill-'+p);
+    if(n)n.classList.add('active');if(pill)pill.classList.add('active');
     renderList();
   };
   window.setContribFilter=function(name){
