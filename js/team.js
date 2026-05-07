@@ -34,9 +34,9 @@ window.toggleContrib = function(containerId, name){
 function saveContributors(){
   if(!App.selectedTicketId) return;
   var upd = {
-    contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null,
-    assignee: App.dSelectedContribs[0]||'Unassigned'
+    contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null
   };
+  if(!isSprintView()) upd.assignee = App.dSelectedContribs[0]||'Unassigned';
   activeTicketRef(App.selectedTicketId).update(upd);
   if(typeof refreshAfterTicketUpdate === 'function') refreshAfterTicketUpdate(App.selectedTicketId, upd);
   var t=App.allTickets[App.selectedTicketId];

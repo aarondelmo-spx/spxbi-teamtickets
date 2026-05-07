@@ -121,6 +121,7 @@ function updateCounts(){
 }
 
 window.setFilter = function(f){
+  if(isSprintView() && f === 'done' && App.currentFilter === 'done') f = 'active';
   App.currentFilter=f;
   App.currentPriorityFilter='all';
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});

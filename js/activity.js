@@ -58,6 +58,7 @@ function renderActivityList(){
     setdeadline:{label:'set deadline',cls:'ab-status'},
     cleareddeadline:{label:'cleared deadline',cls:'ab-status'},
     updatedcontribs:{label:'updated contributors',cls:'ab-subtask'},
+    owner:{label:'changed owner',cls:'ab-status'},
     priority:{label:'changed priority',cls:'ab-status'},
     editedsubtask:{label:isSprintView()?'edited task':'edited subtask',cls:'ab-subtask'},
     editedtitle:{label:'edited title',cls:'ab-status'},

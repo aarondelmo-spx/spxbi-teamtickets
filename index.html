@@ -70,7 +70,7 @@
     <div class="sidebar-section">Workspace</div>
     <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
     <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Vibe Coding Projects<span class="nav-count" id="view-sprint-count">0</span></button>
-    <div class="sidebar-section">Filter by status</div>
+    <div class="sidebar-section" id="status-filter-label">Filter by status</div>
     <button class="nav-item active" id="nav-active" onclick="setFilter('active')"><span class="nav-dot" style="background:var(--open)"></span>Active<span class="nav-count" id="cnt-active">0</span></button>
     <button class="nav-item" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
@@ -87,18 +87,10 @@
     <div class="page-header">
       <div><div class="page-title">Team Projects</div><div class="page-sub" id="ticket-count-sub">Loading...</div></div>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div></div>
-      <div class="stat"><div class="stat-label" id="s-open-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
-      <div class="stat"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
-      <div class="stat"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
-      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
-    </div>
     <div class="vibe-view-bar" id="vibe-view-bar" style="display:none">
       <div class="vibe-tabs" role="tablist" aria-label="Vibe Coding views">
         <button class="vibe-tab active" id="vibe-tab-initiatives" onclick="setVibeView('initiatives')" type="button">Initiatives</button>
         <button class="vibe-tab" id="vibe-tab-sprint" onclick="setVibeView('sprint')" type="button">Weekly Plan</button>
-        <button class="vibe-tab" id="vibe-tab-tasks" onclick="setVibeView('tasks')" type="button">Tasks</button>
       </div>
       <div class="vibe-view-actions">
         <div class="vibe-sprint-controls" id="vibe-sprint-controls" style="display:none">
@@ -107,9 +99,17 @@
           <span class="week-label" id="vibe-week-label"></span>
           <button class="btn btn-sm" onclick="shiftWeeklyPlanWeek(1)" type="button">Next</button>
         </div>
+        <button class="btn btn-sm" id="vibe-done-toggle" onclick="setFilter('done')" type="button">Done</button>
         <button class="btn btn-sm" onclick="openHierarchyModal()" type="button">Manage hierarchy</button>
         <button class="btn btn-sm" id="vibe-filter-toggle" onclick="toggleVibeFilters()" type="button">Filters</button>
       </div>
+    </div>
+    <div class="stats" id="stats-row">
+      <div class="stat" data-vibe-metric="teamSize" onclick="setVibeMetricFilter('teamSize')"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div></div>
+      <div class="stat" data-vibe-metric="reviewed" onclick="setVibeMetricFilter('reviewed')"><div class="stat-label" id="s-open-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
+      <div class="stat" data-vibe-metric="scoped" onclick="setVibeMetricFilter('scoped')"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
+      <div class="stat" data-vibe-metric="inProgress" onclick="setVibeMetricFilter('inProgress')"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
     </div>
     <div class="sprint-board" id="sprint-board" style="display:none">
       <div class="sprint-board-head">
@@ -245,11 +245,10 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Reviewed for automation</label><input id="nt-automation-reviewed-hc" type="number" min="0" step="0.1" /></div>
           <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
           <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
         </div>
       </div>
@@ -285,6 +284,40 @@
       <div class="detail-title" id="d-title" title="Double-click to edit" ondblclick="editDetailField('title')" style="cursor:text"></div>
       <div class="detail-desc" id="d-desc" title="Double-click to edit" ondblclick="editDetailField('desc')" style="cursor:text"></div>
 
+      <div class="detail-core-fields" id="detail-core-fields">
+        <div class="form-row" style="margin-bottom:.75rem">
+          <div class="field"><label>Status</label>
+            <select id="d-status-sel" onchange="updateTicketField('status',this.value)">
+              <option value="open">Open</option><option value="done">Done</option>
+            </select>
+          </div>
+          <div class="field"><label>Priority</label>
+            <select id="d-priority-sel" onchange="updateTicketField('priority',this.value)">
+              <option value="p0">P0 — Critical</option><option value="p1">P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field" id="detail-owner-field"><label>Owner</label>
+            <select id="d-owner-sel" onchange="updateTicketOwner(this.value)"></select>
+          </div>
+          <div class="field">
+            <label>Deadline</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
+              <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+            </div>
+            <div id="d-deadline-status"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Contributors</label>
+          <div class="contributor-picker" id="d-contributor-picker"></div>
+          <div id="d-contributors-display" class="contributors-display"></div>
+        </div>
+      </div>
+
       <div class="vibe-workstream-section" id="vibe-workstream-section" style="display:none">
         <div class="section-head-row">
           <div>
@@ -295,42 +328,13 @@
         </div>
         <div id="vibe-workstream-list"></div>
       </div>
-
       <div class="detail-advanced-toggle" id="detail-advanced-toggle" style="display:none" onclick="toggleSection('detail-advanced')">
         <span class="section-label" style="margin-bottom:0">Automation details</span>
         <span id="detail-advanced-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
       </div>
       <div id="detail-advanced-body">
-      <div class="form-row" style="margin-bottom:.75rem">
-        <div class="field"><label>Status</label>
-          <select id="d-status-sel" onchange="updateTicketField('status',this.value)">
-            <option value="open">Open</option><option value="done">Done</option>
-          </select>
-        </div>
-        <div class="field"><label>Priority</label>
-          <select id="d-priority-sel" onchange="updateTicketField('priority',this.value)">
-            <option value="p0">P0 — Critical</option><option value="p1">P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Deadline</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
-          <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
-        </div>
-        <div id="d-deadline-status"></div>
-      </div>
-
-      <div class="field">
-        <label>Contributors</label>
-        <div class="contributor-picker" id="d-contributor-picker"></div>
-        <div id="d-contributors-display" class="contributors-display"></div>
-      </div>
-
       <div id="d-sprint-fields" style="display:none">
         <div class="divider"></div>
-        <div class="section-label">Automation details</div>
         <div class="form-row">
           <div class="field"><label>Team</label>
             <select id="d-team-area" onchange="updateSprintTeamSelection()"></select>
@@ -356,13 +360,12 @@
         </div>
         <div class="form-row">
           <div class="field"><label>Team/subteam size</label><input id="d-team-size-hc" readonly /></div>
-          <div class="field"><label>Reviewed for automation</label><input id="d-automation-reviewed-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationReviewedHc',this.value)" /></div>
+          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
           <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
+          <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
         </div>
-        <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
       </div>
       </div>
 

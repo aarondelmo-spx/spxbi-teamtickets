@@ -15,7 +15,7 @@ window.createTicket = function(){
 function ticketNumericFields(){
   return {
     scopedHc:true,fteRepurpose:true,fteBuffer:true,bpoNfteReduction:true,
-    automationReviewedHc:true,automationScopedHc:true,automationInProgressHc:true,actualHcSavings:true,excessCapacityHc:true
+    automationScopedHc:true,automationInProgressHc:true,actualHcSavings:true,excessCapacityHc:true
   };
 }
 
@@ -67,6 +67,18 @@ window.updateTicketField = function(field,value){
     if(before) logActivity('priority',before.title,'',id,before.priority,value);
   }
   refreshAfterTicketUpdate(id, upd);
+};
+
+window.updateTicketOwner = function(value){
+  if(!App.selectedTicketId) return;
+  var id = App.selectedTicketId;
+  var owner = value || 'Unassigned';
+  var before = App.allTickets[id] || {};
+  var upd = {assignee: owner};
+  activeTicketRef(id).update(upd);
+  if(before) logActivity('owner', before.title, '', id, before.assignee || 'Unassigned', owner);
+  refreshAfterTicketUpdate(id, upd);
+  if(isSprintView() && typeof renderWorkstreamsAndTasks === 'function') renderWorkstreamsAndTasks(id);
 };
 
 window.clearDeadline = function(){

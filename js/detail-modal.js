@@ -11,6 +11,20 @@ function titleCaseStatus(status){
   return String(status || 'open').replace(/\b\w/g,function(ch){ return ch.toUpperCase(); });
 }
 
+function ownerOptions(selected){
+  var value = selected && selected !== 'Unassigned' ? selected : '';
+  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
+  if(value && names.indexOf(value) === -1) names.unshift(value);
+  return '<option value="">Unassigned</option>' + names.map(function(name){
+    return '<option value="'+safeText(name)+'"'+(value===name?' selected':'')+'>'+safeText(name)+'</option>';
+  }).join('');
+}
+
+function detailOwnerValue(ticket){
+  if(ticket.assignee && ticket.assignee !== 'Unassigned') return ticket.assignee;
+  return ticket.contributors && ticket.contributors.length ? ticket.contributors[0] : '';
+}
+
 window.setDetailStatusOptions = function(currentStatus){
   var el = document.getElementById('d-status-sel');
   if(!el) return;
@@ -81,6 +95,12 @@ window.refreshDetailFields = function(t, options){
   if(prioritySel) prioritySel.value=t.priority||'p1';
   var deadlineInp = document.getElementById('d-deadline-inp');
   if(deadlineInp) deadlineInp.value=t.deadline||'';
+  var ownerSel = document.getElementById('d-owner-sel');
+  if(ownerSel){
+    var owner = detailOwnerValue(t);
+    ownerSel.innerHTML = ownerOptions(owner);
+    ownerSel.value = owner;
+  }
   renderDeadlineStatus(t.deadline,t.status);
   if(typeof populateSprintDetail === 'function') populateSprintDetail(t);
 };
@@ -137,7 +157,7 @@ window.saveDetailChanges = function(){
     priority: document.getElementById('d-priority-sel').value || 'p1',
     deadline: document.getElementById('d-deadline-inp').value || null,
     contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null,
-    assignee: App.dSelectedContribs[0] || 'Unassigned'
+    assignee: isSprintView() ? (document.getElementById('d-owner-sel').value || 'Unassigned') : (App.dSelectedContribs[0] || 'Unassigned')
   };
   if(isSprintView()){
     upd.teamArea = normalizeTeamName(document.getElementById('d-team-area').value);
@@ -147,7 +167,6 @@ window.saveDetailChanges = function(){
     upd.timelineEnd = document.getElementById('d-timeline-end').value || null;
     upd.stage = document.getElementById('d-stage').value || null;
     upd.confidence = document.getElementById('d-confidence').value || null;
-    upd.automationReviewedHc = normalizeTicketFieldValue('automationReviewedHc', document.getElementById('d-automation-reviewed-hc').value);
     upd.automationScopedHc = normalizeTicketFieldValue('automationScopedHc', document.getElementById('d-automation-scoped-hc').value);
     upd.actualHcSavings = normalizeTicketFieldValue('actualHcSavings', document.getElementById('d-actual-hc-savings').value);
     upd.excessCapacityHc = normalizeTicketFieldValue('excessCapacityHc', document.getElementById('d-excess-capacity-hc').value);

@@ -13,6 +13,17 @@ function taskOwner(task){
   return task.contributors && task.contributors.length ? task.contributors[0] : '';
 }
 
+function initiativeOwner(ticket){
+  if(ticket && ticket.assignee && ticket.assignee !== 'Unassigned') return ticket.assignee;
+  return ticket && ticket.contributors && ticket.contributors.length ? ticket.contributors[0] : '';
+}
+
+function ownerNameList(selected){
+  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
+  if(selected && names.indexOf(selected) === -1) names.unshift(selected);
+  return names;
+}
+
 function taskDueRank(task){
   if(task.done) return 99999;
   if(!task.deadline) return 90000 + (task.ts || 0) / 10000000000000;
@@ -144,33 +155,63 @@ function setDisplay(el, display){
   if(el) el.style.display = display;
 }
 
+function validVibeMetricFilter(filter){
+  return filter === 'teamSize' || filter === 'reviewed' || filter === 'scoped' || filter === 'inProgress';
+}
+
+function syncVibeMetricCards(){
+  var row = document.getElementById('stats-row');
+  if(row) row.classList.toggle('vibe-metric-mode', isSprintView());
+  document.querySelectorAll('[data-vibe-metric]').forEach(function(card){
+    var active = isSprintView() && App.vibeMetricFilter === card.getAttribute('data-vibe-metric');
+    card.classList.toggle('active', active);
+    if(isSprintView()){
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-pressed', active ? 'true' : 'false');
+    } else {
+      card.removeAttribute('role');
+      card.removeAttribute('tabindex');
+      card.removeAttribute('aria-pressed');
+    }
+  });
+}
+
 function updateVibeShell(){
   var vibe = isSprintView();
-  var filterOpen = !vibe || App.vibeFiltersOpen;
+  if(vibe && App.currentVibeView === 'tasks') App.currentVibeView = 'initiatives';
   setDisplay(document.getElementById('vibe-view-bar'), vibe ? 'flex' : 'none');
   setDisplay(document.getElementById('vibe-sprint-controls'), vibe && App.currentVibeView === 'sprint' ? 'flex' : 'none');
 
-  ['initiatives','sprint','tasks'].forEach(function(view){
+  ['initiatives','sprint'].forEach(function(view){
     var tab = document.getElementById('vibe-tab-'+view);
     if(tab) tab.classList.toggle('active', App.currentVibeView === view);
   });
 
-  ['priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+  ['status-filter-label','nav-active','nav-all','nav-open','nav-done','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
-  ['nav-all','nav-open'].forEach(function(id){
-    setDisplay(document.getElementById(id), vibe && !filterOpen ? 'none' : '');
+  ['pill-active','pill-all','pill-open','toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+    setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
   document.querySelectorAll('.vibe-advanced-filter').forEach(function(el){
-    el.style.display = vibe && !filterOpen ? 'none' : '';
+    el.style.display = vibe ? 'none' : '';
   });
-  setDisplay(document.getElementById('contrib-filter-row'), vibe ? (filterOpen ? 'flex' : 'none') : 'flex');
+  setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
+  setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
   document.querySelectorAll('.shell-tool').forEach(function(el){
-    el.style.display = vibe ? (filterOpen ? 'flex' : 'none') : '';
+    el.style.display = vibe ? 'none' : '';
   });
 
   var filterBtn = document.getElementById('vibe-filter-toggle');
-  if(filterBtn) filterBtn.textContent = App.vibeFiltersOpen ? 'Hide filters & tools' : 'Filters & tools';
+  setDisplay(filterBtn, vibe ? 'none' : '');
+  var donePill = document.getElementById('pill-done');
+  if(donePill) donePill.textContent = 'Done';
+  var vibeDone = document.getElementById('vibe-done-toggle');
+  if(vibeDone){
+    vibeDone.textContent = App.currentFilter === 'done' ? 'Showing Done' : 'Done';
+    vibeDone.classList.toggle('active', vibe && App.currentFilter === 'done');
+  }
 
   var dashboard = document.getElementById('dashboard-row');
   var workload = document.getElementById('workload-panel');
@@ -181,6 +222,7 @@ function updateVibeShell(){
   setDisplay(activity, vibe ? 'none' : '');
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
   syncWeeklyPlanControls();
+  syncVibeMetricCards();
 }
 
 window.toggleVibeFilters = function(){
@@ -189,10 +231,17 @@ window.toggleVibeFilters = function(){
 };
 
 window.setVibeView = function(view){
-  if(view !== 'initiatives' && view !== 'sprint' && view !== 'tasks') return;
+  if(view !== 'initiatives' && view !== 'sprint') return;
   App.currentVibeView = view;
   updateVibeShell();
   updateStats();
+  renderList();
+};
+
+window.setVibeMetricFilter = function(filter){
+  if(!isSprintView()) return;
+  App.vibeMetricFilter = App.vibeMetricFilter === filter || !validVibeMetricFilter(filter) ? 'all' : filter;
+  syncVibeMetricCards();
   renderList();
 };
 
@@ -219,9 +268,9 @@ function updateVibeStats(initiatives, extra){
   var totals = automationTotals(initiatives);
   var teamSize = automationTeamSizeTotal(initiatives);
   document.getElementById('s-total-label').textContent='Team size';
-  document.getElementById('s-open-label').textContent='Reviewed for automation';
-  document.getElementById('s-prog-label').textContent='Scoped for automation';
-  document.getElementById('s-done-label').textContent='In progress automation';
+  document.getElementById('s-open-label').textContent='Reviewed';
+  document.getElementById('s-prog-label').textContent='Scoped';
+  document.getElementById('s-done-label').textContent='In progress';
   document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
@@ -234,9 +283,10 @@ function updateVibeStats(initiatives, extra){
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
     ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())+' onward'
-    : App.currentVibeView === 'tasks' ? 'Task queue' : 'Initiative planning';
+    : 'Initiative planning';
   document.getElementById('ticket-count-sub').textContent=initiatives.length+' initiative'+(initiatives.length!==1?'s':'')+' total - '+viewLabel;
   syncWeeklyPlanControls();
+  syncVibeMetricCards();
 }
 
 function initiativeMatchesFilter(entry){
@@ -244,6 +294,24 @@ function initiativeMatchesFilter(entry){
   if(App.currentFilter === 'all') return true;
   if(App.currentFilter === 'active') return t.status !== 'done';
   return t.status === App.currentFilter;
+}
+
+function initiativeSubteamRecord(t){
+  var team = normalizeTeamName(t && t.teamArea);
+  var subteam = normalizeSubteamName(t && t.subteam);
+  return automationSubteamList(team).find(function(item){ return item.name === subteam; }) || null;
+}
+
+function initiativeMatchesVibeMetric(t){
+  var filter = App.vibeMetricFilter || 'all';
+  if(filter === 'all') return true;
+  var team = normalizeTeamName(t && t.teamArea);
+  var subteam = normalizeSubteamName(t && t.subteam);
+  if(filter === 'teamSize') return subteamSizeHc(team, subteam) > 0;
+  if(filter === 'reviewed') return subteamReviewed(initiativeSubteamRecord(t));
+  if(filter === 'scoped') return automationScopedHc(t) > 0;
+  if(filter === 'inProgress') return String(t && t.status || '').toLowerCase() === 'in progress';
+  return true;
 }
 
 function initiativeMatchesSearch(t, search){
@@ -292,7 +360,7 @@ function initiativeCardHtml(id, t){
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
-  var hcText = fmtCapacity(automationReviewedHc(t))+' reviewed | '+fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
+  var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
     +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
@@ -317,9 +385,10 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   teamName = teamName ? normalizeTeamName(teamName) : '';
   subteamName = subteamName ? normalizeSubteamName(subteamName) : '';
   var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
+  var reviewed = subteamName ? subteamReviewedCoverage(teamName, subteamName) : (teamName ? teamReviewedCoverage(teamName) : totals.reviewed);
   return '<div class="team-hc-strip">'
     +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
-    +'<span>Reviewed '+fmtCapacity(totals.reviewed)+'</span>'
+    +'<span>Reviewed '+fmtCapacity(reviewed)+'</span>'
     +'<span>Scoped '+fmtCapacity(totals.scoped)+'</span>'
     +'<span>In progress '+fmtCapacity(totals.progress)+'</span>'
     +'<span>Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
@@ -341,6 +410,7 @@ function editableSubteamHeadingHtml(teamName, subteamName){
 function renderVibeInitiatives(search, list){
   var entries = Object.entries(App.allTickets || {})
     .filter(initiativeMatchesFilter)
+    .filter(function(entry){ return initiativeMatchesVibeMetric(entry[1]); })
     .filter(function(entry){ return App.currentPriorityFilter === 'all' || (entry[1].priority || 'p1') === App.currentPriorityFilter; })
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
     .sort(function(a,b){
@@ -381,6 +451,7 @@ function taskMatchesCurrentView(item, search){
   if(App.currentFilter === 'active' && task.done) return false;
   if(App.currentFilter === 'open' && task.done) return false;
   if(App.currentFilter === 'done' && !task.done) return false;
+  if(!initiativeMatchesVibeMetric(item.initiative)) return false;
   if(App.currentContrib !== 'all'){
     var contribs = task.contributors || [];
     if(contribs.indexOf(App.currentContrib) === -1) return false;
@@ -395,8 +466,8 @@ function taskMatchesCurrentView(item, search){
 
 function taskOwnerSelectHtml(item){
   var selected = taskOwner(item.task);
-  var options = '<option value="">Unassigned</option>' + App.teamMembers.map(function(member){
-    return '<option value="'+safeText(member.name)+'"'+(selected===member.name?' selected':'')+'>'+safeText(member.name)+'</option>';
+  var options = '<option value="">Unassigned</option>' + ownerNameList(selected).map(function(name){
+    return '<option value="'+safeText(name)+'"'+(selected===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
   return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)">'+options+'</select>';
 }
@@ -441,11 +512,10 @@ function renderGroupedTasks(items, list, emptyText, mode){
   list.innerHTML = groupedTasksHtml(items, mode);
 }
 
-function renderWeeklyPlanGroups(items, list, start){
+function weeklyPlanGroupsHtml(items, start, emptyText){
   if(!items.length){
     var end = addDays(start, VIBE_WEEKLY_PLAN_WEEKS * 7 - 1);
-    list.innerHTML = '<div class="vibe-empty">No tasks are due from '+safeText(weekRangeLabel(start))+' through '+safeText(weekRangeLabel(addDays(end, -6)))+'. Add due dates to place tasks into the Weekly Plan.</div>';
-    return;
+    return '<div class="vibe-empty">'+safeText(emptyText || ('No tasks are due from '+weekRangeLabel(start)+' through '+weekRangeLabel(addDays(end, -6))+'.'))+'</div>';
   }
   var grouped = {};
   items.forEach(function(item){
@@ -463,7 +533,31 @@ function renderWeeklyPlanGroups(items, list, start){
       +groupedTasksHtml(week.items, 'weekly')
       +'</div>';
   });
+  return html;
+}
+
+function renderWeeklyPlanGroups(items, list, start){
+  if(!items.length){
+    var end = addDays(start, VIBE_WEEKLY_PLAN_WEEKS * 7 - 1);
+    list.innerHTML = '<div class="vibe-empty">No tasks are due from '+safeText(weekRangeLabel(start))+' through '+safeText(weekRangeLabel(addDays(end, -6)))+'. Add due dates to place tasks into the Weekly Plan.</div>';
+    return;
+  }
+  var html = weeklyPlanGroupsHtml(items, start);
   list.innerHTML = html;
+}
+
+function taskAssignedToCurrentUser(item){
+  var user = App.currentUser || '';
+  if(!user) return false;
+  var contribs = item.task.contributors || [];
+  return contribs.indexOf(user) > -1;
+}
+
+function weeklyPlanPanelHtml(title, subtitle, items, start, emptyText){
+  return '<div class="weekly-plan-panel">'
+    +'<div class="weekly-plan-panel-head"><div><div class="vibe-section-title">'+safeText(title)+'</div><div class="microcopy">'+safeText(subtitle)+'</div></div><span>'+items.length+' task'+(items.length!==1?'s':'')+'</span></div>'
+    +weeklyPlanGroupsHtml(items, start, emptyText)
+    +'</div>';
 }
 
 function renderVibeWeeklyPlan(search, list){
@@ -473,7 +567,11 @@ function renderVibeWeeklyPlan(search, list){
     .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
-  renderWeeklyPlanGroups(items, list, start);
+  var mine = items.filter(taskAssignedToCurrentUser);
+  list.innerHTML = '<div class="weekly-plan-grid">'
+    +weeklyPlanPanelHtml('Assigned to me', 'Your due tasks for the selected weekly window.', mine, start, 'No tasks assigned to you in this weekly window.')
+    +weeklyPlanPanelHtml('Team view', 'All due tasks across Vibe Coding initiatives.', items, start, 'No team tasks are due in this weekly window.')
+    +'</div>';
 }
 
 function renderVibeSprint(search, list){
@@ -493,16 +591,12 @@ function renderVibeWorkspace(search, list){
     renderVibeSprint(search, list);
     return;
   }
-  if(App.currentVibeView === 'tasks'){
-    renderVibeTasks(search, list);
-    return;
-  }
   renderVibeInitiatives(search, list);
 }
 
 function addTaskOwnerOptions(selected){
-  return '<option value="">Owner</option>' + App.teamMembers.map(function(member){
-    return '<option value="'+safeText(member.name)+'"'+(selected===member.name?' selected':'')+'>'+safeText(member.name)+'</option>';
+  return '<option value="">Owner</option>' + ownerNameList(selected).map(function(name){
+    return '<option value="'+safeText(name)+'"'+(selected===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
 }
 
@@ -520,9 +614,10 @@ function workstreamTaskRowHtml(ticketId, taskId, task, workstreamName){
 
 function taskComposerHtml(workstreamId){
   var id = domId(workstreamId);
+  var owner = initiativeOwner(App.allTickets[App.selectedTicketId] || {});
   return '<div class="task-add-row">'
     +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')" />'
-    +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions('')+'</select>'
+    +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions(owner)+'</select>'
     +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date" />'
     +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button">Add</button>'
     +'</div>';
@@ -616,6 +711,7 @@ window.addVibeTask = function(workstreamId){
   var text = textEl ? textEl.value.trim() : '';
   if(!text){ if(textEl) textEl.focus(); return; }
   var owner = ownerEl ? ownerEl.value : '';
+  var defaultOwner = initiativeOwner(App.allTickets[App.selectedTicketId] || {});
   var payload = {
     text:text,
     done:false,
@@ -630,7 +726,7 @@ window.addVibeTask = function(workstreamId){
   if(t) logActivity('subtask', t.title, text);
   if(textEl) textEl.value = '';
   if(dueEl) dueEl.value = '';
-  if(ownerEl) ownerEl.value = '';
+  if(ownerEl) ownerEl.value = defaultOwner;
 };
 
 window.quickAddTask = function(ticketId){
@@ -673,12 +769,14 @@ function updateDetailLayoutForView(){
   var legacySection = document.getElementById('legacy-subtasks-section');
   var advancedToggle = document.getElementById('detail-advanced-toggle');
   var advancedBody = document.getElementById('detail-advanced-body');
+  var ownerField = document.getElementById('detail-owner-field');
   var linksSection = document.getElementById('detail-links-section');
   var deleteBtn = document.querySelector('#detail-modal .btn-danger');
   setDisplay(vibeSection, vibe ? 'block' : 'none');
   setDisplay(legacySection, vibe ? 'none' : 'block');
   setDisplay(advancedToggle, vibe ? 'flex' : 'none');
   setDisplay(advancedBody, vibe ? 'none' : 'block');
+  setDisplay(ownerField, vibe ? 'block' : 'none');
   setDisplay(linksSection, vibe ? 'none' : 'block');
   var chevron = document.getElementById('detail-advanced-chevron');
   if(chevron) chevron.style.transform = 'rotate(0deg)';
