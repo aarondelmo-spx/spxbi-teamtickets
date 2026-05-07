@@ -1,4 +1,8 @@
 function startApp(){
+  if(window.location.search.indexOf('view=manager') !== -1){
+    showManagerView();
+    return;
+  }
   App.whitelistRef.on('value', function(snap){
     App.whitelist = {};
     var data = snap.val()||{};

@@ -64,9 +64,13 @@
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
     <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
-    <button class="team-btn shell-tool" onclick="openTeamModal()">👥 Manage team</button>
-    <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
-    <button class="team-btn shell-tool" onclick="openCalendar()" style="margin-top:2px">📅 Calendar view</button>
+    <button class="team-btn" onclick="openManagerView()">📊 Manager view</button>
+    <details class="sidebar-settings">
+      <summary>Settings</summary>
+      <button class="team-btn shell-tool" onclick="openTeamModal()">👥 Manage team</button>
+      <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
+      <button class="team-btn shell-tool" onclick="openCalendar()">📅 Calendar view</button>
+    </details>
     <div class="sidebar-section">Workspace</div>
     <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
     <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Vibe Coding Projects<span class="nav-count" id="view-sprint-count">0</span></button>
@@ -509,6 +513,7 @@
 <script src="js/list.js"></script>
 <script src="js/workload.js"></script>
 <script src="js/calendar.js"></script>
+<script src="js/manager.js"></script>
 <script src="js/listeners.js"></script>
 <script src="js/auth.js"></script>
 </body>
