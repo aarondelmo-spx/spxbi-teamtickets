@@ -10,7 +10,9 @@ firebase.initializeApp({
 
 App.db = firebase.database();
 App.auth = firebase.auth();
-App.ticketsRef = App.db.ref('tickets');
+App.mainTicketsRef = App.db.ref('tickets');
+App.sprintTicketsRef = App.db.ref('sprintProjects');
+App.ticketsRef = App.mainTicketsRef;
 App.teamRef = App.db.ref('team');
 App.activityRef = App.db.ref('activity');
 App.whitelistRef = App.db.ref('whitelist');

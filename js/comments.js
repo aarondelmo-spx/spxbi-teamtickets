@@ -3,7 +3,7 @@ window.postComment = function(){
   var input=document.getElementById('d-comment-input');
   var text=input.value.trim(); if(!text) return;
   var ct=App.allTickets[App.selectedTicketId];
-  App.db.ref('tickets/'+App.selectedTicketId+'/comments').push({author:App.currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
+  activeTicketRef(App.selectedTicketId).child('comments').push({author:App.currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
   if(ct) logActivity('comment',ct.title,'');
   input.value=''; App.replyingTo=null;
 };
@@ -12,7 +12,7 @@ window.postReply = function(cid){
   var input=document.getElementById('reply-input-'+cid); if(!input)return;
   var text=input.value.trim(); if(!text)return;
   var t=App.allTickets[App.selectedTicketId];
-  App.db.ref('tickets/'+App.selectedTicketId+'/comments/'+cid+'/replies').push({author:App.currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
+  activeTicketRef(App.selectedTicketId).child('comments/'+cid+'/replies').push({author:App.currentUser||'Anonymous',text:text,time:fmtDate(),ts:Date.now()});
   if(t) logActivity('replied',t.title,'',App.selectedTicketId);
   input.value=''; App.replyingTo=null;
 };

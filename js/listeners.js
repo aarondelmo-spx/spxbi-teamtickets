@@ -14,23 +14,19 @@ function startApp(){
     renderWorkload();
     renderContribPills();
   });
-  App.ticketsRef.on('value', function(snap){
-    App.allTickets = snap.val()||{};
-    updateStats(); renderList(); updateCounts(); updateWarnings(); renderWorkload();
+  App.mainTicketsRef.on('value', function(snap){
+    App.mainTickets = snap.val()||{};
+    if(!isSprintView()) refreshActiveTickets();
+    else updateProjectViewCounts();
     document.getElementById('sync-dot').className='sync-dot online';
     document.getElementById('sync-label').textContent='Synced live';
-    if(App.selectedTicketId && document.getElementById('detail-modal').style.display!=='none'){
-      var t=App.allTickets[App.selectedTicketId];
-      if(t){
-        document.getElementById('d-status-sel').value=t.status;
-        document.getElementById('d-priority-sel').value=t.priority||'p1';
-        document.getElementById('d-deadline-inp').value=t.deadline||'';
-        renderDeadlineStatus(t.deadline,t.status);
-        renderSubtasks(App.selectedTicketId);
-        renderLinks(App.selectedTicketId);
-        renderComments(App.selectedTicketId);
-      }
-    }
+  }, function(){ document.getElementById('sync-label').textContent='Connection error'; });
+  App.sprintTicketsRef.on('value', function(snap){
+    App.sprintTickets = snap.val()||{};
+    if(isSprintView()) refreshActiveTickets();
+    else updateProjectViewCounts();
+    document.getElementById('sync-dot').className='sync-dot online';
+    document.getElementById('sync-label').textContent='Synced live';
   }, function(){ document.getElementById('sync-label').textContent='Connection error'; });
   App.activityRef.limitToLast(100).on('value', function(snap){
     renderActivity(snap);

@@ -13,8 +13,9 @@ function updateWarnings(){
   var ticketItems=[],subtaskItems=[];
   Object.entries(App.allTickets).forEach(function(e){
     var id=e[0],t=e[1];
-    if(!t.deadline||t.status==='done') return;
-    var diff=deadlineDiff(t.deadline); if(diff===null) return;
+    var dueDate = t.deadline || (isSprintView() ? t.timelineEnd : null);
+    if(!dueDate||t.status==='done') return;
+    var diff=deadlineDiff(dueDate); if(diff===null) return;
     var contribs=t.contributors&&t.contributors.length?t.contributors:(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
     if(diff<0) ticketItems.push({id:id,title:t.title,diff:diff,type:'overdue',contribs:contribs});
     else if(diff<=3) ticketItems.push({id:id,title:t.title,diff:diff,type:'soon',contribs:contribs});

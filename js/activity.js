@@ -5,6 +5,7 @@ function logActivity(type, ticketTitle, detail, ticketId, from, to){
     ticketTitle: ticketTitle||'',
     detail: detail||'',
     ticketId: ticketId||App.selectedTicketId||'',
+    projectView: App.currentProjectView || 'main',
     from: from||'',
     to: to||'',
     ts: Date.now()
@@ -32,8 +33,15 @@ function timeAgo(ts){
 }
 
 function renderActivity(snap){
-  var data = snap.val()||{};
-  var items = Object.values(data).sort(function(a,b){return b.ts-a.ts;});
+  App.activityData = snap.val()||{};
+  renderActivityList();
+}
+
+function renderActivityList(){
+  var data = App.activityData||{};
+  var items = Object.values(data)
+    .filter(function(item){ return (item.projectView||'main') === App.currentProjectView; })
+    .sort(function(a,b){return b.ts-a.ts;});
   var el = document.getElementById('activity-list'); if(!el) return;
   if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No activity yet.</div>'; return; }
   var typeMap = {

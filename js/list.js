@@ -10,10 +10,29 @@ window.renderList = function(){
       var contribs=t.contributors&&t.contributors.length?t.contributors:(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
       return contribs.indexOf(App.currentContrib)>-1;
     })
-    .filter(function(e){return !search||e[1].title.toLowerCase().includes(search)||(e[1].assignee||'').toLowerCase().includes(search);})
-    .sort(function(a,b){return pOrder(a[1].priority)-pOrder(b[1].priority)||(b[1].createdTs||0)-(a[1].createdTs||0);});
+    .filter(function(e){
+      if(!search) return true;
+      var t=e[1];
+      return (t.title||'').toLowerCase().includes(search)
+        || (t.desc||'').toLowerCase().includes(search)
+        || (t.assignee||'').toLowerCase().includes(search)
+        || (t.teamArea||'').toLowerCase().includes(search)
+        || (t.subteam||'').toLowerCase().includes(search)
+        || (t.sprintCycle||'').toLowerCase().includes(search)
+        || (t.nextAction||'').toLowerCase().includes(search);
+    })
+    .sort(function(a,b){
+      if(isSprintView()){
+        return compareTeams(a[1].teamArea||'Unassigned', b[1].teamArea||'Unassigned')
+          || (a[1].subteam||'Unassigned subteam').localeCompare(b[1].subteam||'Unassigned subteam')
+          || pOrder(a[1].priority)-pOrder(b[1].priority)
+          || (b[1].createdTs||0)-(a[1].createdTs||0);
+      }
+      return pOrder(a[1].priority)-pOrder(b[1].priority)||(b[1].createdTs||0)-(a[1].createdTs||0);
+    });
   if(!tickets.length){
-    list.innerHTML='<div class="empty-state"><div style="font-size:28px;opacity:.3">◎</div><p>'+(Object.keys(App.allTickets).length===0?'No projects yet. Create your first one!':'No projects match this filter.')+'</p></div>';
+    var emptyLabel=isSprintView()?'No sprint initiatives yet. Create the first one.':'No projects yet. Create your first one!';
+    list.innerHTML='<div class="empty-state"><div style="font-size:28px;opacity:.3">◎</div><p>'+(Object.keys(App.allTickets).length===0?emptyLabel:'No projects match this filter.')+'</p></div>';
     return;
   }
   list.innerHTML=tickets.map(function(entry){
@@ -28,12 +47,43 @@ window.renderList = function(){
     var subtaskBar=st.total>0?'<div class="subtask-bar"><div class="subtask-bar-fill" style="width:'+Math.round(st.done/st.total*100)+'%"></div></div>':'';
     var contribs=t.contributors&&t.contributors.length?t.contributors:[t.assignee||'Unassigned'];
     var stackHtml=avatarStackHtml(contribs,20);
-    return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+t.priority+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta">'+stackHtml+'<span>·</span><span>'+(t.created||'')+'</span>'+(cc?'<span>· 💬 '+cc+'</span>':'')+(st.total?'<span>· ☑ '+st.done+'/'+st.total+'</span>':'')+(lc?'<span>· 🔗 '+lc+'</span>':'')+(dlTag?'<span>'+dlTag+'</span>':'')+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+t.status+'</span></div></div>';
+    var baseMeta=stackHtml+'<span>·</span><span>'+(t.created||'')+'</span>'+(cc?'<span>· 💬 '+cc+'</span>':'')+(st.total?'<span>· ☑ '+st.done+'/'+st.total+'</span>':'')+(lc?'<span>· 🔗 '+lc+'</span>':'')+(dlTag?'<span>'+dlTag+'</span>':'');
+    var meta=isSprintView()?sprintMetaHtml(t):baseMeta;
+    return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+(t.priority||'p1')+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta">'+meta+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+t.status+'</span></div></div>';
   }).join('');
 };
 
 function updateStats(){
   var t=Object.values(App.allTickets);
+  var extra=document.getElementById('s-extra-wrap');
+  if(isSprintView()){
+    var totals=sprintTotals(t);
+    document.getElementById('s-open').className='stat-num';
+    document.getElementById('s-prog').className='stat-num';
+    document.getElementById('s-done').className='stat-num';
+    document.getElementById('s-total-label').textContent='Scoped HC';
+    document.getElementById('s-open-label').textContent='Repurpose';
+    document.getElementById('s-prog-label').textContent='Buffer';
+    document.getElementById('s-done-label').textContent='BPO/NFTE Reduction';
+    document.getElementById('s-extra-label').textContent='Unclassified';
+    document.getElementById('s-total').textContent=fmtCapacity(totals.scoped);
+    document.getElementById('s-open').textContent=fmtCapacity(totals.repurpose);
+    document.getElementById('s-prog').textContent=fmtCapacity(totals.buffer);
+    document.getElementById('s-done').textContent=fmtCapacity(totals.reduction);
+    document.getElementById('s-extra').textContent=fmtCapacity(totals.unclassified);
+    if(extra) extra.style.display='';
+    document.getElementById('ticket-count-sub').textContent=t.length+' sprint initiative'+(t.length!==1?'s':'')+' total';
+    renderSprintDashboard();
+    return;
+  }
+  document.getElementById('s-total-label').textContent='Total';
+  document.getElementById('s-open-label').textContent='Open';
+  document.getElementById('s-prog-label').textContent='In Progress';
+  document.getElementById('s-done-label').textContent='Done';
+  document.getElementById('s-open').className='stat-num c-high';
+  document.getElementById('s-prog').className='stat-num c-prog';
+  document.getElementById('s-done').className='stat-num c-done';
+  if(extra) extra.style.display='none';
   document.getElementById('s-total').textContent=t.length;
   document.getElementById('s-open').textContent=t.filter(function(x){return x.status==='open';}).length;
   document.getElementById('s-prog').textContent=t.filter(function(x){return x.status==='in progress'||x.status==='review';}).length;
@@ -43,6 +93,7 @@ function updateStats(){
 
 function updateCounts(){
   var t=Object.values(App.allTickets);
+  updateProjectViewCounts();
   document.getElementById('cnt-all').textContent=t.length;
   document.getElementById('cnt-open').textContent=t.filter(function(x){return x.status==='open';}).length;
   document.getElementById('cnt-done').textContent=t.filter(function(x){return x.status==='done';}).length;
@@ -97,6 +148,8 @@ function renderContribPills(){
 
 window.openNewModal = function(){
   App.ntSelectedContribs=[];
+  updateAppShell();
+  clearSprintNewFields();
   renderContribPicker('nt-contributor-picker',App.ntSelectedContribs,function(sel){App.ntSelectedContribs=sel;});
   document.getElementById('new-modal').style.display='flex';
   setTimeout(function(){document.getElementById('nt-title').focus();},100);
@@ -105,5 +158,6 @@ window.openNewModal = function(){
 window.closeNewModal = function(){
   document.getElementById('new-modal').style.display='none';
   ['nt-title','nt-desc','nt-deadline'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  clearSprintNewFields();
   App.ntSelectedContribs=[];
 };

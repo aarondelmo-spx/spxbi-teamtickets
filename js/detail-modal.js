@@ -21,7 +21,7 @@ window.editDetailField = function(field){
   function save(){
     var newVal=input.value.trim()||current;
     var dbField=field==='title'?'title':'desc';
-    App.db.ref('tickets/'+App.selectedTicketId).update({[dbField]:newVal});
+    activeTicketRef(App.selectedTicketId).update({[dbField]:newVal});
     var t=App.allTickets[App.selectedTicketId];
     if(t&&newVal!==current) logActivity('edited'+dbField,t.title,'',App.selectedTicketId,current.slice(0,40),newVal.slice(0,40));
   }
@@ -51,6 +51,7 @@ window.openDetailModal = function(id){
   renderContribPicker('d-contributor-picker',App.dSelectedContribs,function(sel){App.dSelectedContribs=sel;saveContributors();});
   renderContributorsDisplay();
   renderContribPicker('subtask-contributor-picker',App.stSelectedContribs,function(sel){App.stSelectedContribs=sel;});
+  populateSprintDetail(t);
   renderSubtasks(id);
   renderLinks(id);
   renderComments(id);

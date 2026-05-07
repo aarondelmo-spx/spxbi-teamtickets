@@ -33,7 +33,7 @@ window.toggleContrib = function(containerId, name){
 
 function saveContributors(){
   if(!App.selectedTicketId) return;
-  App.db.ref('tickets/'+App.selectedTicketId).update({
+  activeTicketRef(App.selectedTicketId).update({
     contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null,
     assignee: App.dSelectedContribs[0]||'Unassigned'
   });

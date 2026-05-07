@@ -33,8 +33,9 @@ function calCollectDeadlines(){
   }
   Object.entries(App.allTickets).forEach(function(e){
     var id = e[0], t = e[1];
-    if(t.deadline){
-      add(t.deadline, {title:t.title, isSubtask:false, status:t.status, priority:t.priority||'p1', id:id, subId:null});
+    var projectDueDate = t.deadline || (isSprintView() ? t.timelineEnd : null);
+    if(projectDueDate){
+      add(projectDueDate, {title:t.title, isSubtask:false, status:t.status, priority:t.priority||'p1', id:id, subId:null});
     }
     if(t.subtasks){
       Object.entries(t.subtasks).forEach(function(se){

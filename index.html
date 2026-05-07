@@ -63,10 +63,13 @@
       </div>
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
-    <button class="new-btn" onclick="openNewModal()">+ New Project</button>
+    <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
     <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
     <button class="team-btn" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
     <button class="team-btn" onclick="openCalendar()" style="margin-top:2px">📅 Calendar view</button>
+    <div class="sidebar-section">Workspace</div>
+    <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
+    <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Sprint Projects<span class="nav-count" id="view-sprint-count">0</span></button>
     <div class="sidebar-section">Filter by status</div>
     <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
@@ -84,10 +87,17 @@
       <div><div class="page-title">Team Projects</div><div class="page-sub" id="ticket-count-sub">Loading...</div></div>
     </div>
     <div class="stats">
-      <div class="stat"><div class="stat-label">Total</div><div class="stat-num" id="s-total">—</div></div>
-      <div class="stat"><div class="stat-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
-      <div class="stat"><div class="stat-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
-      <div class="stat"><div class="stat-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+      <div class="stat"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div></div>
+      <div class="stat"><div class="stat-label" id="s-open-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
+      <div class="stat"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
+      <div class="stat"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
+    </div>
+    <div class="sprint-board" id="sprint-board" style="display:none">
+      <div class="sprint-board-head">
+        <div class="workload-title" style="margin-bottom:0">Team / subteam sprint hierarchy</div>
+      </div>
+      <div id="sprint-team-summary"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 300px;gap:14px;margin-bottom:1.25rem;align-items:start" id="dashboard-row">
       <div class="warn-banner" id="warn-banner" style="margin-bottom:0">
@@ -126,10 +136,47 @@
 <!-- New Ticket Modal -->
 <div class="modal-overlay" id="new-modal" style="display:none" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
-    <div class="modal-header"><h3>New Project</h3><button class="modal-close" onclick="closeNewModal()">×</button></div>
+    <div class="modal-header"><h3 id="new-modal-title">New Project</h3><button class="modal-close" onclick="closeNewModal()">×</button></div>
     <div class="modal-body">
       <div class="field"><label>Title</label><input id="nt-title" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter')createTicket()" /></div>
       <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add more context..."></textarea></div>
+      <div id="nt-sprint-fields" style="display:none">
+        <div class="section-label">Sprint initiative details</div>
+        <div class="form-row">
+          <div class="field"><label>Team</label>
+            <select id="nt-team-area">
+              <option value="FinOps">FinOps</option><option value="Expansions">Expansions</option><option value="Claims">Claims</option><option value="Fleet">Fleet</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="field"><label>Subteam</label><input id="nt-subteam" placeholder="Agency Billing, HSE, CLEO, etc." /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Sprint</label><input id="nt-sprint-cycle" placeholder="Sprint 1, May, etc." /></div>
+          <div class="field"><label>Timeline Start</label><input id="nt-timeline-start" type="date" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Target End</label><input id="nt-timeline-end" type="date" /></div>
+          <div class="field"><label>Stage</label>
+            <select id="nt-stage">
+              <option value="scoping">Scoping</option><option value="validating">Validating</option><option value="build_uat">Build/UAT</option><option value="live_stabilizing">Live/Stabilizing</option><option value="capacity_review">Ready for capacity review</option><option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Confidence</label>
+            <select id="nt-confidence"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Next Action</label><input id="nt-next-action" placeholder="Concrete next step" /></div>
+        <div class="form-row">
+          <div class="field"><label>Scoped HC-equivalent</label><input id="nt-scoped-hc" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>FTE to Repurpose</label><input id="nt-fte-repurpose" type="number" min="0" step="0.1" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>FTE Buffer</label><input id="nt-fte-buffer" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>BPO / NFTE Reduction</label><input id="nt-bpo-reduction" type="number" min="0" step="0.1" /></div>
+        </div>
+      </div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="p0">P0 — Critical</option><option value="p1" selected>P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option></select></div>
         <div class="field"><label>Deadline (optional)</label><input type="date" id="nt-deadline" style="color-scheme:dark" /></div>
@@ -142,7 +189,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeNewModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createTicket()">Create Project</button>
+      <button class="btn btn-primary" id="create-ticket-btn" onclick="createTicket()">Create Project</button>
     </div>
   </div>
 </div>
@@ -187,6 +234,46 @@
         <label>Contributors</label>
         <div class="contributor-picker" id="d-contributor-picker"></div>
         <div id="d-contributors-display" class="contributors-display"></div>
+      </div>
+
+      <div id="d-sprint-fields" style="display:none">
+        <div class="divider"></div>
+        <div class="section-label">Sprint initiative details</div>
+        <div class="form-row">
+          <div class="field"><label>Team</label>
+            <select id="d-team-area" onchange="updateTicketField('teamArea',this.value)">
+              <option value="FinOps">FinOps</option><option value="Expansions">Expansions</option><option value="Claims">Claims</option><option value="Fleet">Fleet</option><option value="Other">Other</option><option value="Unassigned">Unassigned</option>
+            </select>
+          </div>
+          <div class="field"><label>Subteam</label><input id="d-subteam" onchange="updateTicketField('subteam',this.value)" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Sprint</label><input id="d-sprint-cycle" onchange="updateTicketField('sprintCycle',this.value)" /></div>
+          <div class="field"><label>Timeline Start</label><input id="d-timeline-start" type="date" onchange="updateTicketField('timelineStart',this.value)" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Target End</label><input id="d-timeline-end" type="date" onchange="updateTicketField('timelineEnd',this.value)" /></div>
+          <div class="field"><label>Stage</label>
+            <select id="d-stage" onchange="updateTicketField('stage',this.value)">
+              <option value="scoping">Scoping</option><option value="validating">Validating</option><option value="build_uat">Build/UAT</option><option value="live_stabilizing">Live/Stabilizing</option><option value="capacity_review">Ready for capacity review</option><option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Confidence</label>
+            <select id="d-confidence" onchange="updateTicketField('confidence',this.value)"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Next Action</label><input id="d-next-action" onchange="updateTicketField('nextAction',this.value)" /></div>
+        <div class="form-row">
+          <div class="field"><label>Scoped HC-equivalent</label><input id="d-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('scopedHc',this.value)" /></div>
+          <div class="field"><label>FTE to Repurpose</label><input id="d-fte-repurpose" type="number" min="0" step="0.1" onchange="updateTicketField('fteRepurpose',this.value)" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>FTE Buffer</label><input id="d-fte-buffer" type="number" min="0" step="0.1" onchange="updateTicketField('fteBuffer',this.value)" /></div>
+          <div class="field"><label>BPO / NFTE Reduction</label><input id="d-bpo-reduction" type="number" min="0" step="0.1" onchange="updateTicketField('bpoNfteReduction',this.value)" /></div>
+        </div>
+        <div class="field"><label>Unclassified Capacity</label><input id="d-unclassified" readonly /></div>
       </div>
 
       <div class="divider"></div>
@@ -306,6 +393,7 @@
 <script src="js/state.js"></script>
 <script src="js/config.js"></script>
 <script src="js/helpers.js"></script>
+<script src="js/sprints.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/activity.js"></script>
 <script src="js/warnings.js"></script>
