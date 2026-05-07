@@ -165,7 +165,7 @@
   .workstream-title{font-size:13px;font-weight:500;color:var(--text)}
   .workstream-count{font-family:var(--mono);font-size:11px;color:var(--text3)}
   .task-list{display:flex;flex-direction:column;gap:5px}
-  .task-add-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(105px,140px) 132px minmax(110px,150px) auto;gap:6px;margin-top:.65rem}
+  .task-add-row{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(92px,.75fr) minmax(118px,.8fr) minmax(0,1fr) max-content;gap:6px;margin-top:.65rem;align-items:center;width:100%}
   .task-add-row input,.task-add-row select{padding:7px 9px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none;min-width:0}
   .task-add-row input:focus,.task-add-row select:focus{border-color:var(--accent)}
   .section-head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.75rem}
