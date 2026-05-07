@@ -223,6 +223,11 @@ function updateVibeShell(){
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
   syncWeeklyPlanControls();
   syncVibeMetricCards();
+  var isSprint = vibe && App.currentVibeView === 'sprint';
+  var statsRow = document.getElementById('stats-row');
+  var whoRow = document.getElementById('who-filter-row');
+  if(statsRow) statsRow.style.display = isSprint ? 'none' : '';
+  if(whoRow) whoRow.classList.toggle('visible', !!isSprint);
 }
 
 window.toggleVibeFilters = function(){
@@ -252,6 +257,15 @@ window.setWeeklyPlanDateFromInput = function(){
   localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
+  renderList();
+};
+
+window.setVibeWhoFilter = function(val){
+  App.vibeWhoFilter = val;
+  var allCard = document.getElementById('who-card-all');
+  var mineCard = document.getElementById('who-card-mine');
+  if(allCard) allCard.classList.toggle('active', val === 'all');
+  if(mineCard) mineCard.classList.toggle('active', val === 'mine');
   renderList();
 };
 
@@ -563,15 +577,13 @@ function weeklyPlanPanelHtml(title, subtitle, items, start, emptyText){
 function renderVibeWeeklyPlan(search, list){
   syncWeeklyPlanControls();
   var start = selectedWeekStart();
+  var whoFilter = App.vibeWhoFilter || 'all';
   var items = collectVibeTasks()
     .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
+    .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
     .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
-  var mine = items.filter(taskAssignedToCurrentUser);
-  list.innerHTML = '<div class="weekly-plan-grid">'
-    +weeklyPlanPanelHtml('Assigned to me', 'Your due tasks for the selected weekly window.', mine, start, 'No tasks assigned to you in this weekly window.')
-    +weeklyPlanPanelHtml('Team view', 'All due tasks across Vibe Coding initiatives.', items, start, 'No team tasks are due in this weekly window.')
-    +'</div>';
+  renderWeeklyPlanGroups(items, list, start);
 }
 
 function renderVibeSprint(search, list){

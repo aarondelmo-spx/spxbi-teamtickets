@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vibe Coding Projects — Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* === DESIGN TOKENS (same as app.css) === */
+:root {
+  --bg: #0f0f11;
+  --surface: #17171a;
+  --surface2: #1e1e23;
+  --surface3: #222228;
+  --border: #2a2a32;
+  --border2: #36363f;
+  --text: #e8e8ed;
+  --text2: #8888a0;
+  --text3: #55555f;
+  --accent: #7c6ff7;
+  --accent2: #5a54c4;
+  --high: #f7706f;
+  --med: #f7a86f;
+  --low: #6fd4a8;
+  --open: #6fa8f7;
+  --prog: #b86ff7;
+  --review: #f7d46f;
+  --done: #6fd4a8;
+  --warn: #f7d46f;
+  --overdue: #f7706f;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+/* === WORKSPACE SHELL === */
+.workspace { max-width: 1100px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+
+/* === PAGE HEADER === */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1.75rem;
+}
+.page-header-left { display: flex; flex-direction: column; gap: 4px; }
+.page-title { font-size: 22px; font-weight: 500; }
+.page-sub { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+.new-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: var(--radius);
+  background: var(--accent); color: #fff; border: none;
+  cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 500;
+  transition: background .15s; white-space: nowrap; flex-shrink: 0;
+}
+.new-btn:hover { background: var(--accent2); }
+
+/* === STAT CARDS (original style) === */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 1.75rem;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+}
+.stat:hover { border-color: var(--border2); background: var(--surface2); }
+.stat.active { border-color: var(--accent); background: rgba(124,111,247,.08); }
+.stat-label { font-size: 11px; color: var(--text3); font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-num { font-size: 26px; font-weight: 300; font-family: var(--mono); }
+.stat-num.c-open { color: var(--open); }
+.stat-num.c-prog { color: var(--prog); }
+.stat-num.c-done { color: var(--done); }
+.stat.active .stat-label { color: var(--accent); }
+.stat.active .stat-num { color: var(--accent); }
+
+/* === TOOLBAR === */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.search-wrap { position: relative; flex: 1; max-width: 280px; }
+.search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--text3); pointer-events: none; font-size: 13px;
+}
+.search {
+  width: 100%; padding: 7px 12px 7px 32px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  font-family: var(--font); font-size: 13px; outline: none;
+}
+.search:focus { border-color: var(--accent); }
+.search::placeholder { color: var(--text3); }
+
+.filter-pill {
+  padding: 6px 13px; border-radius: 20px;
+  border: 1px solid var(--border); background: none;
+  color: var(--text2); font-size: 12px; cursor: pointer;
+  transition: all .15s; font-family: var(--font);
+}
+.filter-pill:hover { border-color: var(--border2); color: var(--text); }
+.filter-pill.active { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,.08); }
+
+.toolbar-sep { width: 1px; height: 24px; background: var(--border); margin: 0 2px; }
+
+.done-toggle {
+  padding: 6px 13px; border-radius: 20px;
+  border: 1px solid var(--border); background: none;
+  color: var(--text3); font-size: 12px; cursor: pointer;
+  transition: all .15s; font-family: var(--font);
+}
+.done-toggle:hover { color: var(--text2); border-color: var(--border2); }
+.done-toggle.active { color: var(--done); border-color: rgba(111,212,168,.3); background: rgba(111,212,168,.06); }
+
+/* === VIEW TABS (primary nav, above stats) === */
+.view-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.view-tab {
+  border: none; background: transparent;
+  color: var(--text3); font-family: var(--font);
+  font-size: 14px; font-weight: 500;
+  padding: 8px 18px 10px; cursor: pointer;
+  transition: all .15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.view-tab:hover { color: var(--text2); }
+.view-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* === TEAM SECTION === */
+.team-section { margin-bottom: 2rem; }
+.team-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 .65rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: .85rem;
+}
+.team-section-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  font-weight: 500;
+}
+.team-hc-strip {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 10px; color: var(--text3); flex-wrap: wrap;
+}
+.hc-pill {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  white-space: nowrap;
+}
+
+/* === SUBTEAM GROUP === */
+.subteam-group { margin-bottom: 1rem; }
+.subteam-group-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text3);
+  margin-bottom: .5rem;
+  padding-left: 2px;
+}
+
+/* === INITIATIVE CARD GRID (side-by-side within subteam) === */
+.initiative-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* === INITIATIVE CARD === */
+.initiative-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 120px;
+}
+.initiative-card:hover { border-color: var(--border2); background: var(--surface2); }
+.initiative-card.done-card { opacity: .65; }
+
+/* Chips row */
+.card-chips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.chip {
+  font-size: 10px; font-family: var(--mono);
+  padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); white-space: nowrap;
+}
+.chip.stage { font-weight: 500; border-color: transparent; }
+.chip.stage-scoping { background: rgba(111,168,247,.12); color: #6fa8f7; }
+.chip.stage-validating { background: rgba(247,212,111,.12); color: #f7d46f; }
+.chip.stage-build { background: rgba(184,111,247,.12); color: #b86ff7; }
+.chip.stage-live { background: rgba(111,212,168,.12); color: #6fd4a8; }
+.chip.stage-review { background: rgba(247,168,111,.12); color: #f7a86f; }
+.chip.stage-closed { background: rgba(85,85,95,.2); color: var(--text3); }
+.chip.status-done { background: rgba(111,212,168,.1); color: var(--done); border-color: rgba(111,212,168,.2); }
+.chip.status-open { background: rgba(111,168,247,.1); color: var(--open); border-color: rgba(111,168,247,.2); }
+.chip.status-progress { background: rgba(184,111,247,.1); color: var(--prog); border-color: rgba(184,111,247,.2); }
+
+/* Card title */
+.card-title { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.4; }
+
+/* HC row */
+.card-hc {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--text3); font-family: var(--mono); flex-wrap: wrap;
+}
+.hc-item { display: flex; align-items: center; gap: 3px; }
+.hc-num { font-weight: 500; }
+.hc-num.scoped { color: #6fa8f7; }
+.hc-num.progress { color: var(--prog); }
+.hc-num.saved { color: var(--done); }
+
+/* Task progress */
+.card-footer {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+.task-bar {
+  flex: 1; max-width: 100px; height: 3px;
+  background: var(--border2); border-radius: 2px; overflow: hidden;
+}
+.task-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+.task-bar-fill.done { background: var(--done); }
+.card-meta-text { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.card-meta-text.soon { color: var(--warn); }
+.card-meta-text.overdue { color: var(--overdue); }
+
+/* Card action button */
+.card-task-btn {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 4px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: none;
+  color: var(--text2); font-family: var(--font); font-size: 11px;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.card-task-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,111,247,.06); }
+
+/* === WEEKLY PLAN VIEW === */
+.weekly-controls {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+.week-nav-btn {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: none; color: var(--text2); cursor: pointer; font-size: 16px;
+  transition: all .15s;
+}
+.week-nav-btn:hover { border-color: var(--border2); color: var(--text); }
+.week-label-text { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.week-filter-pills { display: none; }
+
+/* Big who-filter cards replacing stat row in weekly view */
+.who-filter-row {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 1.75rem;
+}
+.who-filter-row.visible { display: grid; }
+.who-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.5rem;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.who-card:hover { border-color: var(--border2); background: var(--surface2); }
+.who-card.active { border-color: var(--accent); background: rgba(124,111,247,.08); }
+.who-card-label { font-size: 11px; color: var(--text3); font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.who-card.active .who-card-label { color: var(--accent); }
+.who-card-title { font-size: 22px; font-weight: 300; font-family: var(--mono); }
+
+.week-group { margin-bottom: 1.5rem; }
+.week-group-header {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--border); margin-bottom: .65rem;
+}
+.week-group-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text2); }
+.week-group-date { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.week-task-count { font-family: var(--mono); font-size: 11px; color: var(--text3); white-space: nowrap; }
+
+.task-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 150px 130px 55px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  margin-bottom: 4px;
+  transition: border-color .15s;
+}
+.task-row:hover { border-color: var(--border2); }
+.task-row.done-task { opacity: .5; }
+.task-row.done-task .task-text { text-decoration: line-through; color: var(--text3); }
+.task-check {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 1.5px solid var(--border2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.task-check.checked { background: var(--done); border-color: var(--done); }
+.task-check.checked::after { content: '✓'; color: #0f0f11; font-size: 10px; font-weight: 700; }
+.task-text { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-initiative { font-size: 10px; color: var(--text3); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-owner-sel {
+  font-size: 11px; font-family: var(--font);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); border-radius: 6px; padding: 4px 8px;
+  cursor: pointer; width: 100%; outline: none;
+}
+.task-due-inp {
+  font-size: 11px; font-family: var(--mono);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); border-radius: 6px; padding: 4px 8px;
+  cursor: pointer; width: 100%; outline: none; color-scheme: dark;
+}
+.task-open-btn {
+  font-size: 11px; font-family: var(--font);
+  background: none; border: 1px solid var(--border);
+  color: var(--text3); border-radius: 6px; padding: 4px 8px;
+  cursor: pointer; width: 100%; text-align: center;
+  transition: all .15s;
+}
+.task-open-btn:hover { color: var(--text); border-color: var(--border2); }
+
+.empty-state { text-align: center; padding: 4rem 2rem; color: var(--text3); }
+.empty-state p { font-size: 13px; margin-top: 8px; }
+
+/* === RESPONSIVE === */
+@media (max-width: 720px) {
+  .workspace { padding: 1rem; }
+  .initiative-card-grid { grid-template-columns: 1fr; }
+  .task-row { grid-template-columns: 20px 1fr 55px; }
+  .task-row > *:nth-child(3),
+  .task-row > *:nth-child(4) { display: none; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="workspace">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-title">Vibe Coding Projects</div>
+      <div class="page-sub" id="page-sub">8 initiatives total · Initiative planning</div>
+    </div>
+    <button class="new-btn" onclick="alert('+ New Initiative')">+ New Initiative</button>
+  </div>
+
+  <!-- PRIMARY VIEW TABS -->
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="setView('initiatives', this)">Initiatives</button>
+    <button class="view-tab" onclick="setView('weekly', this)">Weekly Plan</button>
+  </div>
+
+  <!-- STAT CARDS (original rectangular style, clickable to filter) -->
+  <div class="stats" id="stats-row">
+    <div class="stat" data-filter="teamSize" onclick="toggleStatFilter(this)">
+      <div class="stat-label">Team size</div>
+      <div class="stat-num" id="stat-team-size">408</div>
+    </div>
+    <div class="stat" data-filter="reviewed" onclick="toggleStatFilter(this)">
+      <div class="stat-label">Reviewed</div>
+      <div class="stat-num c-open" id="stat-reviewed">192</div>
+    </div>
+    <div class="stat" data-filter="scoped" onclick="toggleStatFilter(this)">
+      <div class="stat-label">Scoped</div>
+      <div class="stat-num c-prog" id="stat-scoped">67</div>
+    </div>
+    <div class="stat" data-filter="inProgress" onclick="toggleStatFilter(this)">
+      <div class="stat-label">In progress</div>
+      <div class="stat-num c-prog" id="stat-inprogress">3</div>
+    </div>
+    <div class="stat" style="cursor:default">
+      <div class="stat-label">HC saved</div>
+      <div class="stat-num c-done" id="stat-savings">14</div>
+    </div>
+  </div>
+
+  <!-- WHO FILTER (weekly plan only, replaces stat cards) -->
+  <div class="who-filter-row" id="who-filter-row">
+    <div class="who-card active" id="who-all" onclick="setWhoFilter(this, 'all')">
+      <div class="who-card-label">Showing</div>
+      <div class="who-card-title">All tasks</div>
+    </div>
+    <div class="who-card" id="who-mine" onclick="setWhoFilter(this, 'mine')">
+      <div class="who-card-label">Filter to</div>
+      <div class="who-card-title">Mine</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search" id="search-input" placeholder="Search initiatives, teams, tasks..." oninput="applyFilters()" />
+    </div>
+
+    <button class="filter-pill active" data-status="active" onclick="setStatusFilter(this, 'active')">Active</button>
+    <button class="filter-pill" data-status="all" onclick="setStatusFilter(this, 'all')">All</button>
+    <div class="toolbar-sep"></div>
+    <button class="done-toggle" id="done-toggle" onclick="toggleDone(this)">Done</button>
+  </div>
+
+  <!-- INITIATIVES VIEW -->
+  <div id="initiatives-view">
+    <div id="initiative-list"></div>
+  </div>
+
+  <!-- WEEKLY PLAN VIEW -->
+  <div id="weekly-view" style="display:none">
+    <div class="weekly-controls">
+      <button class="week-nav-btn" onclick="shiftWeek(-1)">‹</button>
+      <span class="week-label-text" id="week-label-text">May 5 – May 11, 2026</span>
+      <button class="week-nav-btn" onclick="shiftWeek(1)">›</button>
+      <div class="week-filter-pills">
+        <button class="filter-pill active" data-who="all" onclick="setWhoFilter(this, 'all')">All tasks</button>
+        <button class="filter-pill" data-who="mine" onclick="setWhoFilter(this, 'mine')">Mine</button>
+      </div>
+    </div>
+    <div id="weekly-list"></div>
+  </div>
+
+</div>
+
+<script type="module">
+// =====================================================================
+// MOCK DATA
+// =====================================================================
+const CURRENT_USER = 'Karl Kue';
+
+const initiatives = [
+  {
+    id: 'init-001',
+    title: 'Agency Billing Validation Automation',
+    teamArea: 'FinOps',
+    subteam: 'Agency Billing Validation',
+    stage: 'build_uat',
+    status: 'in progress',
+    automationScopedHc: 12,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't1': { text: 'Map validation rules to current SOPs', done: true, deadline: '2026-04-28', contributors: ['Karl Kue'] },
+      't2': { text: 'Build staging environment test suite', done: true, deadline: '2026-05-02', contributors: ['Karl Kue'] },
+      't3': { text: 'UAT with Agency Billing team', done: false, deadline: '2026-05-09', contributors: ['Karl Kue'] },
+      't4': { text: 'Deployment sign-off from FinOps lead', done: false, deadline: '2026-05-16', contributors: [] },
+      't5': { text: 'Hypercare period monitoring', done: false, deadline: '2026-05-23', contributors: [] },
+    }
+  },
+  {
+    id: 'init-009',
+    title: 'Agency Billing Reconciliation Tool',
+    teamArea: 'FinOps',
+    subteam: 'Agency Billing Validation',
+    stage: 'scoping',
+    status: 'open',
+    automationScopedHc: 6,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't20': { text: 'Scope reconciliation requirements', done: false, deadline: '2026-05-20', contributors: [] },
+    }
+  },
+  {
+    id: 'init-002',
+    title: 'RB Calculation Engine Rebuild',
+    teamArea: 'FinOps',
+    subteam: 'RB Calculation',
+    stage: 'validating',
+    status: 'open',
+    automationScopedHc: 8,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't6': { text: 'Stakeholder review of calculation spec', done: false, deadline: '2026-05-08', contributors: ['Maria Santos'] },
+      't7': { text: 'Identify edge cases from legacy system', done: false, deadline: '2026-05-15', contributors: [] },
+    }
+  },
+  {
+    id: 'init-003',
+    title: 'HSE Document Automation',
+    teamArea: 'Expansions',
+    subteam: 'HSE',
+    stage: 'live_stabilizing',
+    status: 'in progress',
+    automationScopedHc: 18,
+    actualHcSavings: 14,
+    excessCapacityHc: 4,
+    subtasks: {
+      't8': { text: 'Weekly monitoring dashboard review', done: false, deadline: '2026-05-09', contributors: ['Karl Kue'] },
+      't9': { text: 'Post-launch capacity review with HSE team', done: false, deadline: '2026-05-30', contributors: ['Karl Kue'] },
+      't10': { text: 'Document automation playbook', done: true, deadline: '2026-05-05', contributors: ['Maria Santos'] },
+    }
+  },
+  {
+    id: 'init-010',
+    title: 'HSE Incident Logging Automation',
+    teamArea: 'Expansions',
+    subteam: 'HSE',
+    stage: 'scoping',
+    status: 'open',
+    automationScopedHc: null,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't21': { text: 'Define incident categories and triggers', done: false, deadline: '2026-05-28', contributors: [] },
+      't22': { text: 'Review existing incident log workflow', done: false, deadline: null, contributors: [] },
+    }
+  },
+  {
+    id: 'init-004',
+    title: 'Site Planning Form Digitization',
+    teamArea: 'Expansions',
+    subteam: 'Site Planning',
+    stage: 'scoping',
+    status: 'open',
+    automationScopedHc: null,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't11': { text: 'Current state process mapping workshop', done: false, deadline: '2026-05-20', contributors: [] },
+      't12': { text: 'HC sizing estimate', done: false, deadline: null, contributors: [] },
+    }
+  },
+  {
+    id: 'init-005',
+    title: 'SSP Claims Integration',
+    teamArea: 'Claims',
+    subteam: 'SSP Integration',
+    stage: 'build_uat',
+    status: 'in progress',
+    automationScopedHc: 22,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't13': { text: 'API endpoint mapping with SSP vendor', done: true, deadline: '2026-04-25', contributors: ['Karl Kue'] },
+      't14': { text: 'Error handling for rejected claims', done: true, deadline: '2026-05-02', contributors: ['Karl Kue'] },
+      't15': { text: 'Load testing — 1000 concurrent claims', done: false, deadline: '2026-05-09', contributors: ['Karl Kue'] },
+      't16': { text: 'UAT sign-off — Claims ops team', done: false, deadline: '2026-05-16', contributors: [] },
+    }
+  },
+  {
+    id: 'init-006',
+    title: 'CLEO Workflow Automation',
+    teamArea: 'Claims',
+    subteam: 'CLEO',
+    stage: 'scoping',
+    status: 'open',
+    automationScopedHc: 7,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {
+      't17': { text: 'Requirements gathering with CLEO team', done: false, deadline: '2026-05-22', contributors: [] },
+    }
+  },
+  {
+    id: 'init-007',
+    title: 'Fleet Ops Dispatch Automation',
+    teamArea: 'Fleet',
+    subteam: 'Fleet Ops',
+    stage: 'capacity_review',
+    status: 'done',
+    automationScopedHc: 28,
+    actualHcSavings: 28,
+    excessCapacityHc: 0,
+    subtasks: {
+      't18': { text: 'Capacity review sign-off', done: true, deadline: '2026-04-30', contributors: ['Karl Kue'] },
+      't19': { text: 'Final documentation', done: true, deadline: '2026-04-28', contributors: ['Karl Kue'] },
+    }
+  },
+  {
+    id: 'init-008',
+    title: 'Agency Portal Migration',
+    teamArea: 'FinOps',
+    subteam: 'Agency Portal Migration',
+    stage: 'scoping',
+    status: 'open',
+    automationScopedHc: null,
+    actualHcSavings: null,
+    excessCapacityHc: null,
+    subtasks: {}
+  }
+];
+
+// =====================================================================
+// STATE
+// =====================================================================
+let activeFilter = 'active';
+let showDone = false;
+let activeStatFilter = null;
+let currentView = 'initiatives';
+let searchQuery = '';
+let weekOffset = 0;
+let weekWhoFilter = 'all';
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+function numVal(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function fmtHc(n) {
+  n = numVal(n);
+  if (Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
+  return n.toFixed(1);
+}
+function stageLabel(s) {
+  return { scoping:'Scoping', validating:'Validating', build_uat:'Build / UAT', live_stabilizing:'Live', capacity_review:'Cap Review', closed:'Closed' }[s] || 'Scoping';
+}
+function stageClass(s) {
+  return { scoping:'stage-scoping', validating:'stage-validating', build_uat:'stage-build', live_stabilizing:'stage-live', capacity_review:'stage-review', closed:'stage-closed' }[s] || 'stage-scoping';
+}
+function statusChipClass(s) {
+  if (!s || s === 'open') return 'status-open';
+  if (s === 'in progress') return 'status-progress';
+  if (s === 'done') return 'status-done';
+  return 'status-open';
+}
+function taskStats(init) {
+  const t = Object.values(init.subtasks || {});
+  return { total: t.length, done: t.filter(x => x.done).length };
+}
+function nearestDueTask(init) {
+  return Object.values(init.subtasks || {})
+    .filter(t => !t.done && t.deadline)
+    .sort((a, b) => a.deadline.localeCompare(b.deadline))[0] || null;
+}
+function deadlineDays(dl) {
+  if (!dl) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((new Date(dl + 'T00:00:00') - today) / 86400000);
+}
+function deadlineLabel(dl) {
+  if (!dl) return null;
+  const d = deadlineDays(dl);
+  if (d === null) return null;
+  if (d < 0) return { text: `${Math.abs(d)}d overdue`, cls: 'overdue' };
+  if (d === 0) return { text: 'due today', cls: 'soon' };
+  if (d <= 7) return { text: `in ${d}d`, cls: 'soon' };
+  const dt = new Date(dl + 'T00:00:00');
+  return { text: dt.toLocaleDateString(undefined, { month:'short', day:'numeric' }), cls: '' };
+}
+function safeHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function scopedHc(i) { return i.automationScopedHc != null ? numVal(i.automationScopedHc) : 0; }
+function inProgressHc(i) { return i.status === 'in progress' ? scopedHc(i) : 0; }
+function savedHc(i) { return i.status === 'done' && i.actualHcSavings != null ? numVal(i.actualHcSavings) : 0; }
+function isAssignedToMe(task) {
+  return (task.contributors || []).includes(CURRENT_USER);
+}
+
+// =====================================================================
+// FILTER
+// =====================================================================
+function getFilteredInitiatives() {
+  const q = searchQuery.toLowerCase();
+  return initiatives.filter(init => {
+    if (activeFilter === 'active' && init.status === 'done' && !showDone) return false;
+    if (activeStatFilter === 'inProgress' && init.status !== 'in progress') return false;
+    if (activeStatFilter === 'scoped' && scopedHc(init) === 0) return false;
+    if (q) {
+      const match = [init.title, init.teamArea, init.subteam, stageLabel(init.stage)].some(v => (v||'').toLowerCase().includes(q));
+      const taskMatch = Object.values(init.subtasks||{}).some(t => (t.text||'').toLowerCase().includes(q));
+      if (!match && !taskMatch) return false;
+    }
+    return true;
+  });
+}
+
+// =====================================================================
+// RENDER: INITIATIVE CARD
+// =====================================================================
+function renderCard(init) {
+  const stats = taskStats(init);
+  const pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
+  const nearDue = nearestDueTask(init);
+  const dl = nearDue ? deadlineLabel(nearDue.deadline) : null;
+  const sc = scopedHc(init);
+  const ip = inProgressHc(init);
+  const sv = savedHc(init);
+  const isDone = init.status === 'done';
+
+  const hcParts = [];
+  if (sc) hcParts.push(`<span class="hc-item"><span class="hc-num scoped">${fmtHc(sc)}</span> scoped</span>`);
+  if (ip) hcParts.push(`<span class="hc-item"><span class="hc-num progress">${fmtHc(ip)}</span> in&nbsp;prog</span>`);
+  if (sv) hcParts.push(`<span class="hc-item"><span class="hc-num saved">${fmtHc(sv)}</span> saved</span>`);
+
+  return `
+    <div class="initiative-card${isDone ? ' done-card' : ''}" onclick="openDetail('${init.id}')">
+      <div class="card-chips">
+        <span class="chip stage ${stageClass(init.stage)}">${stageLabel(init.stage)}</span>
+        <span class="chip ${statusChipClass(init.status)}">${safeHtml(init.status||'open')}</span>
+      </div>
+      <div class="card-title">${safeHtml(init.title)}</div>
+      ${hcParts.length ? `<div class="card-hc">${hcParts.join('<span style="color:var(--border2)"> · </span>')}</div>` : ''}
+      <div class="card-footer">
+        ${stats.total ? `
+          <div class="task-bar"><div class="task-bar-fill${isDone?' done':''}" style="width:${pct}%"></div></div>
+          <span class="card-meta-text">${stats.done}/${stats.total}</span>
+          ${nearDue && dl ? `<span class="card-meta-text ${dl.cls}">· ${safeHtml(nearDue.text)} ${dl.text}</span>` : ''}
+        ` : `<span class="card-meta-text">No tasks yet</span>`}
+        <button class="card-task-btn" onclick="event.stopPropagation();quickAddTask('${init.id}')">+ Task</button>
+      </div>
+    </div>
+  `;
+}
+
+// =====================================================================
+// RENDER: INITIATIVES VIEW (team → subteam → card grid)
+// =====================================================================
+function renderInitiatives() {
+  const list = document.getElementById('initiative-list');
+  const filtered = getFilteredInitiatives();
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><div style="font-size:28px;opacity:.3">○</div><p>No initiatives match this view.</p></div>';
+    updateSubHeader(0);
+    return;
+  }
+
+  // Group by team → subteam
+  const byTeam = {};
+  const teamOrder = ['FinOps', 'Expansions', 'Claims', 'Fleet'];
+  filtered.forEach(init => {
+    const team = init.teamArea || 'Other';
+    const sub = init.subteam || 'Other';
+    if (!byTeam[team]) byTeam[team] = {};
+    if (!byTeam[team][sub]) byTeam[team][sub] = [];
+    byTeam[team][sub].push(init);
+  });
+
+  const sortedTeams = Object.keys(byTeam).sort((a, b) => {
+    const ai = teamOrder.indexOf(a), bi = teamOrder.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1; if (bi === -1) return -1;
+    return ai - bi;
+  });
+
+  let html = '';
+  sortedTeams.forEach(team => {
+    const subteams = byTeam[team];
+    const allItems = Object.values(subteams).flat();
+    const totalSc = allItems.reduce((s, i) => s + scopedHc(i), 0);
+    const totalIp = allItems.reduce((s, i) => s + inProgressHc(i), 0);
+    const totalSv = allItems.reduce((s, i) => s + savedHc(i), 0);
+    const hcPills = [
+      totalSc ? `<span class="hc-pill">${fmtHc(totalSc)} scoped</span>` : '',
+      totalIp ? `<span class="hc-pill">${fmtHc(totalIp)} in progress</span>` : '',
+      totalSv ? `<span class="hc-pill">${fmtHc(totalSv)} saved</span>` : '',
+    ].filter(Boolean).join('');
+
+    html += `<div class="team-section">
+      <div class="team-section-header">
+        <span class="team-section-name">${safeHtml(team)}</span>
+        ${hcPills ? `<div class="team-hc-strip">${hcPills}</div>` : ''}
+      </div>`;
+
+    // Sort subteams alphabetically (Other last)
+    const sortedSubs = Object.keys(subteams).sort((a, b) => {
+      if (a === 'Other') return 1; if (b === 'Other') return -1;
+      return a.localeCompare(b);
+    });
+
+    sortedSubs.forEach(sub => {
+      const items = subteams[sub];
+      const showSubLabel = sortedSubs.length > 1;
+      html += `<div class="subteam-group">`;
+      if (showSubLabel) {
+        html += `<div class="subteam-group-label">${safeHtml(sub)}</div>`;
+      }
+      // Cards in a 2-column grid — single item still uses the grid (just takes full row)
+      html += `<div class="initiative-card-grid">`;
+      html += items.map(renderCard).join('');
+      html += `</div></div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  list.innerHTML = html;
+  updateSubHeader(filtered.length);
+}
+
+function updateSubHeader(count) {
+  const sub = document.getElementById('page-sub');
+  if (sub) sub.textContent = `${count} initiative${count !== 1 ? 's' : ''} · ${currentView === 'weekly' ? 'Weekly plan' : 'Initiative planning'}`;
+}
+
+// =====================================================================
+// RENDER: WEEKLY PLAN VIEW
+// =====================================================================
+function getWeekStart(offset = 0) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const day = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  return mon;
+}
+function weekLabel(start) {
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  const fmt = d => d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  return `${fmt(start)} – ${fmt(end)}, ${end.getFullYear()}`;
+}
+
+function renderWeeklyPlan() {
+  const start = getWeekStart(weekOffset);
+  document.getElementById('week-label-text').textContent = weekLabel(start);
+  const windowEnd = new Date(start); windowEnd.setDate(start.getDate() + 34);
+
+  const allTasks = [];
+  initiatives.forEach(init => {
+    if (init.status === 'done') return;
+    Object.entries(init.subtasks || {}).forEach(([tid, task]) => {
+      if (!task.deadline) return;
+      const due = new Date(task.deadline + 'T00:00:00');
+      if (due < start || due > windowEnd) return;
+      if (weekWhoFilter === 'mine' && !isAssignedToMe(task)) return;
+      allTasks.push({ task, init, tid });
+    });
+  });
+
+  if (!allTasks.length) {
+    const msg = weekWhoFilter === 'mine'
+      ? 'No tasks assigned to you in the next 5 weeks.'
+      : 'No tasks due in the next 5 weeks. Add due dates to place tasks here.';
+    document.getElementById('weekly-list').innerHTML = `<div class="empty-state"><p>${msg}</p></div>`;
+    return;
+  }
+
+  const byWeek = {};
+  allTasks.forEach(item => {
+    const due = new Date(item.task.deadline + 'T00:00:00');
+    const day = due.getDay();
+    const mon = new Date(due); mon.setDate(due.getDate() - (day === 0 ? 6 : day - 1));
+    const key = mon.toISOString().slice(0, 10);
+    if (!byWeek[key]) byWeek[key] = { start: mon, items: [] };
+    byWeek[key].items.push(item);
+  });
+
+  let html = '';
+  Object.keys(byWeek).sort().forEach(key => {
+    const { start: ws, items } = byWeek[key];
+    const off = Math.round((ws - getWeekStart(weekOffset)) / (7 * 86400000));
+    const lbl = off === 0 ? 'This week' : off === 1 ? 'Next week' : `${off} weeks out`;
+    html += `<div class="week-group">
+      <div class="week-group-header">
+        <span class="week-group-title">${lbl}</span>
+        <span class="week-group-date">${weekLabel(ws)}</span>
+        <span class="week-task-count">${items.length} task${items.length!==1?'s':''}</span>
+      </div>`;
+    items.sort((a,b) => a.task.deadline.localeCompare(b.task.deadline)).forEach(({ task, init }) => {
+      const owner = task.contributors && task.contributors[0] ? task.contributors[0] : '';
+      html += `<div class="task-row${task.done ? ' done-task' : ''}">
+        <div class="task-check${task.done ? ' checked' : ''}"></div>
+        <div>
+          <div class="task-text">${safeHtml(task.text || 'Untitled task')}</div>
+          <div class="task-initiative">${safeHtml(init.title)}</div>
+        </div>
+        <select class="task-owner-sel">
+          <option value=""${!owner?' selected':''}>Unassigned</option>
+          <option value="Karl Kue"${owner==='Karl Kue'?' selected':''}>Karl Kue</option>
+          <option value="Maria Santos"${owner==='Maria Santos'?' selected':''}>Maria Santos</option>
+        </select>
+        <input class="task-due-inp" type="date" value="${task.deadline || ''}" />
+        <button class="task-open-btn">Open</button>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  document.getElementById('weekly-list').innerHTML = html;
+  updateSubHeader(initiatives.filter(i => i.status !== 'done').length);
+}
+
+// =====================================================================
+// INTERACTION HANDLERS
+// =====================================================================
+window.toggleStatFilter = function(el) {
+  const filter = el.dataset.filter;
+  if (activeStatFilter === filter) {
+    activeStatFilter = null;
+    el.classList.remove('active');
+  } else {
+    document.querySelectorAll('.stat[data-filter]').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    activeStatFilter = filter;
+  }
+  renderInitiatives();
+};
+
+window.setStatusFilter = function(el, val) {
+  activeFilter = val;
+  document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderInitiatives();
+};
+
+window.toggleDone = function(el) {
+  showDone = !showDone;
+  el.classList.toggle('active', showDone);
+  el.textContent = showDone ? 'Showing Done' : 'Done';
+  renderInitiatives();
+};
+
+window.setView = function(view, el) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('initiatives-view').style.display = view === 'initiatives' ? '' : 'none';
+  document.getElementById('weekly-view').style.display = view === 'weekly' ? '' : 'none';
+  document.getElementById('stats-row').style.display = view === 'initiatives' ? '' : 'none';
+  const whoRow = document.getElementById('who-filter-row');
+  if (whoRow) whoRow.classList.toggle('visible', view === 'weekly');
+  if (view === 'weekly') renderWeeklyPlan();
+  else renderInitiatives();
+};
+
+window.applyFilters = function() {
+  searchQuery = document.getElementById('search-input').value;
+  renderInitiatives();
+};
+
+window.shiftWeek = function(delta) {
+  weekOffset += delta;
+  renderWeeklyPlan();
+};
+
+window.setWhoFilter = function(el, val) {
+  weekWhoFilter = val;
+  document.querySelectorAll('.who-card').forEach(b => b.classList.remove('active'));
+  document.getElementById(val === 'all' ? 'who-all' : 'who-mine').classList.add('active');
+  renderWeeklyPlan();
+};
+
+window.openDetail = function(id) {
+  alert(`Open detail: ${initiatives.find(i => i.id === id)?.title}`);
+};
+
+window.quickAddTask = function(id) {
+  alert(`+ Task for: ${initiatives.find(i => i.id === id)?.title}`);
+};
+
+// =====================================================================
+// INIT
+// =====================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderInitiatives();
+});
+</script>
+
+</body>
+</html>

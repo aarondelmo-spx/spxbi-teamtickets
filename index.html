@@ -115,6 +115,16 @@
       <div class="stat" data-vibe-metric="inProgress" onclick="setVibeMetricFilter('inProgress')"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
       <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
     </div>
+    <div class="who-filter-row" id="who-filter-row">
+      <div class="who-card active" id="who-card-all" onclick="setVibeWhoFilter('all')">
+        <div class="who-card-label">Showing</div>
+        <div class="who-card-title">All tasks</div>
+      </div>
+      <div class="who-card" id="who-card-mine" onclick="setVibeWhoFilter('mine')">
+        <div class="who-card-label">Filter to</div>
+        <div class="who-card-title">Mine</div>
+      </div>
+    </div>
     <div class="sprint-board" id="sprint-board" style="display:none">
       <div class="sprint-board-head">
         <div class="workload-title" style="margin-bottom:0">Team / subteam hierarchy</div>
