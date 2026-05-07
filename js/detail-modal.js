@@ -54,7 +54,7 @@ window.openDetailModal = function(id){
   populateSprintDetail(t);
   if(typeof updateDetailLayoutForView === 'function') updateDetailLayoutForView();
   renderSubtasks(id);
-  renderLinks(id);
+  if(!isSprintView()) renderLinks(id);
   renderComments(id);
   updateWho();
   document.getElementById('detail-modal').style.display='flex';

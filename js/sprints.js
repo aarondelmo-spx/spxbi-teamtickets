@@ -59,6 +59,48 @@ function unclassifiedCapacity(t){
   return Math.max(numVal(t.scopedHc) - numVal(t.fteRepurpose) - numVal(t.fteBuffer) - numVal(t.bpoNfteReduction), 0);
 }
 
+function automationScopedHc(t){
+  return t && t.automationScopedHc != null ? numVal(t.automationScopedHc) : numVal(t && t.scopedHc);
+}
+
+function automationInProgressHc(t){
+  return t && t.automationInProgressHc != null ? numVal(t.automationInProgressHc) : 0;
+}
+
+function actualHcSavings(t){
+  if(t && t.actualHcSavings != null) return numVal(t.actualHcSavings);
+  return numVal(t && t.fteRepurpose) + numVal(t && t.bpoNfteReduction);
+}
+
+function excessCapacityHc(t){
+  return t && t.excessCapacityHc != null ? numVal(t.excessCapacityHc) : numVal(t && t.fteBuffer);
+}
+
+function teamSizeHc(teamName){
+  var team = automationTeamList().find(function(item){ return item.name === teamName; });
+  if(!team) return 0;
+  return team.teamSizeHc != null ? numVal(team.teamSizeHc) : numVal(team.currentHc);
+}
+
+function automationTotals(items){
+  return items.reduce(function(acc, t){
+    acc.scoped += automationScopedHc(t);
+    acc.progress += automationInProgressHc(t);
+    acc.actual += actualHcSavings(t);
+    acc.excess += excessCapacityHc(t);
+    return acc;
+  }, {scoped:0, progress:0, actual:0, excess:0});
+}
+
+function automationTeamSizeTotal(items){
+  var teams = {};
+  items.forEach(function(t){
+    var name = t.teamArea || 'Unassigned';
+    if(!teams[name]) teams[name] = teamSizeHc(name);
+  });
+  return Object.values(teams).reduce(function(sum, n){ return sum + numVal(n); }, 0);
+}
+
 function sprintTotals(items){
   return items.reduce(function(acc, t){
     acc.scoped += numVal(t.scopedHc);
@@ -80,11 +122,10 @@ function sprintPayloadFromNewModal(){
     timelineEnd: cleanTextField('nt-timeline-end'),
     stage: document.getElementById('nt-stage').value || 'scoping',
     confidence: document.getElementById('nt-confidence').value || 'medium',
-    nextAction: cleanTextField('nt-next-action'),
-    scopedHc: cleanNumField('nt-scoped-hc'),
-    fteRepurpose: cleanNumField('nt-fte-repurpose'),
-    fteBuffer: cleanNumField('nt-fte-buffer'),
-    bpoNfteReduction: cleanNumField('nt-bpo-reduction')
+    automationScopedHc: cleanNumField('nt-automation-scoped-hc'),
+    automationInProgressHc: cleanNumField('nt-automation-progress-hc'),
+    actualHcSavings: cleanNumField('nt-actual-hc-savings'),
+    excessCapacityHc: cleanNumField('nt-excess-capacity-hc')
   };
 }
 
@@ -94,11 +135,10 @@ function clearSprintNewFields(){
     'nt-sprint-cycle',
     'nt-timeline-start',
     'nt-timeline-end',
-    'nt-next-action',
-    'nt-scoped-hc',
-    'nt-fte-repurpose',
-    'nt-fte-buffer',
-    'nt-bpo-reduction'
+    'nt-automation-scoped-hc',
+    'nt-automation-progress-hc',
+    'nt-actual-hc-savings',
+    'nt-excess-capacity-hc'
   ].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.value = '';
@@ -181,7 +221,7 @@ function refreshActiveTickets(){
       populateSprintDetail(t);
       if(typeof updateDetailLayoutForView === 'function') updateDetailLayoutForView();
       renderSubtasks(App.selectedTicketId);
-      renderLinks(App.selectedTicketId);
+      if(!isSprintView()) renderLinks(App.selectedTicketId);
       renderComments(App.selectedTicketId);
     } else {
       closeDetailModal();
@@ -334,12 +374,9 @@ function sprintMetaHtml(t){
   pieces.push('<span class="stage-badge '+sprintStageClass(t.stage)+'">'+sprintStageLabel(t.stage)+'</span>');
   var timeline = timelineLabel(t);
   if(timeline !== 'TBD') pieces.push('<span>'+safeText(timeline)+'</span>');
-  if(numVal(t.scopedHc)) pieces.push('<span title="'+safeText(SCOPED_HC_HELP_TEXT)+'">'+fmtCapacity(t.scopedHc)+' HC scoped</span>');
-  if(numVal(t.fteRepurpose)) pieces.push('<span>'+fmtCapacity(t.fteRepurpose)+' repurpose</span>');
-  if(numVal(t.fteBuffer)) pieces.push('<span>'+fmtCapacity(t.fteBuffer)+' buffer</span>');
-  if(numVal(t.bpoNfteReduction)) pieces.push('<span>'+fmtCapacity(t.bpoNfteReduction)+' reduction</span>');
-  if(unclassifiedCapacity(t)) pieces.push('<span>'+fmtCapacity(unclassifiedCapacity(t))+' unclassified</span>');
-  if(t.nextAction) pieces.push('<span>Next: '+safeText(t.nextAction)+'</span>');
+  if(automationScopedHc(t)) pieces.push('<span title="'+safeText(SCOPED_HC_HELP_TEXT)+'">'+fmtCapacity(automationScopedHc(t))+' scoped for automation</span>');
+  if(automationInProgressHc(t)) pieces.push('<span>'+fmtCapacity(automationInProgressHc(t))+' in progress</span>');
+  if(actualHcSavings(t) || excessCapacityHc(t)) pieces.push('<span>'+fmtCapacity(actualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' HC savings</span>');
   return pieces.join('<span>&middot;</span>');
 }
 
@@ -355,12 +392,11 @@ function populateSprintDetail(t){
   document.getElementById('d-timeline-end').value = t.timelineEnd || '';
   document.getElementById('d-stage').value = t.stage || 'scoping';
   document.getElementById('d-confidence').value = t.confidence || 'medium';
-  document.getElementById('d-next-action').value = t.nextAction || '';
-  document.getElementById('d-scoped-hc').value = t.scopedHc == null ? '' : t.scopedHc;
-  document.getElementById('d-fte-repurpose').value = t.fteRepurpose == null ? '' : t.fteRepurpose;
-  document.getElementById('d-fte-buffer').value = t.fteBuffer == null ? '' : t.fteBuffer;
-  document.getElementById('d-bpo-reduction').value = t.bpoNfteReduction == null ? '' : t.bpoNfteReduction;
-  document.getElementById('d-unclassified').value = fmtCapacity(unclassifiedCapacity(t));
+  document.getElementById('d-team-size-hc').value = fmtCapacity(teamSizeHc(t.teamArea || 'Unassigned'));
+  document.getElementById('d-automation-scoped-hc').value = t.automationScopedHc == null ? (t.scopedHc == null ? '' : t.scopedHc) : t.automationScopedHc;
+  document.getElementById('d-automation-progress-hc').value = t.automationInProgressHc == null ? '' : t.automationInProgressHc;
+  document.getElementById('d-actual-hc-savings').value = t.actualHcSavings == null ? ((t.fteRepurpose == null && t.bpoNfteReduction == null) ? '' : actualHcSavings(t)) : t.actualHcSavings;
+  document.getElementById('d-excess-capacity-hc').value = t.excessCapacityHc == null ? (t.fteBuffer == null ? '' : t.fteBuffer) : t.excessCapacityHc;
 }
 
 function updateLocalSelectedTicket(upd){
@@ -437,39 +473,35 @@ function renderSprintDashboard(){
   var rows = [];
   Object.keys(grouped).sort(compareTeams).forEach(function(team){
     var teamGroup = grouped[team];
-    var teamTotals = sprintTotals(teamGroup.items);
+    var teamTotals = automationTotals(teamGroup.items);
     rows.push('<tr class="hier-team-row">'
       +'<td>'+safeText(team)+'</td>'
       +'<td>All subteams</td>'
       +'<td>'+teamGroup.items.length+'</td>'
       +'<td>'+firstTimeline(teamGroup.items)+'</td>'
+      +'<td>'+fmtCapacity(teamSizeHc(team))+'</td>'
       +'<td>'+fmtCapacity(teamTotals.scoped)+'</td>'
-      +'<td>'+fmtCapacity(teamTotals.repurpose)+'</td>'
-      +'<td>'+fmtCapacity(teamTotals.buffer)+'</td>'
-      +'<td>'+fmtCapacity(teamTotals.reduction)+'</td>'
-      +'<td>'+fmtCapacity(teamTotals.unclassified)+'</td>'
-      +'<td>'+firstNextAction(teamGroup.items)+'</td>'
+      +'<td>'+fmtCapacity(teamTotals.progress)+'</td>'
+      +'<td>'+fmtCapacity(teamTotals.actual)+' / '+fmtCapacity(teamTotals.excess)+'</td>'
       +'</tr>');
     Object.keys(teamGroup.subteams).sort().forEach(function(subteam){
       var subGroup = teamGroup.subteams[subteam];
       var subItems = subGroup.items.map(function(item){ return item.t; });
-      var subTotals = sprintTotals(subItems);
+      var subTotals = automationTotals(subItems);
       rows.push('<tr class="hier-subteam-row">'
         +'<td></td>'
         +'<td>'+safeText(subteam)+'</td>'
         +'<td><div class="initiative-links">'+initiativeLinksHtml(subGroup.items)+'</div></td>'
         +'<td>'+firstTimeline(subGroup.items)+'</td>'
+        +'<td></td>'
         +'<td>'+fmtCapacity(subTotals.scoped)+'</td>'
-        +'<td>'+fmtCapacity(subTotals.repurpose)+'</td>'
-        +'<td>'+fmtCapacity(subTotals.buffer)+'</td>'
-        +'<td>'+fmtCapacity(subTotals.reduction)+'</td>'
-        +'<td>'+fmtCapacity(subTotals.unclassified)+'</td>'
-        +'<td>'+firstNextAction(subItems)+'</td>'
+        +'<td>'+fmtCapacity(subTotals.progress)+'</td>'
+        +'<td>'+fmtCapacity(subTotals.actual)+' / '+fmtCapacity(subTotals.excess)+'</td>'
         +'</tr>');
     });
   });
   el.innerHTML = '<table class="sprint-summary-table"><thead><tr>'
-    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th><span class="table-heading-with-tip">Scoped HC '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>Repurpose</th><th>Buffer</th><th>BPO/NFTE Reduction</th><th>Unclassified</th><th>Next Action</th>'
+    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Team size</th><th><span class="table-heading-with-tip">Scoped for automation '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>In progress automation</th><th>HC savings actual / excess</th>'
     +'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 }
 
@@ -499,9 +531,10 @@ function renderAutomationHierarchyLists(){
   if(!App.hierarchySelectedTeam && teams.length) App.hierarchySelectedTeam = teams[0].name;
   teamEl.innerHTML = teams.map(function(team){
     var active = team.name === App.hierarchySelectedTeam;
+    var size = team.teamSizeHc != null ? team.teamSizeHc : team.currentHc;
     return '<button class="hierarchy-row'+(active?' active':'')+'" onclick="selectAutomationTeam(\''+safeText(team.name)+'\')" type="button">'
       +'<span>'+safeText(team.name)+'</span>'
-      +(team.currentHc != null ? '<span class="hierarchy-meta">'+fmtCapacity(team.currentHc)+' HC</span>' : '')
+      +(size != null ? '<span class="hierarchy-meta">'+fmtCapacity(size)+' HC</span>' : '')
       +'</button>';
   }).join('');
   var subteams = automationSubteamList(App.hierarchySelectedTeam || '');

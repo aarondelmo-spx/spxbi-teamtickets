@@ -216,14 +216,13 @@
             <select id="nt-confidence"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
           </div>
         </div>
-        <div class="field"><label>Next Action</label><input id="nt-next-action" placeholder="Concrete next step" /></div>
         <div class="form-row">
-          <div class="field"><label class="label-with-tip">Scoped HC-equivalent <span class="info-tip" tabindex="0" aria-label="Scoped HC-equivalent: estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete." title="Scoped HC-equivalent: estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete." data-tooltip="Estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete.">?</span></label><input id="nt-scoped-hc" type="number" min="0" step="0.1" /></div>
-          <div class="field"><label>FTE to Repurpose</label><input id="nt-fte-repurpose" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>In progress automation</label><input id="nt-automation-progress-hc" type="number" min="0" step="0.1" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>FTE Buffer</label><input id="nt-fte-buffer" type="number" min="0" step="0.1" /></div>
-          <div class="field"><label>BPO / NFTE Reduction</label><input id="nt-bpo-reduction" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
         </div>
       </div>
       <div class="form-row">
@@ -270,7 +269,7 @@
       </div>
 
       <div class="detail-advanced-toggle" id="detail-advanced-toggle" style="display:none" onclick="toggleSection('detail-advanced')">
-        <span class="section-label" style="margin-bottom:0">Initiative details</span>
+        <span class="section-label" style="margin-bottom:0">Automation details</span>
         <span id="detail-advanced-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
       </div>
       <div id="detail-advanced-body">
@@ -303,7 +302,7 @@
 
       <div id="d-sprint-fields" style="display:none">
         <div class="divider"></div>
-        <div class="section-label">Legacy initiative metadata</div>
+        <div class="section-label">Automation details</div>
         <div class="form-row">
           <div class="field"><label>Team</label>
             <select id="d-team-area" onchange="updateSprintTeamSelection()"></select>
@@ -327,16 +326,15 @@
             <select id="d-confidence" onchange="updateTicketField('confidence',this.value)"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
           </div>
         </div>
-        <div class="field"><label>Next Action</label><input id="d-next-action" onchange="updateTicketField('nextAction',this.value)" /></div>
         <div class="form-row">
-          <div class="field"><label class="label-with-tip">Scoped HC-equivalent <span class="info-tip" tabindex="0" aria-label="Scoped HC-equivalent: estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete." title="Scoped HC-equivalent: estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete." data-tooltip="Estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete.">?</span></label><input id="d-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('scopedHc',this.value)" /></div>
-          <div class="field"><label>FTE to Repurpose</label><input id="d-fte-repurpose" type="number" min="0" step="0.1" onchange="updateTicketField('fteRepurpose',this.value)" /></div>
+          <div class="field"><label>Team size</label><input id="d-team-size-hc" readonly /></div>
+          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>FTE Buffer</label><input id="d-fte-buffer" type="number" min="0" step="0.1" onchange="updateTicketField('fteBuffer',this.value)" /></div>
-          <div class="field"><label>BPO / NFTE Reduction</label><input id="d-bpo-reduction" type="number" min="0" step="0.1" onchange="updateTicketField('bpoNfteReduction',this.value)" /></div>
+          <div class="field"><label>In progress automation</label><input id="d-automation-progress-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationInProgressHc',this.value)" /></div>
+          <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
         </div>
-        <div class="field"><label>Unclassified Capacity</label><input id="d-unclassified" readonly /></div>
+        <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
       </div>
       </div>
 
@@ -365,22 +363,24 @@
       </div>
       </div>
 
-      <div class="divider"></div>
+      <div id="detail-links-section">
+        <div class="divider"></div>
 
-      <!-- Links collapsible -->
-      <div onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="section-label" style="margin-bottom:0">Links</span>
-          <span id="d-link-count" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+        <!-- Links collapsible -->
+        <div onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="section-label" style="margin-bottom:0">Links</span>
+            <span id="d-link-count" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+          </div>
+          <span id="links-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
         </div>
-        <span id="links-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
-      </div>
-      <div id="links-body" style="display:none;margin-top:.75rem">
-        <div id="d-link-list" class="link-list"></div>
-        <div class="add-link-row">
-          <input id="link-url-input" placeholder="https://..." onkeydown="if(event.key==='Enter')addLink()" />
-          <input id="link-label-input" placeholder="Label (optional)" onkeydown="if(event.key==='Enter')addLink()" />
-          <button class="btn btn-sm btn-primary" onclick="addLink()">Add</button>
+        <div id="links-body" style="display:none;margin-top:.75rem">
+          <div id="d-link-list" class="link-list"></div>
+          <div class="add-link-row">
+            <input id="link-url-input" placeholder="https://..." onkeydown="if(event.key==='Enter')addLink()" />
+            <input id="link-label-input" placeholder="Label (optional)" onkeydown="if(event.key==='Enter')addLink()" />
+            <button class="btn btn-sm btn-primary" onclick="addLink()">Add</button>
+          </div>
         </div>
       </div>
 

@@ -14,7 +14,10 @@ window.createTicket = function(){
 
 window.updateTicketField = function(field,value){
   if(!App.selectedTicketId) return;
-  var numericFields={scopedHc:true,fteRepurpose:true,fteBuffer:true,bpoNfteReduction:true};
+  var numericFields={
+    scopedHc:true,fteRepurpose:true,fteBuffer:true,bpoNfteReduction:true,
+    automationScopedHc:true,automationInProgressHc:true,actualHcSavings:true,excessCapacityHc:true
+  };
   var upd={};
   if(numericFields[field]) upd[field]=(value===''?null:numVal(value));
   else upd[field]=(value===''?null:value);
