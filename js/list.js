@@ -31,8 +31,12 @@ window.renderList = function(){
     })
     .sort(function(a,b){
       if(isSprintView()){
-        return compareTeams(a[1].teamArea||'Unassigned', b[1].teamArea||'Unassigned')
-          || (a[1].subteam||'Unassigned subteam').localeCompare(b[1].subteam||'Unassigned subteam')
+        var teamA = typeof normalizeTeamName === 'function' ? normalizeTeamName(a[1].teamArea) : (a[1].teamArea || 'Other');
+        var teamB = typeof normalizeTeamName === 'function' ? normalizeTeamName(b[1].teamArea) : (b[1].teamArea || 'Other');
+        var subteamA = typeof normalizeSubteamName === 'function' ? normalizeSubteamName(a[1].subteam) : (a[1].subteam || 'Other');
+        var subteamB = typeof normalizeSubteamName === 'function' ? normalizeSubteamName(b[1].subteam) : (b[1].subteam || 'Other');
+        return compareTeams(teamA, teamB)
+          || subteamA.localeCompare(subteamB)
           || pOrder(a[1].priority)-pOrder(b[1].priority)
           || (b[1].createdTs||0)-(a[1].createdTs||0);
       }

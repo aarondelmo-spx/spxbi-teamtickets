@@ -166,7 +166,6 @@
           <div id="automation-team-list" class="hierarchy-list"></div>
           <div class="add-link-row hierarchy-add-row" style="margin-top:10px">
             <input id="automation-team-name" placeholder="Add team..." onkeydown="if(event.key==='Enter')addAutomationTeam()" />
-            <input id="automation-team-size" placeholder="Team size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')addAutomationTeam()" />
             <button class="btn btn-sm btn-primary" onclick="addAutomationTeam()">Add</button>
           </div>
         </div>
@@ -224,7 +223,7 @@
         <div class="section-label">Vibe initiative details</div>
         <div class="form-row">
           <div class="field"><label>Team</label>
-            <select id="nt-team-area" onchange="renderSubteamSelect('nt')"></select>
+            <select id="nt-team-area" onchange="renderSubteamSelect('nt','Other')"></select>
           </div>
           <div class="field"><label>Subteam</label><select id="nt-subteam"></select></div>
         </div>

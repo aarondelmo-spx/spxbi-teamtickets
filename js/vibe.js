@@ -300,6 +300,8 @@ function initiativeCardHtml(id, t){
 function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   var initiatives = items.map(function(entry){ return entry[1] || entry.t || entry; });
   var totals = automationTotals(initiatives);
+  teamName = teamName ? normalizeTeamName(teamName) : '';
+  subteamName = subteamName ? normalizeSubteamName(subteamName) : '';
   var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
   return '<div class="team-hc-strip">'
     +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
@@ -329,7 +331,7 @@ function renderVibeInitiatives(search, list){
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
     .sort(function(a,b){
       return compareTeams(a[1].teamArea || 'Unassigned', b[1].teamArea || 'Unassigned')
-        || (a[1].subteam || 'Unassigned subteam').localeCompare(b[1].subteam || 'Unassigned subteam')
+        || normalizeSubteamName(a[1].subteam).localeCompare(normalizeSubteamName(b[1].subteam))
         || (b[1].createdTs || 0) - (a[1].createdTs || 0);
     });
   if(!entries.length){
@@ -339,8 +341,8 @@ function renderVibeInitiatives(search, list){
   var grouped = {};
   entries.forEach(function(entry){
     var t = entry[1];
-    var team = t.teamArea || 'Unassigned';
-    var subteam = t.subteam || 'Unassigned subteam';
+    var team = normalizeTeamName(t.teamArea);
+    var subteam = normalizeSubteamName(t.subteam);
     if(!grouped[team]) grouped[team] = {};
     if(!grouped[team][subteam]) grouped[team][subteam] = [];
     grouped[team][subteam].push(entry);
