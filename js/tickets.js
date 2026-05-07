@@ -53,7 +53,7 @@ window.clearDeadline = function(){
 
 window.deleteTicket = function(){
   if(!App.selectedTicketId)return;
-  if(!confirm('Delete this project? This cannot be undone.'))return;
+  if(!confirm('Delete this '+(isSprintView()?'initiative':'project')+'? This cannot be undone.'))return;
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('deleted',t.title,'',App.selectedTicketId);
   activeTicketRef(App.selectedTicketId).remove();

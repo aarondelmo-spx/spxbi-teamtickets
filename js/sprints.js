@@ -42,6 +42,13 @@ function safeText(value){
     .replace(/'/g, '&#39;');
 }
 
+var SCOPED_HC_HELP_TEXT = 'Estimated HC-equivalent capacity already mapped to named Vibe Coding initiatives. This is opportunity only, not confirmed HC reduction, until implementation is stable and capacity review is complete.';
+
+function infoTipHtml(text){
+  var tip = safeText(text);
+  return '<span class="info-tip" tabindex="0" aria-label="'+tip+'" title="'+tip+'" data-tooltip="'+tip+'">?</span>';
+}
+
 function fmtCapacity(n){
   n = numVal(n);
   if(Math.abs(n - Math.round(n)) < 0.001) return String(Math.round(n));
@@ -118,16 +125,17 @@ function updateAppShell(){
   var createBtn = document.getElementById('create-ticket-btn');
   var sprintFields = document.getElementById('nt-sprint-fields');
   var sprintBoard = document.getElementById('sprint-board');
-  if(title) title.textContent = sprint ? 'Sprint Projects' : 'Main Projects';
-  if(sub) sub.textContent = Object.keys(App.allTickets).length + (sprint ? ' sprint initiative' : ' project') + (Object.keys(App.allTickets).length !== 1 ? 's' : '') + ' total';
-  if(newBtn) newBtn.textContent = sprint ? '+ New Sprint Project' : '+ New Project';
-  if(search) search.placeholder = sprint ? 'Search initiatives, teams, subteams, or next actions...' : 'Search main projects...';
+  if(title) title.textContent = sprint ? 'Vibe Coding Projects' : 'Main Projects';
+  if(sub) sub.textContent = Object.keys(App.allTickets).length + (sprint ? ' initiative' : ' project') + (Object.keys(App.allTickets).length !== 1 ? 's' : '') + ' total';
+  if(newBtn) newBtn.textContent = sprint ? '+ New Initiative' : '+ New Project';
+  if(search) search.placeholder = sprint ? 'Search initiatives, workstreams, tasks, teams...' : 'Search main projects...';
   if(mainTab) mainTab.classList.toggle('active', !sprint);
   if(sprintTab) sprintTab.classList.toggle('active', sprint);
-  if(newTitle) newTitle.textContent = sprint ? 'New Sprint Project' : 'New Project';
-  if(createBtn) createBtn.textContent = sprint ? 'Create Sprint Project' : 'Create Project';
+  if(newTitle) newTitle.textContent = sprint ? 'New Vibe Coding Initiative' : 'New Project';
+  if(createBtn) createBtn.textContent = sprint ? 'Create Initiative' : 'Create Project';
   if(sprintFields) sprintFields.style.display = sprint ? 'block' : 'none';
-  if(sprintBoard) sprintBoard.style.display = sprint ? 'block' : 'none';
+  if(sprintBoard) sprintBoard.style.display = 'none';
+  if(typeof updateVibeShell === 'function') updateVibeShell();
 }
 
 function updateProjectViewCounts(){
@@ -138,16 +146,16 @@ function updateProjectViewCounts(){
 }
 
 function resetFiltersForView(){
-  App.currentFilter = 'all';
+  App.currentFilter = 'active';
   App.currentPriorityFilter = 'all';
   App.currentContrib = 'all';
   document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
   document.querySelectorAll('.filter-pill').forEach(function(b){ b.classList.remove('active'); });
-  var navAll = document.getElementById('nav-all');
-  var pillAll = document.getElementById('pill-all');
+  var navActive = document.getElementById('nav-active');
+  var pillActive = document.getElementById('pill-active');
   var cpillAll = document.getElementById('cpill-all');
-  if(navAll) navAll.classList.add('active');
-  if(pillAll) pillAll.classList.add('active');
+  if(navActive) navActive.classList.add('active');
+  if(pillActive) pillActive.classList.add('active');
   if(cpillAll) cpillAll.classList.add('active');
 }
 
@@ -171,6 +179,7 @@ function refreshActiveTickets(){
       document.getElementById('d-deadline-inp').value = t.deadline || '';
       renderDeadlineStatus(t.deadline, t.status);
       populateSprintDetail(t);
+      if(typeof updateDetailLayoutForView === 'function') updateDetailLayoutForView();
       renderSubtasks(App.selectedTicketId);
       renderLinks(App.selectedTicketId);
       renderComments(App.selectedTicketId);
@@ -184,6 +193,7 @@ window.setProjectView = function(view){
   if(view !== 'main' && view !== 'sprint') return;
   if(App.currentProjectView === view) return;
   App.currentProjectView = view;
+  if(view === 'sprint') App.currentVibeView = 'initiatives';
   App.selectedTicketId = null;
   resetFiltersForView();
   refreshActiveTickets();
@@ -324,7 +334,7 @@ function sprintMetaHtml(t){
   pieces.push('<span class="stage-badge '+sprintStageClass(t.stage)+'">'+sprintStageLabel(t.stage)+'</span>');
   var timeline = timelineLabel(t);
   if(timeline !== 'TBD') pieces.push('<span>'+safeText(timeline)+'</span>');
-  if(numVal(t.scopedHc)) pieces.push('<span>'+fmtCapacity(t.scopedHc)+' HC scoped</span>');
+  if(numVal(t.scopedHc)) pieces.push('<span title="'+safeText(SCOPED_HC_HELP_TEXT)+'">'+fmtCapacity(t.scopedHc)+' HC scoped</span>');
   if(numVal(t.fteRepurpose)) pieces.push('<span>'+fmtCapacity(t.fteRepurpose)+' repurpose</span>');
   if(numVal(t.fteBuffer)) pieces.push('<span>'+fmtCapacity(t.fteBuffer)+' buffer</span>');
   if(numVal(t.bpoNfteReduction)) pieces.push('<span>'+fmtCapacity(t.bpoNfteReduction)+' reduction</span>');
@@ -459,7 +469,7 @@ function renderSprintDashboard(){
     });
   });
   el.innerHTML = '<table class="sprint-summary-table"><thead><tr>'
-    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Scoped HC</th><th>Repurpose</th><th>Buffer</th><th>BPO/NFTE Reduction</th><th>Unclassified</th><th>Next Action</th>'
+    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th><span class="table-heading-with-tip">Scoped HC '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>Repurpose</th><th>Buffer</th><th>BPO/NFTE Reduction</th><th>Unclassified</th><th>Next Action</th>'
     +'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 }
 
@@ -500,7 +510,10 @@ function renderAutomationHierarchyLists(){
     return;
   }
   subteamEl.innerHTML = subteams.map(function(subteam){
-    return '<div class="hierarchy-row static"><span>'+safeText(subteam.name)+'</span></div>';
+    return '<div class="hierarchy-row static">'
+      +'<span>'+safeText(subteam.name)+'</span>'
+      +(subteam.id && !String(subteam.id).startsWith('default-') ? '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationSubteam(\''+safeText(subteam.id)+'\',\''+safeText(subteam.name)+'\',\''+safeText(subteam.teamName || App.hierarchySelectedTeam || '')+'\')" title="Delete subteam" type="button">×</button>' : '')
+      +'</div>';
   }).join('');
 }
 
@@ -526,111 +539,21 @@ window.addAutomationSubteam = function(){
   input.value = '';
 };
 
-function guessedSeedTeams(){
-  return [
-    {name:'FinOps', currentHc:104, sortOrder:1},
-    {name:'Expansions', currentHc:92, sortOrder:2},
-    {name:'Claims', currentHc:48, sortOrder:3},
-    {name:'Fleet', currentHc:164, sortOrder:4}
-  ];
-}
-
-function guessedSeedSubteams(){
-  return [
-    {teamName:'FinOps', name:'Agency Billing Validation'},
-    {teamName:'FinOps', name:'RB Calculation'},
-    {teamName:'FinOps', name:'Agency Portal Migration'},
-    {teamName:'Expansions', name:'HSE'},
-    {teamName:'Expansions', name:'Site Planning'},
-    {teamName:'Claims', name:'SSP Integration'},
-    {teamName:'Claims', name:'CLEO'},
-    {teamName:'Fleet', name:'Fleet Ops'}
-  ];
-}
-
-function guessedSeedInitiatives(){
-  var base = {
-    projectType:'sprint',
-    status:'open',
-    created:fmtDate(),
-    createdTs:Date.now(),
-    assignee:'Unassigned',
-    contributors:null,
-    deadline:null,
-    timelineStart:null,
-    timelineEnd:null,
-    fteRepurpose:null,
-    fteBuffer:null,
-    bpoNfteReduction:null,
-    seeded:true,
-    seedBatch:'automation-dashboard-2026-05-07'
-  };
-  function item(key, title, desc, teamArea, subteam, scopedHc, stage, confidence, nextAction, priority){
-    return Object.assign({}, base, {
-      sourceKey:key,
-      title:title,
-      desc:desc,
-      teamArea:teamArea,
-      subteam:subteam,
-      scopedHc:scopedHc,
-      stage:stage,
-      confidence:confidence,
-      nextAction:nextAction,
-      priority:priority||'p1',
-      sprintCycle: teamArea === 'Fleet' ? 'Discovery' : 'Sprint 1'
-    });
+window.deleteAutomationSubteam = function(id, name, teamName){
+  if(!id || !name) return;
+  var impacted = Object.entries(App.sprintTickets || {}).filter(function(entry){
+    var t = entry[1];
+    return (t.teamArea || '') === teamName && (t.subteam || '') === name;
+  });
+  var message = 'Delete subteam "'+name+'"?';
+  if(impacted.length){
+    message += '\n\nThis will also clear the subteam on '+impacted.length+' initiative'+(impacted.length!==1?'s':'')+' so it no longer appears in the hierarchy.';
   }
-  return [
-    item('finops-invoice-validation-ai','Invoice Validation using AI','Guessed status from current notes: Ervin testing edge cases; timeline to integrate into SSP still needed.','FinOps','Agency Billing Validation',7,'build_uat','medium','Capture build, UAT, and launch evidence; confirm SSP integration timeline','p1'),
-    item('finops-calculation-validation','Calculation Validation','Guessed status from current notes: awaiting SSP sample data and test downloads.','FinOps','Agency Billing Validation',5,'validating','medium','Download SSP samples and complete validation testing','p1'),
-    item('finops-calculator-template','Calculator Template Preparation','Guessed status from current notes: several automations are already done and need PH clarification/demo.','FinOps','RB Calculation',5,'build_uat','high','Confirm PH output changes and capture evidence','p1'),
-    item('finops-dispute-automation','Dispute Automation','Guessed status from current notes: named opportunity but owner/details still thin.','FinOps','RB Calculation',5,'scoping','low','Assign PIC and validate scope','p2'),
-    item('finops-agency-portal-migration','Agency Portal Migration','Guessed status from current notes: requirements alignment pending.','FinOps','Agency Portal Migration',null,'scoping','low','Align with Charm and Evelyn on requirements','p2'),
-    item('expansions-dole-submission','Monthly DOLE Submission','Guessed status from current notes: credentials and browser-emulator testing needed.','Expansions','HSE',1,'scoping','medium','Collect credentials and test browser-emulator flow','p1'),
-    item('expansions-hse-bulletin','Weekly HSE Bulletin Distribution and Compliance Tracking','Guessed status from current notes: ready to start once Forms/Sheets are received.','Expansions','HSE',4,'build_uat','medium','Get Google Forms/Sheets from Lance team and start build','p1'),
-    item('expansions-site-planning','Site Planning Generation','Guessed status from current notes: preliminary output exists but needs updated design rules.','Expansions','Site Planning',2,'validating','medium','Confirm updated design rules and improve output quality','p1'),
-    item('claims-ssp-integration','SSP Integration','Guessed allocation: half of the current 25 HC Claims opportunity until detailed sizing is confirmed.','Claims','SSP Integration',12.5,'validating','medium','Validate hours saved, build readiness, and deadline','p1'),
-    item('claims-cleo','CLEO','Guessed allocation: half of the current 25 HC Claims opportunity until detailed sizing is confirmed.','Claims','CLEO',12.5,'validating','medium','Validate hours saved, build readiness, and deadline','p1'),
-    item('fleet-discovery-cleanup','Fleet Discovery and Cleanup','Guessed status from dashboard: no scoped HC yet; team discussion needed before reporting.','Fleet','Fleet Ops',0,'scoping','low','Talk to Abbie and team; clean up source view','p2')
-  ];
-}
-
-function pushMissingByName(ref, existingList, seedList, fields){
-  var existing = {};
-  existingList.forEach(function(item){
-    var key = [item.teamName || '', item.name || ''].join('|').toLowerCase();
-    existing[key] = true;
+  if(!confirm(message)) return;
+  var updates = {};
+  impacted.forEach(function(entry){
+    updates['sprintProjects/'+entry[0]+'/subteam'] = null;
   });
-  var writes = [];
-  seedList.forEach(function(seed){
-    var key = [seed.teamName || '', seed.name || ''].join('|').toLowerCase();
-    if(existing[key]) return;
-    var payload = {};
-    fields.forEach(function(field){ payload[field] = seed[field] == null ? null : seed[field]; });
-    payload.seeded = true;
-    payload.createdTs = Date.now();
-    payload.createdBy = App.currentUser || 'Unknown';
-    writes.push(ref.push(payload));
-  });
-  return Promise.all(writes);
-}
-
-window.seedCurrentAutomationStructure = function(){
-  if(!isSprintView()) setProjectView('sprint');
-  if(!confirm('Seed the current guessed teams, subteams, and initiatives into Sprint Projects? Existing seeded items will not be duplicated.')) return;
-  var existingTeams = Object.entries(App.automationTeams || {}).map(function(entry){ return Object.assign({id:entry[0]}, entry[1]); });
-  var existingSubteams = Object.entries(App.automationSubteams || {}).map(function(entry){ return Object.assign({id:entry[0]}, entry[1]); });
-  var existingSourceKeys = {};
-  Object.values(App.sprintTickets || {}).forEach(function(t){ if(t.sourceKey) existingSourceKeys[t.sourceKey] = true; });
-  var seedInitiatives = guessedSeedInitiatives().filter(function(item){ return !existingSourceKeys[item.sourceKey]; });
-  Promise.all([
-    pushMissingByName(App.automationTeamsRef, existingTeams, guessedSeedTeams(), ['name','currentHc','sortOrder']),
-    pushMissingByName(App.automationSubteamsRef, existingSubteams, guessedSeedSubteams(), ['teamName','name','sortOrder'])
-  ]).then(function(){
-    return Promise.all(seedInitiatives.map(function(item){ return App.sprintTicketsRef.push(item); }));
-  }).then(function(){
-    alert('Seeded current automation structure. Added '+seedInitiatives.length+' initiative(s).');
-  }).catch(function(err){
-    alert('Seed failed: '+err.message);
-  });
+  updates['automationSubteams/'+id] = null;
+  App.db.ref().update(updates);
 };

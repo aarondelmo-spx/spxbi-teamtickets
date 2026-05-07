@@ -52,6 +52,7 @@ window.openDetailModal = function(id){
   renderContributorsDisplay();
   renderContribPicker('subtask-contributor-picker',App.stSelectedContribs,function(sel){App.stSelectedContribs=sel;});
   populateSprintDetail(t);
+  if(typeof updateDetailLayoutForView === 'function') updateDetailLayoutForView();
   renderSubtasks(id);
   renderLinks(id);
   renderComments(id);

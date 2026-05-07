@@ -54,6 +54,10 @@ window.editSubtask = function(sid){
 };
 
 function renderSubtasks(ticketId){
+  if(isSprintView() && typeof renderWorkstreamsAndTasks === 'function'){
+    renderWorkstreamsAndTasks(ticketId);
+    return;
+  }
   var t=App.allTickets[ticketId]; if(!t) return;
   var subtasks=t.subtasks?Object.entries(t.subtasks).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
   var stats=subtaskStats(t.subtasks);

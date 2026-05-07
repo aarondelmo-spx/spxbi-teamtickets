@@ -1,8 +1,16 @@
 window.renderList = function(){
   var search=(document.getElementById('search-input')||{value:''}).value.toLowerCase();
   var list=document.getElementById('ticket-list');
+  if(isSprintView() && typeof renderVibeWorkspace === 'function'){
+    renderVibeWorkspace(search, list);
+    return;
+  }
   var tickets=Object.entries(App.allTickets)
-    .filter(function(e){return App.currentFilter==='all'||e[1].status===App.currentFilter;})
+    .filter(function(e){
+      if(App.currentFilter==='all') return true;
+      if(App.currentFilter==='active') return e[1].status!=='done';
+      return e[1].status===App.currentFilter;
+    })
     .filter(function(e){return App.currentPriorityFilter==='all'||(e[1].priority||'p1')===App.currentPriorityFilter;})
     .filter(function(e){
       if(App.currentContrib==='all') return true;
@@ -57,6 +65,10 @@ function updateStats(){
   var t=Object.values(App.allTickets);
   var extra=document.getElementById('s-extra-wrap');
   if(isSprintView()){
+    if(typeof updateVibeStats === 'function'){
+      updateVibeStats(t, extra);
+      return;
+    }
     var totals=sprintTotals(t);
     document.getElementById('s-open').className='stat-num';
     document.getElementById('s-prog').className='stat-num';
@@ -94,6 +106,7 @@ function updateStats(){
 function updateCounts(){
   var t=Object.values(App.allTickets);
   updateProjectViewCounts();
+  document.getElementById('cnt-active').textContent=t.filter(function(x){return x.status!=='done';}).length;
   document.getElementById('cnt-all').textContent=t.length;
   document.getElementById('cnt-open').textContent=t.filter(function(x){return x.status==='open';}).length;
   document.getElementById('cnt-done').textContent=t.filter(function(x){return x.status==='done';}).length;
@@ -115,7 +128,7 @@ window.setFilter = function(f){
 
 window.setPriorityFilter = function(p){
   App.currentPriorityFilter=p;
-  App.currentFilter='all';
+  App.currentFilter='active';
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('.filter-pill').forEach(function(b){b.classList.remove('active');});
   var n=document.getElementById('nav-'+p),pill=document.getElementById('pill-'+p);

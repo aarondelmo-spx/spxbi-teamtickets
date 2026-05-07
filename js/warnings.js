@@ -37,7 +37,7 @@ function updateWarnings(){
   banner.classList.add('visible');
   var html='';
   if(ticketItems.length){
-    html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Projects</div>';
+    html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">'+(isSprintView()?'Initiatives':'Projects')+'</div>';
     html+=ticketItems.map(function(it){
       var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
       var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
@@ -45,7 +45,7 @@ function updateWarnings(){
     }).join('');
   }
   if(subtaskItems.length){
-    html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;margin-top:'+(ticketItems.length?'10px':'2px')+'">Subtasks</div>';
+    html+='<div style="font-size:10px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;margin-top:'+(ticketItems.length?'10px':'2px')+'">'+(isSprintView()?'Tasks':'Subtasks')+'</div>';
     html+=subtaskItems.map(function(it){
       var badge=it.type==='overdue'?'badge-overdue':'badge-soon';
       var label=it.type==='overdue'?'overdue '+Math.abs(it.diff)+'d':it.diff===0?'due today':'in '+it.diff+'d';
