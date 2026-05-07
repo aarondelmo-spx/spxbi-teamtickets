@@ -542,9 +542,10 @@ function weeklyPlanGroupsHtml(items, start, emptyText){
   Object.keys(grouped).sort().forEach(function(key){
     var week = grouped[key];
     var offset = Math.round((week.start - start) / (7 * 24 * 60 * 60 * 1000));
+    var sorted = week.items.slice().sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts||0) - (b.task.ts||0); });
     html += '<div class="vibe-week-group">'
-      +'<div class="vibe-week-heading"><div><div class="vibe-section-title">'+safeText(weekLabelForOffset(offset))+'</div><div class="week-label">'+safeText(weekRangeLabel(week.start))+'</div></div><span>'+week.items.length+' task'+(week.items.length!==1?'s':'')+'</span></div>'
-      +groupedTasksHtml(week.items, 'weekly')
+      +'<div class="vibe-week-heading"><div><div class="vibe-section-title">'+safeText(weekLabelForOffset(offset))+'</div><div class="week-label">'+safeText(weekRangeLabel(week.start))+'</div></div><span>'+sorted.length+' task'+(sorted.length!==1?'s':'')+'</span></div>'
+      +sorted.map(function(item){ return taskRowHtml(item, 'weekly'); }).join('')
       +'</div>';
   });
   return html;
