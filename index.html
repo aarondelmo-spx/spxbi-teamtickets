@@ -97,14 +97,15 @@
     <div class="vibe-view-bar" id="vibe-view-bar" style="display:none">
       <div class="vibe-tabs" role="tablist" aria-label="Vibe Coding views">
         <button class="vibe-tab active" id="vibe-tab-initiatives" onclick="setVibeView('initiatives')" type="button">Initiatives</button>
-        <button class="vibe-tab" id="vibe-tab-sprint" onclick="setVibeView('sprint')" type="button">Sprint</button>
+        <button class="vibe-tab" id="vibe-tab-sprint" onclick="setVibeView('sprint')" type="button">Weekly Plan</button>
         <button class="vibe-tab" id="vibe-tab-tasks" onclick="setVibeView('tasks')" type="button">Tasks</button>
       </div>
       <div class="vibe-view-actions">
         <div class="vibe-sprint-controls" id="vibe-sprint-controls" style="display:none">
-          <input id="vibe-sprint-label" list="vibe-sprint-labels" placeholder="Sprint label..." onkeydown="if(event.key==='Enter')setActiveSprintLabelFromInput()" />
-          <datalist id="vibe-sprint-labels"></datalist>
-          <button class="btn btn-sm btn-primary" onclick="setActiveSprintLabelFromInput()" type="button">Set sprint</button>
+          <button class="btn btn-sm" onclick="shiftWeeklyPlanWeek(-1)" type="button">Prev</button>
+          <input id="vibe-week-date" type="date" title="Pick any date in the week" aria-label="Weekly plan date" onchange="setWeeklyPlanDateFromInput()" />
+          <span class="week-label" id="vibe-week-label"></span>
+          <button class="btn btn-sm" onclick="shiftWeeklyPlanWeek(1)" type="button">Next</button>
         </div>
         <button class="btn btn-sm" onclick="openHierarchyModal()" type="button">Manage hierarchy</button>
         <button class="btn btn-sm" id="vibe-filter-toggle" onclick="toggleVibeFilters()" type="button">Filters</button>
@@ -112,7 +113,7 @@
     </div>
     <div class="sprint-board" id="sprint-board" style="display:none">
       <div class="sprint-board-head">
-        <div class="workload-title" style="margin-bottom:0">Team / subteam sprint hierarchy</div>
+        <div class="workload-title" style="margin-bottom:0">Team / subteam hierarchy</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm" onclick="openHierarchyModal()">Manage hierarchy</button>
         </div>
@@ -186,6 +187,32 @@
   </div>
 </div>
 
+<!-- Team/subteam edit modal -->
+<div class="modal-overlay" id="hierarchy-edit-modal" style="display:none" onclick="if(event.target===this)closeHierarchyEditModal()">
+  <div class="modal" style="max-width:430px">
+    <div class="modal-header">
+      <h3 id="hierarchy-edit-title">Edit team</h3>
+      <button class="modal-close" onclick="closeHierarchyEditModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="hierarchy-edit-context" id="hierarchy-edit-context" style="display:none"></div>
+      <div class="field">
+        <label id="hierarchy-edit-name-label">Team name</label>
+        <input id="hierarchy-edit-name" onkeydown="if(event.key==='Enter')saveHierarchyEdit()" />
+      </div>
+      <div class="field">
+        <label id="hierarchy-edit-size-label">Team size</label>
+        <input id="hierarchy-edit-size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')saveHierarchyEdit()" />
+      </div>
+      <div class="microcopy">Renaming will update existing Vibe Coding initiatives that use this team or subteam.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeHierarchyEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHierarchyEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- New Ticket Modal -->
 <div class="modal-overlay" id="new-modal" style="display:none" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
@@ -202,7 +229,7 @@
           <div class="field"><label>Subteam</label><select id="nt-subteam"></select></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Default sprint label</label><input id="nt-sprint-cycle" placeholder="May Sprint 1, W19, etc." /></div>
+          <div class="field"><label>Planning note</label><input id="nt-sprint-cycle" placeholder="Optional context..." /></div>
           <div class="field"><label>Timeline Start</label><input id="nt-timeline-start" type="date" /></div>
         </div>
         <div class="form-row">
@@ -223,10 +250,9 @@
           <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Ongoing projects</label><input id="nt-automation-progress-hc" type="number" min="0" step="0.1" /></div>
           <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
         </div>
-        <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
       </div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="p0">P0 — Critical</option><option value="p1" selected>P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option></select></div>
@@ -313,7 +339,7 @@
           <div class="field"><label>Subteam</label><select id="d-subteam" onchange="updateSprintSubteamSelection()"></select></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Default sprint label</label><input id="d-sprint-cycle" onchange="updateTicketField('sprintCycle',this.value)" /></div>
+          <div class="field"><label>Planning note</label><input id="d-sprint-cycle" onchange="updateTicketField('sprintCycle',this.value)" /></div>
           <div class="field"><label>Timeline Start</label><input id="d-timeline-start" type="date" onchange="updateTicketField('timelineStart',this.value)" /></div>
         </div>
         <div class="form-row">
@@ -335,12 +361,9 @@
         </div>
         <div class="form-row">
           <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
-          <div class="field"><label>Ongoing projects</label><input id="d-automation-progress-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationInProgressHc',this.value)" /></div>
-        </div>
-        <div class="form-row">
           <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
-          <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
         </div>
+        <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
       </div>
       </div>
 

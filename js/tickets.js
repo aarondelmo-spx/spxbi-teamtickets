@@ -23,10 +23,16 @@ window.updateTicketField = function(field,value){
   else upd[field]=(value===''?null:value);
   activeTicketRef(App.selectedTicketId).update(upd);
   if(field==='status'){
+    var tStatus=App.allTickets[App.selectedTicketId];
+    if(tStatus) tStatus.status=value;
     document.getElementById('d-status-badge').className='status-badge '+statusClass(value);
     document.getElementById('d-status-badge').textContent=value;
     renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);
-    var t2=App.allTickets[App.selectedTicketId]; if(t2) logActivity('status',t2.title,value);
+    if(tStatus) logActivity('status',tStatus.title,value);
+    if(typeof populateSprintDetail === 'function' && tStatus) populateSprintDetail(tStatus);
+    if(typeof updateStats === 'function') updateStats();
+    if(typeof renderList === 'function') renderList();
+    if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
   }
   if(field==='deadline'){
     renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
@@ -37,6 +43,9 @@ window.updateTicketField = function(field,value){
     if(tnum){
       tnum[field]=upd[field];
       populateSprintDetail(tnum);
+      if(typeof updateStats === 'function') updateStats();
+      if(typeof renderList === 'function') renderList();
+      if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
     }
   }
   if(field==='priority'){

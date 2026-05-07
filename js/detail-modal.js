@@ -7,6 +7,26 @@ window.toggleSection = function(s){
 function openSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='block'; if(c)c.style.transform='rotate(90deg)'; }
 function closeSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='none'; if(c)c.style.transform='rotate(0deg)'; }
 
+function titleCaseStatus(status){
+  return String(status || 'open').replace(/\b\w/g,function(ch){ return ch.toUpperCase(); });
+}
+
+window.setDetailStatusOptions = function(currentStatus){
+  var el = document.getElementById('d-status-sel');
+  if(!el) return;
+  var options = isSprintView()
+    ? [{value:'open', label:'Open'}, {value:'in progress', label:'In progress'}, {value:'done', label:'Done'}]
+    : [{value:'open', label:'Open'}, {value:'done', label:'Done'}];
+  var value = currentStatus || 'open';
+  if(value && !options.some(function(opt){ return opt.value === value; })){
+    options.splice(Math.max(options.length - 1, 1), 0, {value:value, label:titleCaseStatus(value)});
+  }
+  el.innerHTML = options.map(function(opt){
+    return '<option value="'+safeText(opt.value)+'">'+safeText(opt.label)+'</option>';
+  }).join('');
+  el.value = value;
+};
+
 window.editDetailField = function(field){
   var el=document.getElementById('d-'+field); if(!el) return;
   var current=el.textContent;
@@ -42,7 +62,7 @@ window.openDetailModal = function(id){
   document.getElementById('d-priority-badge').textContent=t.priority||'p1';
   document.getElementById('d-status-badge').className='status-badge '+statusClass(t.status);
   document.getElementById('d-status-badge').textContent=t.status;
-  document.getElementById('d-status-sel').value=t.status;
+  setDetailStatusOptions(t.status);
   document.getElementById('d-priority-sel').value=t.priority||'p1';
   document.getElementById('d-deadline-inp').value=t.deadline||'';
   renderDeadlineStatus(t.deadline,t.status);

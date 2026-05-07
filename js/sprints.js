@@ -76,12 +76,16 @@ function automationReviewedHc(t){
 }
 
 function automationInProgressHc(t){
-  return t && t.automationInProgressHc != null ? numVal(t.automationInProgressHc) : 0;
+  return t && String(t.status || '').toLowerCase() === 'in progress' ? automationScopedHc(t) : 0;
 }
 
 function actualHcSavings(t){
   if(t && t.actualHcSavings != null) return numVal(t.actualHcSavings);
   return numVal(t && t.fteRepurpose) + numVal(t && t.bpoNfteReduction);
+}
+
+function countedActualHcSavings(t){
+  return t && String(t.status || '').toLowerCase() === 'done' ? actualHcSavings(t) : 0;
 }
 
 function excessCapacityHc(t){
@@ -123,7 +127,7 @@ function automationTotals(items){
     acc.reviewed += automationReviewedHc(t);
     acc.scoped += automationScopedHc(t);
     acc.progress += automationInProgressHc(t);
-    acc.actual += actualHcSavings(t);
+    acc.actual += countedActualHcSavings(t);
     acc.excess += excessCapacityHc(t);
     return acc;
   }, {reviewed:0, scoped:0, progress:0, actual:0, excess:0});
@@ -170,7 +174,6 @@ function sprintPayloadFromNewModal(){
     confidence: document.getElementById('nt-confidence').value || 'medium',
     automationReviewedHc: cleanNumField('nt-automation-reviewed-hc'),
     automationScopedHc: cleanNumField('nt-automation-scoped-hc'),
-    automationInProgressHc: cleanNumField('nt-automation-progress-hc'),
     actualHcSavings: cleanNumField('nt-actual-hc-savings'),
     excessCapacityHc: cleanNumField('nt-excess-capacity-hc')
   };
@@ -184,7 +187,6 @@ function clearSprintNewFields(){
     'nt-timeline-end',
     'nt-automation-reviewed-hc',
     'nt-automation-scoped-hc',
-    'nt-automation-progress-hc',
     'nt-actual-hc-savings',
     'nt-excess-capacity-hc'
   ].forEach(function(id){
@@ -262,7 +264,8 @@ function refreshActiveTickets(){
   if(App.selectedTicketId && document.getElementById('detail-modal').style.display !== 'none'){
     var t = App.allTickets[App.selectedTicketId];
     if(t){
-      document.getElementById('d-status-sel').value = t.status;
+      if(typeof setDetailStatusOptions === 'function') setDetailStatusOptions(t.status);
+      else document.getElementById('d-status-sel').value = t.status;
       document.getElementById('d-priority-sel').value = t.priority || 'p1';
       document.getElementById('d-deadline-inp').value = t.deadline || '';
       renderDeadlineStatus(t.deadline, t.status);
@@ -366,6 +369,14 @@ function automationSubteamList(teamName){
   return Object.values(byId).sort(function(a,b){ return (a.name || '').localeCompare(b.name || ''); });
 }
 
+function automationTeamByName(teamName){
+  return automationTeamList().find(function(team){ return team.name === teamName; }) || null;
+}
+
+function automationSubteamByName(teamName, subteamName){
+  return automationSubteamList(teamName).find(function(subteam){ return subteam.name === subteamName; }) || null;
+}
+
 function renderTeamSelect(prefix, selected){
   var el = document.getElementById(prefix+'-team-area');
   if(!el) return;
@@ -427,8 +438,8 @@ function sprintMetaHtml(t){
   if(timeline !== 'TBD') pieces.push('<span>'+safeText(timeline)+'</span>');
   if(automationReviewedHc(t)) pieces.push('<span>'+fmtCapacity(automationReviewedHc(t))+' reviewed for automation</span>');
   if(automationScopedHc(t)) pieces.push('<span title="'+safeText(SCOPED_HC_HELP_TEXT)+'">'+fmtCapacity(automationScopedHc(t))+' scoped for automation</span>');
-  if(automationInProgressHc(t)) pieces.push('<span>'+fmtCapacity(automationInProgressHc(t))+' ongoing projects</span>');
-  if(actualHcSavings(t) || excessCapacityHc(t)) pieces.push('<span>'+fmtCapacity(actualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' HC savings</span>');
+  if(automationInProgressHc(t)) pieces.push('<span>'+fmtCapacity(automationInProgressHc(t))+' in progress automation</span>');
+  if(countedActualHcSavings(t) || excessCapacityHc(t)) pieces.push('<span>'+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' HC savings</span>');
   return pieces.join('<span>&middot;</span>');
 }
 
@@ -447,7 +458,6 @@ function populateSprintDetail(t){
   document.getElementById('d-team-size-hc').value = fmtCapacity(hierarchySizeHc(t.teamArea || 'Unassigned', t.subteam || ''));
   document.getElementById('d-automation-reviewed-hc').value = t.automationReviewedHc == null ? (t.reviewedHc == null ? '' : t.reviewedHc) : t.automationReviewedHc;
   document.getElementById('d-automation-scoped-hc').value = t.automationScopedHc == null ? (t.scopedHc == null ? '' : t.scopedHc) : t.automationScopedHc;
-  document.getElementById('d-automation-progress-hc').value = t.automationInProgressHc == null ? '' : t.automationInProgressHc;
   document.getElementById('d-actual-hc-savings').value = t.actualHcSavings == null ? ((t.fteRepurpose == null && t.bpoNfteReduction == null) ? '' : actualHcSavings(t)) : t.actualHcSavings;
   document.getElementById('d-excess-capacity-hc').value = t.excessCapacityHc == null ? (t.fteBuffer == null ? '' : t.fteBuffer) : t.excessCapacityHc;
 }
@@ -519,7 +529,7 @@ function renderSprintDashboard(){
   if(!el || !isSprintView()) return;
   var entries = Object.entries(App.allTickets || {}).map(function(entry){ return {id: entry[0], t: entry[1]}; });
   if(!entries.length){
-    el.innerHTML = '<div class="empty-inline">No sprint initiatives yet.</div>';
+    el.innerHTML = '<div class="empty-inline">No Vibe Coding initiatives yet.</div>';
     return;
   }
   var grouped = groupSprintInitiatives(entries);
@@ -556,7 +566,7 @@ function renderSprintDashboard(){
     });
   });
   el.innerHTML = '<table class="sprint-summary-table"><thead><tr>'
-    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Team/subteam size</th><th>Reviewed for automation</th><th><span class="table-heading-with-tip">Scoped for automation '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>Ongoing projects</th><th>HC savings actual / excess</th>'
+    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Team/subteam size</th><th>Reviewed for automation</th><th><span class="table-heading-with-tip">Scoped for automation '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>In progress automation</th><th>HC savings actual / excess</th>'
     +'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 }
 
@@ -612,6 +622,161 @@ function cleanHierarchyCapacity(value){
   var n = parseFloat(value);
   return isNaN(n) ? null : n;
 }
+
+function cleanHierarchyName(value){
+  return String(value || '').trim();
+}
+
+function hierarchyRecordId(prefix, name){
+  var slug = cleanHierarchyName(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return prefix + '-' + (slug || Date.now());
+}
+
+function hierarchyEditSizeValue(value){
+  var n = cleanHierarchyCapacity(value);
+  return n == null ? '' : fmtCapacity(n);
+}
+
+function setHierarchyEditLabels(mode){
+  var teamMode = mode === 'team';
+  document.getElementById('hierarchy-edit-title').textContent = teamMode ? 'Edit team' : 'Edit subteam';
+  document.getElementById('hierarchy-edit-name-label').textContent = teamMode ? 'Team name' : 'Subteam name';
+  document.getElementById('hierarchy-edit-size-label').textContent = teamMode ? 'Team size' : 'Subteam size';
+}
+
+window.openHierarchyEditModal = function(mode, teamName, subteamName){
+  if(!isSprintView()) return;
+  var target = null;
+  if(mode === 'team'){
+    var team = automationTeamByName(teamName) || {id: hierarchyRecordId('team', teamName), name: teamName, sortOrder: Date.now()};
+    target = {type:'team', id:team.id, originalName:team.name, sortOrder:team.sortOrder};
+    document.getElementById('hierarchy-edit-name').value = team.name || '';
+    document.getElementById('hierarchy-edit-size').value = hierarchyEditSizeValue(teamSizeFieldValue(team.name));
+    document.getElementById('hierarchy-edit-context').style.display = 'none';
+  } else {
+    var subteam = automationSubteamByName(teamName, subteamName) || {id: hierarchyRecordId('subteam', teamName + '-' + subteamName), teamName: teamName, name: subteamName, sortOrder: Date.now()};
+    target = {type:'subteam', id:subteam.id, teamName:teamName, originalName:subteam.name, sortOrder:subteam.sortOrder};
+    document.getElementById('hierarchy-edit-name').value = subteam.name || '';
+    document.getElementById('hierarchy-edit-size').value = hierarchyEditSizeValue(subteamSizeFieldValue(teamName, subteam.name));
+    var context = document.getElementById('hierarchy-edit-context');
+    context.textContent = 'Team: ' + teamName;
+    context.style.display = 'block';
+  }
+  App.hierarchyEditTarget = target;
+  setHierarchyEditLabels(target.type);
+  var modal = document.getElementById('hierarchy-edit-modal');
+  if(modal) modal.style.display = 'flex';
+  setTimeout(function(){
+    var input = document.getElementById('hierarchy-edit-name');
+    if(input){ input.focus(); input.select(); }
+  }, 80);
+};
+
+window.closeHierarchyEditModal = function(){
+  App.hierarchyEditTarget = null;
+  var modal = document.getElementById('hierarchy-edit-modal');
+  if(modal) modal.style.display = 'none';
+};
+
+function duplicateTeamName(newName, currentId){
+  return automationTeamList().some(function(team){
+    return team.id !== currentId && team.name.toLowerCase() === newName.toLowerCase();
+  });
+}
+
+function duplicateSubteamName(teamName, newName, currentId){
+  return automationSubteamList(teamName).some(function(subteam){
+    return subteam.id !== currentId && subteam.name.toLowerCase() === newName.toLowerCase();
+  });
+}
+
+function updateLocalHierarchyFromEdit(target, newName, size){
+  if(target.type === 'team'){
+    var oldName = target.originalName;
+    var existingTeam = App.automationTeams[target.id] || automationTeamByName(oldName) || {};
+    App.automationTeams[target.id] = Object.assign({}, existingTeam, {
+      name:newName,
+      sortOrder: target.sortOrder != null ? target.sortOrder : existingTeam.sortOrder,
+      teamSizeHc:size,
+      currentHc:size
+    });
+    Object.keys(App.automationSubteams || {}).forEach(function(id){
+      if((App.automationSubteams[id].teamName || '') === oldName) App.automationSubteams[id].teamName = newName;
+    });
+    defaultAutomationSubteams().filter(function(sub){ return sub.teamName === oldName; }).forEach(function(sub){
+      App.automationSubteams[sub.id] = Object.assign({}, App.automationSubteams[sub.id] || sub, {teamName:newName});
+    });
+    Object.values(App.sprintTickets || {}).forEach(function(t){
+      if((t.teamArea || '') === oldName) t.teamArea = newName;
+    });
+    if(App.hierarchySelectedTeam === oldName) App.hierarchySelectedTeam = newName;
+  } else {
+    var oldSubteam = target.originalName;
+    var existingSubteam = App.automationSubteams[target.id] || automationSubteamByName(target.teamName, oldSubteam) || {};
+    App.automationSubteams[target.id] = Object.assign({}, existingSubteam, {
+      teamName: target.teamName,
+      name:newName,
+      sortOrder: target.sortOrder != null ? target.sortOrder : existingSubteam.sortOrder,
+      subteamSizeHc:size
+    });
+    Object.values(App.sprintTickets || {}).forEach(function(t){
+      if((t.teamArea || '') === target.teamName && (t.subteam || '') === oldSubteam) t.subteam = newName;
+    });
+  }
+  App.allTickets = currentTickets();
+}
+
+window.saveHierarchyEdit = function(){
+  var target = App.hierarchyEditTarget;
+  if(!target) return;
+  var newName = cleanHierarchyName(document.getElementById('hierarchy-edit-name').value);
+  if(!newName){
+    document.getElementById('hierarchy-edit-name').focus();
+    return;
+  }
+  var size = cleanHierarchyCapacity(document.getElementById('hierarchy-edit-size').value);
+  if(target.type === 'team' && duplicateTeamName(newName, target.id)){
+    alert('A team with this name already exists.');
+    return;
+  }
+  if(target.type === 'subteam' && duplicateSubteamName(target.teamName, newName, target.id)){
+    alert('A subteam with this name already exists under this team.');
+    return;
+  }
+
+  var updates = {};
+  if(target.type === 'team'){
+    updates['automationTeams/'+target.id+'/name'] = newName;
+    updates['automationTeams/'+target.id+'/sortOrder'] = target.sortOrder != null ? target.sortOrder : Date.now();
+    updates['automationTeams/'+target.id+'/teamSizeHc'] = size;
+    updates['automationTeams/'+target.id+'/currentHc'] = size;
+    Object.entries(App.sprintTickets || {}).forEach(function(entry){
+      if((entry[1].teamArea || '') === target.originalName) updates['sprintProjects/'+entry[0]+'/teamArea'] = newName;
+    });
+    automationSubteamList(target.originalName).forEach(function(subteam){
+      updates['automationSubteams/'+subteam.id+'/teamName'] = newName;
+      updates['automationSubteams/'+subteam.id+'/name'] = subteam.name;
+      updates['automationSubteams/'+subteam.id+'/sortOrder'] = subteam.sortOrder != null ? subteam.sortOrder : Date.now();
+      if(subteam.subteamSizeHc != null) updates['automationSubteams/'+subteam.id+'/subteamSizeHc'] = subteam.subteamSizeHc;
+      if(subteam.currentHc != null) updates['automationSubteams/'+subteam.id+'/currentHc'] = subteam.currentHc;
+    });
+  } else {
+    updates['automationSubteams/'+target.id+'/teamName'] = target.teamName;
+    updates['automationSubteams/'+target.id+'/name'] = newName;
+    updates['automationSubteams/'+target.id+'/sortOrder'] = target.sortOrder != null ? target.sortOrder : Date.now();
+    updates['automationSubteams/'+target.id+'/subteamSizeHc'] = size;
+    Object.entries(App.sprintTickets || {}).forEach(function(entry){
+      var t = entry[1];
+      if((t.teamArea || '') === target.teamName && (t.subteam || '') === target.originalName) updates['sprintProjects/'+entry[0]+'/subteam'] = newName;
+    });
+  }
+  App.db.ref().update(updates);
+  updateLocalHierarchyFromEdit(target, newName, size);
+  closeHierarchyEditModal();
+  refreshSprintHierarchyUi();
+  if(typeof updateStats === 'function') updateStats();
+  if(typeof renderList === 'function') renderList();
+};
 
 window.updateAutomationTeamSize = function(id, value){
   if(!id || !App.automationTeamsRef) return;

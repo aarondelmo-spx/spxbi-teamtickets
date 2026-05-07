@@ -39,7 +39,7 @@ window.renderList = function(){
       return pOrder(a[1].priority)-pOrder(b[1].priority)||(b[1].createdTs||0)-(a[1].createdTs||0);
     });
   if(!tickets.length){
-    var emptyLabel=isSprintView()?'No sprint initiatives yet. Create the first one.':'No projects yet. Create your first one!';
+    var emptyLabel=isSprintView()?'No Vibe Coding initiatives yet. Create the first one.':'No projects yet. Create your first one!';
     list.innerHTML='<div class="empty-state"><div style="font-size:28px;opacity:.3">◎</div><p>'+(Object.keys(App.allTickets).length===0?emptyLabel:'No projects match this filter.')+'</p></div>';
     return;
   }
@@ -84,7 +84,7 @@ function updateStats(){
     document.getElementById('s-done').textContent=fmtCapacity(totals.reduction);
     document.getElementById('s-extra').textContent=fmtCapacity(totals.unclassified);
     if(extra) extra.style.display='';
-    document.getElementById('ticket-count-sub').textContent=t.length+' sprint initiative'+(t.length!==1?'s':'')+' total';
+    document.getElementById('ticket-count-sub').textContent=t.length+' initiative'+(t.length!==1?'s':'')+' total';
     renderSprintDashboard();
     return;
   }

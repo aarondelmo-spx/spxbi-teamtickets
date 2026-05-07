@@ -12,15 +12,68 @@ function taskOwner(task){
   return task.contributors && task.contributors.length ? task.contributors[0] : '';
 }
 
-function taskSprintLabel(task){
-  return (task.sprintLabel || '').trim();
-}
-
 function taskDueRank(task){
   if(task.done) return 99999;
   if(!task.deadline) return 90000 + (task.ts || 0) / 10000000000000;
   var diff = deadlineDiff(task.deadline);
   return diff === null ? 90000 : diff;
+}
+
+function parseYmd(value){
+  if(!value) return null;
+  var parts = String(value).split('-').map(function(part){ return parseInt(part, 10); });
+  if(parts.length !== 3 || parts.some(function(part){ return isNaN(part); })) return null;
+  var date = new Date(parts[0], parts[1] - 1, parts[2]);
+  if(date.getFullYear() !== parts[0] || date.getMonth() !== parts[1] - 1 || date.getDate() !== parts[2]) return null;
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function ymd(date){
+  var month = String(date.getMonth() + 1).padStart(2, '0');
+  var day = String(date.getDate()).padStart(2, '0');
+  return date.getFullYear() + '-' + month + '-' + day;
+}
+
+function addDays(date, days){
+  var next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + days);
+  next.setHours(0,0,0,0);
+  return next;
+}
+
+function weekStartForDate(value){
+  var date = value instanceof Date ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : parseYmd(value);
+  if(!date) date = new Date();
+  date.setHours(0,0,0,0);
+  var day = date.getDay();
+  return addDays(date, day === 0 ? -6 : 1 - day);
+}
+
+function selectedWeekStart(){
+  var start = parseYmd(App.activePlanWeekStart);
+  if(!start){
+    start = weekStartForDate(new Date());
+    App.activePlanWeekStart = ymd(start);
+    localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
+  }
+  return start;
+}
+
+function shortDateLabel(date){
+  return date.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+function weekRangeLabel(start){
+  var end = addDays(start, 6);
+  return shortDateLabel(start) + ' - ' + shortDateLabel(end);
+}
+
+function taskInWeek(task, start){
+  var due = parseYmd(task && task.deadline);
+  if(!due) return false;
+  var end = addDays(start, 6);
+  return due >= start && due <= end;
 }
 
 function workstreamEntries(t){
@@ -64,29 +117,13 @@ function collectVibeTasks(){
   return items;
 }
 
-function sprintLabelsFromTasks(){
-  var labels = {};
-  collectVibeTasks().forEach(function(item){
-    var label = taskSprintLabel(item.task);
-    if(label) labels[label] = true;
-  });
-  if(App.activeSprintLabel) labels[App.activeSprintLabel] = true;
-  return Object.keys(labels).sort();
-}
-
-function syncSprintControls(){
-  var input = document.getElementById('vibe-sprint-label');
-  var datalist = document.getElementById('vibe-sprint-labels');
-  if(!input || !datalist) return;
-  var labels = sprintLabelsFromTasks();
-  if(!App.activeSprintLabel && labels.length){
-    App.activeSprintLabel = labels[0];
-    localStorage.setItem('spxbi_active_sprint_label', App.activeSprintLabel);
-  }
-  input.value = App.activeSprintLabel || '';
-  datalist.innerHTML = labels.map(function(label){
-    return '<option value="'+safeText(label)+'"></option>';
-  }).join('');
+function syncWeeklyPlanControls(){
+  var input = document.getElementById('vibe-week-date');
+  var label = document.getElementById('vibe-week-label');
+  if(!input || !label) return;
+  var start = selectedWeekStart();
+  input.value = ymd(start);
+  label.textContent = weekRangeLabel(start);
 }
 
 function setDisplay(el, display){
@@ -129,7 +166,7 @@ function updateVibeShell(){
   setDisplay(workload, vibe ? 'none' : '');
   setDisplay(activity, vibe ? 'none' : '');
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
-  syncSprintControls();
+  syncWeeklyPlanControls();
 }
 
 window.toggleVibeFilters = function(){
@@ -145,12 +182,21 @@ window.setVibeView = function(view){
   renderList();
 };
 
-window.setActiveSprintLabelFromInput = function(){
-  var input = document.getElementById('vibe-sprint-label');
-  App.activeSprintLabel = input ? input.value.trim() : '';
-  if(App.activeSprintLabel) localStorage.setItem('spxbi_active_sprint_label', App.activeSprintLabel);
-  else localStorage.removeItem('spxbi_active_sprint_label');
-  syncSprintControls();
+window.setWeeklyPlanDateFromInput = function(){
+  var input = document.getElementById('vibe-week-date');
+  var start = weekStartForDate(input ? input.value : null);
+  App.activePlanWeekStart = ymd(start);
+  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
+  syncWeeklyPlanControls();
+  updateStats();
+  renderList();
+};
+
+window.shiftWeeklyPlanWeek = function(delta){
+  var start = addDays(selectedWeekStart(), delta * 7);
+  App.activePlanWeekStart = ymd(start);
+  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
+  syncWeeklyPlanControls();
   updateStats();
   renderList();
 };
@@ -161,7 +207,7 @@ function updateVibeStats(initiatives, extra){
   document.getElementById('s-total-label').textContent='Team size';
   document.getElementById('s-open-label').textContent='Reviewed for automation';
   document.getElementById('s-prog-label').textContent='Scoped for automation';
-  document.getElementById('s-done-label').textContent='Ongoing projects';
+  document.getElementById('s-done-label').textContent='In progress automation';
   document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
@@ -173,10 +219,10 @@ function updateVibeStats(initiatives, extra){
   document.getElementById('s-extra').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
-    ? (App.activeSprintLabel ? 'Sprint: '+App.activeSprintLabel : 'Sprint view')
+    ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())
     : App.currentVibeView === 'tasks' ? 'Task queue' : 'Initiative planning';
   document.getElementById('ticket-count-sub').textContent=initiatives.length+' initiative'+(initiatives.length!==1?'s':'')+' total - '+viewLabel;
-  syncSprintControls();
+  syncWeeklyPlanControls();
 }
 
 function initiativeMatchesFilter(entry){
@@ -194,8 +240,7 @@ function initiativeMatchesSearch(t, search){
   if((t.subteam||'').toLowerCase().includes(search)) return true;
   return taskEntries('', t).some(function(item){
     return (item.task.text||'').toLowerCase().includes(search)
-      || (item.workstreamName||'').toLowerCase().includes(search)
-      || taskSprintLabel(item.task).toLowerCase().includes(search);
+      || (item.workstreamName||'').toLowerCase().includes(search);
   });
 }
 
@@ -219,21 +264,27 @@ function nextOpenTask(t){
     .sort(function(a,b){ return taskDueRank(a) - taskDueRank(b) || (a.ts || 0) - (b.ts || 0); })[0] || null;
 }
 
+function dueThisWeekCount(t){
+  var start = weekStartForDate(new Date());
+  return Object.values(t.subtasks || {}).filter(function(task){
+    return !task.done && taskInWeek(task, start);
+  }).length;
+}
+
 function initiativeCardHtml(id, t){
   var stats = initiativeTaskStats(t);
   var pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
   var due = nearestDueTask(t);
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
   var groupCount = customWorkstreamEntries(t).length;
-  var tasks = taskEntries(id, t);
-  var sprinted = tasks.filter(function(item){ return taskSprintLabel(item.task); }).length;
-  var hcText = fmtCapacity(automationReviewedHc(t))+' reviewed | '+fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' ongoing | '+fmtCapacity(actualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
+  var weeklyDue = dueThisWeekCount(t);
+  var hcText = fmtCapacity(automationReviewedHc(t))+' reviewed | '+fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
     +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
-    +(sprinted?'<span>'+sprinted+' in sprint</span>':'')
+    +(weeklyDue?'<span>'+weeklyDue+' due this week</span>':'')
     +(groupCount?'<span>'+groupCount+' group'+(groupCount!==1?'s':'')+'</span>':'')
     +'<span>'+hcText+'</span>'
     +'<span>'+dueText+'</span>'
@@ -254,9 +305,21 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
     +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
     +'<span>Reviewed '+fmtCapacity(totals.reviewed)+'</span>'
     +'<span>Scoped '+fmtCapacity(totals.scoped)+'</span>'
-    +'<span>Ongoing '+fmtCapacity(totals.progress)+'</span>'
+    +'<span>In progress '+fmtCapacity(totals.progress)+'</span>'
     +'<span>Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
     +'</div>';
+}
+
+function editableTeamHeadingHtml(teamName){
+  return '<button class="team-heading edit-heading" onclick="openHierarchyEditModal(\'team\',\''+jsArg(teamName)+'\')" type="button">'
+    +'<span>'+safeText(teamName)+'</span><span class="edit-hint">Edit</span>'
+    +'</button>';
+}
+
+function editableSubteamHeadingHtml(teamName, subteamName){
+  return '<button class="subteam-heading edit-heading" onclick="openHierarchyEditModal(\'subteam\',\''+jsArg(teamName)+'\',\''+jsArg(subteamName)+'\')" type="button">'
+    +'<span>'+safeText(subteamName)+'</span><span class="edit-hint">Edit</span>'
+    +'</button>';
 }
 
 function renderVibeInitiatives(search, list){
@@ -286,9 +349,9 @@ function renderVibeInitiatives(search, list){
   Object.keys(grouped).sort(compareTeams).forEach(function(team){
     var teamEntries = [];
     Object.keys(grouped[team]).forEach(function(subteam){ teamEntries = teamEntries.concat(grouped[team][subteam]); });
-    html += '<div class="team-group"><div class="team-heading-row"><div class="team-heading">'+safeText(team)+'</div>'+hcSummaryHtml(teamEntries, team, true, null)+'</div>';
+    html += '<div class="team-group"><div class="team-heading-row">'+editableTeamHeadingHtml(team)+hcSummaryHtml(teamEntries, team, true, null)+'</div>';
     Object.keys(grouped[team]).sort().forEach(function(subteam){
-      html += '<div class="subteam-group"><div class="subteam-heading-row"><div class="subteam-heading">'+safeText(subteam)+'</div>'+hcSummaryHtml(grouped[team][subteam], team, false, subteam)+'</div><div class="initiative-card-grid">'
+      html += '<div class="subteam-group"><div class="subteam-heading-row">'+editableSubteamHeadingHtml(team, subteam)+hcSummaryHtml(grouped[team][subteam], team, false, subteam)+'</div><div class="initiative-card-grid">'
         +grouped[team][subteam].map(function(entry){ return initiativeCardHtml(entry[0], entry[1]); }).join('')
         +'</div></div>';
     });
@@ -311,7 +374,6 @@ function taskMatchesCurrentView(item, search){
   return (task.text || '').toLowerCase().includes(search)
     || (item.initiative.title || '').toLowerCase().includes(search)
     || (item.workstreamName || '').toLowerCase().includes(search)
-    || taskSprintLabel(task).toLowerCase().includes(search)
     || (taskOwner(task) || '').toLowerCase().includes(search);
 }
 
@@ -326,15 +388,12 @@ function taskOwnerSelectHtml(item){
 function taskRowHtml(item, mode){
   var task = item.task;
   var checked = !!task.done;
-  var action = mode === 'sprint'
-    ? '<button class="btn btn-sm" onclick="removeTaskFromSprint(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\')" type="button">Remove</button>'
-    : '<button class="btn btn-sm" onclick="openDetailModal(\''+jsArg(item.ticketId)+'\')" type="button">Open</button>';
+  var action = '<button class="btn btn-sm" onclick="openDetailModal(\''+jsArg(item.ticketId)+'\')" type="button">Open</button>';
   return '<div class="vibe-task-row'+(checked?' done-task':'')+'">'
     +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\','+checked+')"></div>'
     +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(item.initiative.title || 'Untitled initiative')+' / '+safeText(item.workstreamName)+'</div></div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'deadline\',this.value)" />'
-    +'<input class="task-inline-input" value="'+safeText(taskSprintLabel(task))+'" placeholder="Sprint label" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'sprintLabel\',this.value)" />'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'deadline\',this.value)" />'
     +'<div style="display:flex;gap:5px;justify-content:flex-end">'+action+'</div>'
     +'</div>';
 }
@@ -362,17 +421,18 @@ function renderGroupedTasks(items, list, emptyText, mode){
   list.innerHTML = html;
 }
 
-function renderVibeSprint(search, list){
-  syncSprintControls();
-  if(!App.activeSprintLabel){
-    list.innerHTML = '<div class="vibe-empty">Set a sprint label, then tag tasks into it from an initiative or the Tasks view.</div>';
-    return;
-  }
+function renderVibeWeeklyPlan(search, list){
+  syncWeeklyPlanControls();
+  var start = selectedWeekStart();
   var items = collectVibeTasks()
-    .filter(function(item){ return taskSprintLabel(item.task) === App.activeSprintLabel; })
+    .filter(function(item){ return taskInWeek(item.task, start); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
-  renderGroupedTasks(items, list, 'No tasks are assigned to this sprint yet.', 'sprint');
+  renderGroupedTasks(items, list, 'No tasks are due in '+weekRangeLabel(start)+'. Add a due date to place tasks into the Weekly Plan.', 'weekly');
+}
+
+function renderVibeSprint(search, list){
+  renderVibeWeeklyPlan(search, list);
 }
 
 function renderVibeTasks(search, list){
@@ -408,8 +468,7 @@ function workstreamTaskRowHtml(ticketId, taskId, task, workstreamName){
     +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\','+checked+')"></div>'
     +'<div class="task-text">'+safeText(task.text || 'Untitled task')+'</div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)" />'
-    +'<input class="task-inline-input" value="'+safeText(taskSprintLabel(task))+'" placeholder="Sprint label" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'sprintLabel\',this.value)" />'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)" />'
     +'<button class="btn-icon" onclick="deleteSubtask(\''+jsArg(taskId)+'\')" title="Remove task" type="button">x</button>'
     +'</div>';
 }
@@ -419,8 +478,7 @@ function taskComposerHtml(workstreamId){
   return '<div class="task-add-row">'
     +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')" />'
     +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions('')+'</select>'
-    +'<input id="task-due-'+id+'" type="date" />'
-    +'<input id="task-sprint-'+id+'" placeholder="Sprint label" value="'+safeText(App.activeSprintLabel || '')+'" />'
+    +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date" />'
     +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button">Add</button>'
     +'</div>';
 }
@@ -477,18 +535,15 @@ window.addVibeTask = function(workstreamId){
   var textEl = document.getElementById('task-text-'+id);
   var ownerEl = document.getElementById('task-owner-'+id);
   var dueEl = document.getElementById('task-due-'+id);
-  var sprintEl = document.getElementById('task-sprint-'+id);
   var text = textEl ? textEl.value.trim() : '';
   if(!text){ if(textEl) textEl.focus(); return; }
   var owner = ownerEl ? ownerEl.value : '';
-  var sprintLabel = sprintEl ? sprintEl.value.trim() : '';
   var payload = {
     text:text,
     done:false,
     workstreamId: workstreamId === VIBE_GENERAL_WORKSTREAM_ID ? null : workstreamId,
     deadline: dueEl && dueEl.value ? dueEl.value : null,
     contributors: owner ? [owner] : null,
-    sprintLabel: sprintLabel || null,
     createdBy:App.currentUser || 'Unknown',
     ts:Date.now()
   };
@@ -530,12 +585,6 @@ window.updateVibeTaskField = function(ticketId, taskId, field, value){
 
 window.toggleVibeTaskFromList = function(ticketId, taskId, current){
   var upd = {done:!current};
-  App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
-  refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
-};
-
-window.removeTaskFromSprint = function(ticketId, taskId){
-  var upd = {sprintLabel:null};
   App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
 };
