@@ -14,6 +14,14 @@ function startApp(){
     renderWorkload();
     renderContribPills();
   });
+  App.automationTeamsRef.on('value', function(snap){
+    App.automationTeams = snap.val()||{};
+    refreshSprintHierarchyUi();
+  });
+  App.automationSubteamsRef.on('value', function(snap){
+    App.automationSubteams = snap.val()||{};
+    refreshSprintHierarchyUi();
+  });
   App.mainTicketsRef.on('value', function(snap){
     App.mainTickets = snap.val()||{};
     if(!isSprintView()) refreshActiveTickets();

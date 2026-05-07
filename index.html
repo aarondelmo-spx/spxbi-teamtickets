@@ -96,6 +96,10 @@
     <div class="sprint-board" id="sprint-board" style="display:none">
       <div class="sprint-board-head">
         <div class="workload-title" style="margin-bottom:0">Team / subteam sprint hierarchy</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="openHierarchyModal()">Manage hierarchy</button>
+          <button class="btn btn-sm btn-primary" onclick="seedCurrentAutomationStructure()">Seed current view</button>
+        </div>
       </div>
       <div id="sprint-team-summary"></div>
     </div>
@@ -133,6 +137,36 @@
   </main>
 </div>
 
+<!-- Automation hierarchy modal -->
+<div class="modal-overlay" id="hierarchy-modal" style="display:none" onclick="if(event.target===this)closeHierarchyModal()">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header"><h3>Team hierarchy</h3><button class="modal-close" onclick="closeHierarchyModal()">×</button></div>
+    <div class="modal-body">
+      <div class="hierarchy-grid">
+        <div>
+          <div class="section-label">Teams</div>
+          <div id="automation-team-list" class="hierarchy-list"></div>
+          <div class="add-link-row" style="margin-top:10px">
+            <input id="automation-team-name" placeholder="Add team..." onkeydown="if(event.key==='Enter')addAutomationTeam()" />
+            <button class="btn btn-sm btn-primary" onclick="addAutomationTeam()">Add</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">Subteams</div>
+          <div id="automation-subteam-list" class="hierarchy-list"></div>
+          <div class="add-link-row" style="margin-top:10px">
+            <input id="automation-subteam-name" placeholder="Add subteam under selected team..." onkeydown="if(event.key==='Enter')addAutomationSubteam()" />
+            <button class="btn btn-sm btn-primary" onclick="addAutomationSubteam()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeHierarchyModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- New Ticket Modal -->
 <div class="modal-overlay" id="new-modal" style="display:none" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
@@ -144,11 +178,9 @@
         <div class="section-label">Sprint initiative details</div>
         <div class="form-row">
           <div class="field"><label>Team</label>
-            <select id="nt-team-area">
-              <option value="FinOps">FinOps</option><option value="Expansions">Expansions</option><option value="Claims">Claims</option><option value="Fleet">Fleet</option><option value="Other">Other</option>
-            </select>
+            <select id="nt-team-area" onchange="renderSubteamSelect('nt')"></select>
           </div>
-          <div class="field"><label>Subteam</label><input id="nt-subteam" placeholder="Agency Billing, HSE, CLEO, etc." /></div>
+          <div class="field"><label>Subteam</label><select id="nt-subteam"></select></div>
         </div>
         <div class="form-row">
           <div class="field"><label>Sprint</label><input id="nt-sprint-cycle" placeholder="Sprint 1, May, etc." /></div>
@@ -241,11 +273,9 @@
         <div class="section-label">Sprint initiative details</div>
         <div class="form-row">
           <div class="field"><label>Team</label>
-            <select id="d-team-area" onchange="updateTicketField('teamArea',this.value)">
-              <option value="FinOps">FinOps</option><option value="Expansions">Expansions</option><option value="Claims">Claims</option><option value="Fleet">Fleet</option><option value="Other">Other</option><option value="Unassigned">Unassigned</option>
-            </select>
+            <select id="d-team-area" onchange="updateSprintTeamSelection()"></select>
           </div>
-          <div class="field"><label>Subteam</label><input id="d-subteam" onchange="updateTicketField('subteam',this.value)" /></div>
+          <div class="field"><label>Subteam</label><select id="d-subteam" onchange="updateSprintSubteamSelection()"></select></div>
         </div>
         <div class="form-row">
           <div class="field"><label>Sprint</label><input id="d-sprint-cycle" onchange="updateTicketField('sprintCycle',this.value)" /></div>

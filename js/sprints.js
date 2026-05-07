@@ -99,7 +99,9 @@ function clearSprintNewFields(){
   var team = document.getElementById('nt-team-area');
   var stage = document.getElementById('nt-stage');
   var confidence = document.getElementById('nt-confidence');
-  if(team) team.value = 'FinOps';
+  renderTeamSelect('nt', 'FinOps');
+  if(team && !team.value) team.value = 'FinOps';
+  renderSubteamSelect('nt');
   if(stage) stage.value = 'scoping';
   if(confidence) confidence.value = 'medium';
 }
@@ -218,6 +220,93 @@ function compareTeams(a, b){
   return teamSortValue(a) - teamSortValue(b) || String(a || '').localeCompare(String(b || ''));
 }
 
+function defaultAutomationTeams(){
+  return [
+    {id:'default-finops', name:'FinOps', currentHc:104, sortOrder:1},
+    {id:'default-expansions', name:'Expansions', currentHc:92, sortOrder:2},
+    {id:'default-claims', name:'Claims', currentHc:48, sortOrder:3},
+    {id:'default-fleet', name:'Fleet', currentHc:164, sortOrder:4},
+    {id:'default-other', name:'Other', currentHc:null, sortOrder:99}
+  ];
+}
+
+function defaultAutomationSubteams(){
+  return [
+    {id:'default-finops-agency-billing', teamName:'FinOps', name:'Agency Billing Validation'},
+    {id:'default-finops-rb-calculation', teamName:'FinOps', name:'RB Calculation'},
+    {id:'default-finops-agency-portal', teamName:'FinOps', name:'Agency Portal Migration'},
+    {id:'default-expansions-hse', teamName:'Expansions', name:'HSE'},
+    {id:'default-expansions-site-planning', teamName:'Expansions', name:'Site Planning'},
+    {id:'default-claims-ssp', teamName:'Claims', name:'SSP Integration'},
+    {id:'default-claims-cleo', teamName:'Claims', name:'CLEO'},
+    {id:'default-fleet-ops', teamName:'Fleet', name:'Fleet Ops'}
+  ];
+}
+
+function automationTeamList(){
+  var teams = Object.entries(App.automationTeams || {}).map(function(entry){
+    return Object.assign({id: entry[0]}, entry[1]);
+  });
+  if(!teams.length) teams = defaultAutomationTeams();
+  return teams.sort(function(a,b){
+    return compareTeams(a.name, b.name) || numVal(a.sortOrder) - numVal(b.sortOrder);
+  });
+}
+
+function automationSubteamList(teamName){
+  var subteams = Object.entries(App.automationSubteams || {}).map(function(entry){
+    return Object.assign({id: entry[0]}, entry[1]);
+  }).filter(function(sub){
+    return (sub.teamName || '') === teamName;
+  });
+  if(!subteams.length){
+    subteams = defaultAutomationSubteams().filter(function(sub){ return sub.teamName === teamName; });
+  }
+  return subteams.sort(function(a,b){ return (a.name || '').localeCompare(b.name || ''); });
+}
+
+function renderTeamSelect(prefix, selected){
+  var el = document.getElementById(prefix+'-team-area');
+  if(!el) return;
+  var teams = automationTeamList();
+  var current = selected || el.value || 'FinOps';
+  if(current && !teams.some(function(team){ return team.name === current; })){
+    teams.push({id:'current-'+current,name:current,currentHc:null,sortOrder:999});
+  }
+  el.innerHTML = teams.map(function(team){
+    return '<option value="'+safeText(team.name)+'">'+safeText(team.name)+'</option>';
+  }).join('');
+  if(teams.some(function(team){ return team.name === current; })) el.value = current;
+  else if(teams.length) el.value = teams[0].name;
+}
+
+function renderSubteamSelect(prefix, selected){
+  var teamEl = document.getElementById(prefix+'-team-area');
+  var subEl = document.getElementById(prefix+'-subteam');
+  if(!teamEl || !subEl) return;
+  var subteams = automationSubteamList(teamEl.value);
+  var current = selected || subEl.value || '';
+  if(current && !subteams.some(function(subteam){ return subteam.name === current; })){
+    subteams.push({id:'current-'+current,teamName:teamEl.value,name:current});
+  }
+  subEl.innerHTML = '<option value="">Unassigned subteam</option>' + subteams.map(function(subteam){
+    return '<option value="'+safeText(subteam.name)+'">'+safeText(subteam.name)+'</option>';
+  }).join('');
+  if(subteams.some(function(subteam){ return subteam.name === current; })) subEl.value = current;
+  else subEl.value = '';
+}
+
+function refreshSprintHierarchyUi(){
+  renderTeamSelect('nt');
+  renderSubteamSelect('nt');
+  if(App.selectedTicketId && isSprintView()){
+    var t = App.allTickets[App.selectedTicketId];
+    if(t) populateSprintDetail(t);
+  }
+  renderAutomationHierarchyLists();
+  renderSprintDashboard();
+}
+
 function timelineLabel(t){
   var start = t.timelineStart || '';
   var end = t.timelineEnd || t.deadline || '';
@@ -249,8 +338,8 @@ function populateSprintDetail(t){
   if(!wrap) return;
   wrap.style.display = isSprintView() ? 'block' : 'none';
   if(!isSprintView()) return;
-  document.getElementById('d-team-area').value = t.teamArea || 'FinOps';
-  document.getElementById('d-subteam').value = t.subteam || '';
+  renderTeamSelect('d', t.teamArea || 'FinOps');
+  renderSubteamSelect('d', t.subteam || '');
   document.getElementById('d-sprint-cycle').value = t.sprintCycle || '';
   document.getElementById('d-timeline-start').value = t.timelineStart || '';
   document.getElementById('d-timeline-end').value = t.timelineEnd || '';
@@ -263,6 +352,35 @@ function populateSprintDetail(t){
   document.getElementById('d-bpo-reduction').value = t.bpoNfteReduction == null ? '' : t.bpoNfteReduction;
   document.getElementById('d-unclassified').value = fmtCapacity(unclassifiedCapacity(t));
 }
+
+function updateLocalSelectedTicket(upd){
+  var t = App.allTickets[App.selectedTicketId];
+  if(!t) return;
+  Object.keys(upd).forEach(function(k){ t[k] = upd[k]; });
+  populateSprintDetail(t);
+  renderList();
+  renderSprintDashboard();
+}
+
+window.updateSprintTeamSelection = function(){
+  if(!App.selectedTicketId) return;
+  var teamEl = document.getElementById('d-team-area');
+  var teamName = teamEl ? teamEl.value : 'Unassigned';
+  renderSubteamSelect('d');
+  var subEl = document.getElementById('d-subteam');
+  var subteamName = subEl && subEl.value ? subEl.value : null;
+  var upd = {teamArea: teamName || 'Unassigned', subteam: subteamName};
+  activeTicketRef(App.selectedTicketId).update(upd);
+  updateLocalSelectedTicket(upd);
+};
+
+window.updateSprintSubteamSelection = function(){
+  if(!App.selectedTicketId) return;
+  var subEl = document.getElementById('d-subteam');
+  var upd = {subteam: subEl && subEl.value ? subEl.value : null};
+  activeTicketRef(App.selectedTicketId).update(upd);
+  updateLocalSelectedTicket(upd);
+};
 
 function groupSprintInitiatives(entries){
   var grouped = {};
@@ -344,3 +462,175 @@ function renderSprintDashboard(){
     +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Scoped HC</th><th>Repurpose</th><th>Buffer</th><th>BPO/NFTE Reduction</th><th>Unclassified</th><th>Next Action</th>'
     +'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 }
+
+window.openHierarchyModal = function(){
+  var teams = automationTeamList();
+  if(!App.hierarchySelectedTeam && teams.length) App.hierarchySelectedTeam = teams[0].name;
+  renderAutomationHierarchyLists();
+  var modal = document.getElementById('hierarchy-modal');
+  if(modal) modal.style.display = 'flex';
+};
+
+window.closeHierarchyModal = function(){
+  var modal = document.getElementById('hierarchy-modal');
+  if(modal) modal.style.display = 'none';
+};
+
+window.selectAutomationTeam = function(teamName){
+  App.hierarchySelectedTeam = teamName;
+  renderAutomationHierarchyLists();
+};
+
+function renderAutomationHierarchyLists(){
+  var teamEl = document.getElementById('automation-team-list');
+  var subteamEl = document.getElementById('automation-subteam-list');
+  if(!teamEl || !subteamEl) return;
+  var teams = automationTeamList();
+  if(!App.hierarchySelectedTeam && teams.length) App.hierarchySelectedTeam = teams[0].name;
+  teamEl.innerHTML = teams.map(function(team){
+    var active = team.name === App.hierarchySelectedTeam;
+    return '<button class="hierarchy-row'+(active?' active':'')+'" onclick="selectAutomationTeam(\''+safeText(team.name)+'\')" type="button">'
+      +'<span>'+safeText(team.name)+'</span>'
+      +(team.currentHc != null ? '<span class="hierarchy-meta">'+fmtCapacity(team.currentHc)+' HC</span>' : '')
+      +'</button>';
+  }).join('');
+  var subteams = automationSubteamList(App.hierarchySelectedTeam || '');
+  if(!subteams.length){
+    subteamEl.innerHTML = '<div class="empty-inline">No subteams yet.</div>';
+    return;
+  }
+  subteamEl.innerHTML = subteams.map(function(subteam){
+    return '<div class="hierarchy-row static"><span>'+safeText(subteam.name)+'</span></div>';
+  }).join('');
+}
+
+window.addAutomationTeam = function(){
+  var input = document.getElementById('automation-team-name');
+  var name = input ? input.value.trim() : '';
+  if(!name) return;
+  var exists = automationTeamList().some(function(team){ return team.name.toLowerCase() === name.toLowerCase(); });
+  if(exists){ input.value=''; return; }
+  App.automationTeamsRef.push({name:name,currentHc:null,sortOrder:Date.now(),createdTs:Date.now(),createdBy:App.currentUser||'Unknown'});
+  App.hierarchySelectedTeam = name;
+  input.value = '';
+};
+
+window.addAutomationSubteam = function(){
+  var input = document.getElementById('automation-subteam-name');
+  var name = input ? input.value.trim() : '';
+  var teamName = App.hierarchySelectedTeam || (automationTeamList()[0] && automationTeamList()[0].name);
+  if(!name || !teamName) return;
+  var exists = automationSubteamList(teamName).some(function(sub){ return sub.name.toLowerCase() === name.toLowerCase(); });
+  if(exists){ input.value=''; return; }
+  App.automationSubteamsRef.push({teamName:teamName,name:name,sortOrder:Date.now(),createdTs:Date.now(),createdBy:App.currentUser||'Unknown'});
+  input.value = '';
+};
+
+function guessedSeedTeams(){
+  return [
+    {name:'FinOps', currentHc:104, sortOrder:1},
+    {name:'Expansions', currentHc:92, sortOrder:2},
+    {name:'Claims', currentHc:48, sortOrder:3},
+    {name:'Fleet', currentHc:164, sortOrder:4}
+  ];
+}
+
+function guessedSeedSubteams(){
+  return [
+    {teamName:'FinOps', name:'Agency Billing Validation'},
+    {teamName:'FinOps', name:'RB Calculation'},
+    {teamName:'FinOps', name:'Agency Portal Migration'},
+    {teamName:'Expansions', name:'HSE'},
+    {teamName:'Expansions', name:'Site Planning'},
+    {teamName:'Claims', name:'SSP Integration'},
+    {teamName:'Claims', name:'CLEO'},
+    {teamName:'Fleet', name:'Fleet Ops'}
+  ];
+}
+
+function guessedSeedInitiatives(){
+  var base = {
+    projectType:'sprint',
+    status:'open',
+    created:fmtDate(),
+    createdTs:Date.now(),
+    assignee:'Unassigned',
+    contributors:null,
+    deadline:null,
+    timelineStart:null,
+    timelineEnd:null,
+    fteRepurpose:null,
+    fteBuffer:null,
+    bpoNfteReduction:null,
+    seeded:true,
+    seedBatch:'automation-dashboard-2026-05-07'
+  };
+  function item(key, title, desc, teamArea, subteam, scopedHc, stage, confidence, nextAction, priority){
+    return Object.assign({}, base, {
+      sourceKey:key,
+      title:title,
+      desc:desc,
+      teamArea:teamArea,
+      subteam:subteam,
+      scopedHc:scopedHc,
+      stage:stage,
+      confidence:confidence,
+      nextAction:nextAction,
+      priority:priority||'p1',
+      sprintCycle: teamArea === 'Fleet' ? 'Discovery' : 'Sprint 1'
+    });
+  }
+  return [
+    item('finops-invoice-validation-ai','Invoice Validation using AI','Guessed status from current notes: Ervin testing edge cases; timeline to integrate into SSP still needed.','FinOps','Agency Billing Validation',7,'build_uat','medium','Capture build, UAT, and launch evidence; confirm SSP integration timeline','p1'),
+    item('finops-calculation-validation','Calculation Validation','Guessed status from current notes: awaiting SSP sample data and test downloads.','FinOps','Agency Billing Validation',5,'validating','medium','Download SSP samples and complete validation testing','p1'),
+    item('finops-calculator-template','Calculator Template Preparation','Guessed status from current notes: several automations are already done and need PH clarification/demo.','FinOps','RB Calculation',5,'build_uat','high','Confirm PH output changes and capture evidence','p1'),
+    item('finops-dispute-automation','Dispute Automation','Guessed status from current notes: named opportunity but owner/details still thin.','FinOps','RB Calculation',5,'scoping','low','Assign PIC and validate scope','p2'),
+    item('finops-agency-portal-migration','Agency Portal Migration','Guessed status from current notes: requirements alignment pending.','FinOps','Agency Portal Migration',null,'scoping','low','Align with Charm and Evelyn on requirements','p2'),
+    item('expansions-dole-submission','Monthly DOLE Submission','Guessed status from current notes: credentials and browser-emulator testing needed.','Expansions','HSE',1,'scoping','medium','Collect credentials and test browser-emulator flow','p1'),
+    item('expansions-hse-bulletin','Weekly HSE Bulletin Distribution and Compliance Tracking','Guessed status from current notes: ready to start once Forms/Sheets are received.','Expansions','HSE',4,'build_uat','medium','Get Google Forms/Sheets from Lance team and start build','p1'),
+    item('expansions-site-planning','Site Planning Generation','Guessed status from current notes: preliminary output exists but needs updated design rules.','Expansions','Site Planning',2,'validating','medium','Confirm updated design rules and improve output quality','p1'),
+    item('claims-ssp-integration','SSP Integration','Guessed allocation: half of the current 25 HC Claims opportunity until detailed sizing is confirmed.','Claims','SSP Integration',12.5,'validating','medium','Validate hours saved, build readiness, and deadline','p1'),
+    item('claims-cleo','CLEO','Guessed allocation: half of the current 25 HC Claims opportunity until detailed sizing is confirmed.','Claims','CLEO',12.5,'validating','medium','Validate hours saved, build readiness, and deadline','p1'),
+    item('fleet-discovery-cleanup','Fleet Discovery and Cleanup','Guessed status from dashboard: no scoped HC yet; team discussion needed before reporting.','Fleet','Fleet Ops',0,'scoping','low','Talk to Abbie and team; clean up source view','p2')
+  ];
+}
+
+function pushMissingByName(ref, existingList, seedList, fields){
+  var existing = {};
+  existingList.forEach(function(item){
+    var key = [item.teamName || '', item.name || ''].join('|').toLowerCase();
+    existing[key] = true;
+  });
+  var writes = [];
+  seedList.forEach(function(seed){
+    var key = [seed.teamName || '', seed.name || ''].join('|').toLowerCase();
+    if(existing[key]) return;
+    var payload = {};
+    fields.forEach(function(field){ payload[field] = seed[field] == null ? null : seed[field]; });
+    payload.seeded = true;
+    payload.createdTs = Date.now();
+    payload.createdBy = App.currentUser || 'Unknown';
+    writes.push(ref.push(payload));
+  });
+  return Promise.all(writes);
+}
+
+window.seedCurrentAutomationStructure = function(){
+  if(!isSprintView()) setProjectView('sprint');
+  if(!confirm('Seed the current guessed teams, subteams, and initiatives into Sprint Projects? Existing seeded items will not be duplicated.')) return;
+  var existingTeams = Object.entries(App.automationTeams || {}).map(function(entry){ return Object.assign({id:entry[0]}, entry[1]); });
+  var existingSubteams = Object.entries(App.automationSubteams || {}).map(function(entry){ return Object.assign({id:entry[0]}, entry[1]); });
+  var existingSourceKeys = {};
+  Object.values(App.sprintTickets || {}).forEach(function(t){ if(t.sourceKey) existingSourceKeys[t.sourceKey] = true; });
+  var seedInitiatives = guessedSeedInitiatives().filter(function(item){ return !existingSourceKeys[item.sourceKey]; });
+  Promise.all([
+    pushMissingByName(App.automationTeamsRef, existingTeams, guessedSeedTeams(), ['name','currentHc','sortOrder']),
+    pushMissingByName(App.automationSubteamsRef, existingSubteams, guessedSeedSubteams(), ['teamName','name','sortOrder'])
+  ]).then(function(){
+    return Promise.all(seedInitiatives.map(function(item){ return App.sprintTicketsRef.push(item); }));
+  }).then(function(){
+    alert('Seeded current automation structure. Added '+seedInitiatives.length+' initiative(s).');
+  }).catch(function(err){
+    alert('Seed failed: '+err.message);
+  });
+};
