@@ -25,6 +25,16 @@ window.toggleReplyBox = function(cid){
   if(box){box.style.display='flex';box.querySelector('input').focus();}
 };
 
+function linkifyText(text){
+  var parts = String(text || '').split(/(https?:\/\/[^\s]+)/g);
+  return parts.map(function(part, i){
+    if(i % 2 === 1){
+      return '<a href="'+safeText(part)+'" target="_blank" rel="noopener" class="comment-link">'+safeText(part)+'</a>';
+    }
+    return safeText(part);
+  }).join('');
+}
+
 function renderComments(ticketId){
   var t=App.allTickets[ticketId]; if(!t) return;
   var comments=t.comments?Object.entries(t.comments).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
@@ -33,7 +43,7 @@ function renderComments(ticketId){
   document.getElementById('d-comments').innerHTML=comments.map(function(entry){
     var cid=entry[0],c=entry[1];
     var replies=c.replies?Object.entries(c.replies).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
-    var rHtml=replies.length?'<div class="replies">'+replies.map(function(re){var r=re[1];return '<div class="comment" style="background:var(--surface3)"><div class="comment-header">'+avatarHtml(r.author,18)+'<span class="comment-author" style="font-size:12px">'+r.author+'</span><span class="comment-time">'+r.time+'</span></div><div class="comment-text">'+r.text+'</div></div>';}).join('')+'</div>':'';
-    return '<div class="comment-thread"><div class="comment"><div class="comment-header">'+avatarHtml(c.author)+'<span class="comment-author">'+c.author+'</span><span class="comment-time">'+c.time+'</span></div><div class="comment-text">'+c.text+'</div><div class="comment-actions"><button class="btn btn-ghost" onclick="toggleReplyBox(\''+cid+'\')">↩ Reply</button></div></div>'+rHtml+'<div class="reply-box" id="reply-box-'+cid+'" style="display:none">'+avatarHtml(App.currentUser,20)+'<input id="reply-input-'+cid+'" placeholder="Reply to '+c.author+'..." onkeydown="if(event.key===\'Enter\')postReply(\''+cid+'\')" /><button class="btn btn-primary btn-sm" onclick="postReply(\''+cid+'\')">Reply</button></div></div>';
+    var rHtml=replies.length?'<div class="replies">'+replies.map(function(re){var r=re[1];return '<div class="comment" style="background:var(--surface3)"><div class="comment-header">'+avatarHtml(r.author,18)+'<span class="comment-author" style="font-size:12px">'+safeText(r.author)+'</span><span class="comment-time">'+safeText(r.time)+'</span></div><div class="comment-text">'+linkifyText(r.text)+'</div></div>';}).join('')+'</div>':'';
+    return '<div class="comment-thread"><div class="comment"><div class="comment-header">'+avatarHtml(c.author)+'<span class="comment-author">'+safeText(c.author)+'</span><span class="comment-time">'+safeText(c.time)+'</span></div><div class="comment-text">'+linkifyText(c.text)+'</div><div class="comment-actions"><button class="btn btn-ghost" onclick="toggleReplyBox(\''+cid+'\')">↩ Reply</button></div></div>'+rHtml+'<div class="reply-box" id="reply-box-'+cid+'" style="display:none">'+avatarHtml(App.currentUser,20)+'<input id="reply-input-'+cid+'" placeholder="Reply to '+c.author+'..." onkeydown="if(event.key===\'Enter\')postReply(\''+cid+'\')" /><button class="btn btn-primary btn-sm" onclick="postReply(\''+cid+'\')">Reply</button></div></div>';
   }).join('');
 }

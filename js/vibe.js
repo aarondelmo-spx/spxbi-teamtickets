@@ -790,7 +790,7 @@ function updateDetailLayoutForView(){
   setDisplay(advancedToggle, vibe ? 'flex' : 'none');
   setDisplay(advancedBody, vibe ? 'none' : 'block');
   setDisplay(ownerField, vibe ? 'block' : 'none');
-  setDisplay(linksSection, vibe ? 'none' : 'block');
+  setDisplay(linksSection, 'block');
   var chevron = document.getElementById('detail-advanced-chevron');
   if(chevron) chevron.style.transform = 'rotate(0deg)';
   if(deleteBtn) deleteBtn.textContent = vibe ? 'Delete initiative' : 'Delete project';
