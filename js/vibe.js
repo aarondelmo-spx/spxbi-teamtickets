@@ -594,7 +594,7 @@ function weeklyPlanGroupsHtml(items, start, emptyText){
   Object.keys(grouped).sort().forEach(function(key){
     var week = grouped[key];
     var offset = Math.round((week.start - start) / (7 * 24 * 60 * 60 * 1000));
-    var sorted = week.items.slice().sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts||0) - (b.task.ts||0); });
+    var sorted = week.items.slice().sort(function(a,b){ var da=a.task.deadline||'',db=b.task.deadline||''; return da<db?-1:da>db?1:0; });
     html += '<div class="vibe-week-group">'
       +'<div class="vibe-week-heading"><div><div class="vibe-section-title">'+safeText(weekLabelForOffset(offset))+'</div><div class="week-label">'+safeText(weekRangeLabel(week.start))+'</div></div><span>'+sorted.length+' task'+(sorted.length!==1?'s':'')+'</span></div>'
       +sorted.map(function(item){ return taskRowHtml(item, 'weekly'); }).join('')
@@ -635,7 +635,7 @@ function renderVibeWeeklyPlan(search, list){
     .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
-    .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
+    .sort(function(a,b){ var da=a.task.deadline||'',db=b.task.deadline||''; return da<db?-1:da>db?1:0; });
   renderWeeklyPlanGroups(items, list, start);
 }
 
