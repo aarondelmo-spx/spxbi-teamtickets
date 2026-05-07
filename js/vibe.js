@@ -33,6 +33,10 @@ function workstreamEntries(t){
   });
 }
 
+function customWorkstreamEntries(t){
+  return workstreamEntries(t).filter(function(ws){ return !ws.virtual; });
+}
+
 function workstreamById(t, workstreamId){
   return workstreamEntries(t).find(function(ws){ return ws.id === workstreamId; }) || workstreamEntries(t)[0];
 }
@@ -155,17 +159,19 @@ function updateVibeStats(initiatives, extra){
   var totals = automationTotals(initiatives);
   var teamSize = automationTeamSizeTotal(initiatives);
   document.getElementById('s-total-label').textContent='Team size';
-  document.getElementById('s-open-label').textContent='Scoped for automation';
-  document.getElementById('s-prog-label').textContent='In progress automation';
-  document.getElementById('s-done-label').textContent='HC savings';
+  document.getElementById('s-open-label').textContent='Reviewed for automation';
+  document.getElementById('s-prog-label').textContent='Scoped for automation';
+  document.getElementById('s-done-label').textContent='Ongoing projects';
   document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
   document.getElementById('s-total').textContent=fmtCapacity(teamSize);
-  document.getElementById('s-open').textContent=fmtCapacity(totals.scoped);
-  document.getElementById('s-prog').textContent=fmtCapacity(totals.progress);
-  document.getElementById('s-done').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
-  if(extra) extra.style.display='none';
+  document.getElementById('s-open').textContent=fmtCapacity(totals.reviewed);
+  document.getElementById('s-prog').textContent=fmtCapacity(totals.scoped);
+  document.getElementById('s-done').textContent=fmtCapacity(totals.progress);
+  document.getElementById('s-extra-label').textContent='HC savings';
+  document.getElementById('s-extra').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
+  if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
     ? (App.activeSprintLabel ? 'Sprint: '+App.activeSprintLabel : 'Sprint view')
     : App.currentVibeView === 'tasks' ? 'Task queue' : 'Initiative planning';
@@ -218,17 +224,17 @@ function initiativeCardHtml(id, t){
   var pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
   var due = nearestDueTask(t);
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
-  var workstreamCount = workstreamEntries(t).length;
+  var groupCount = customWorkstreamEntries(t).length;
   var tasks = taskEntries(id, t);
   var sprinted = tasks.filter(function(item){ return taskSprintLabel(item.task); }).length;
-  var hcText = fmtCapacity(actualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' HC';
+  var hcText = fmtCapacity(automationReviewedHc(t))+' reviewed | '+fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' ongoing | '+fmtCapacity(actualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
     +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +'<div class="initiative-meta">'
-    +'<span>'+workstreamCount+' workstream'+(workstreamCount!==1?'s':'')+'</span>'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
     +(sprinted?'<span>'+sprinted+' in sprint</span>':'')
+    +(groupCount?'<span>'+groupCount+' group'+(groupCount!==1?'s':'')+'</span>':'')
     +'<span>'+hcText+'</span>'
     +'<span>'+dueText+'</span>'
     +'</div>'
@@ -240,14 +246,15 @@ function initiativeCardHtml(id, t){
     +'</div>';
 }
 
-function hcSummaryHtml(items, teamName, showTeamSize){
+function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   var initiatives = items.map(function(entry){ return entry[1] || entry.t || entry; });
   var totals = automationTotals(initiatives);
-  var size = teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives);
+  var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
   return '<div class="team-hc-strip">'
-    +(showTeamSize ? '<span>Team size '+fmtCapacity(size)+'</span>' : '')
+    +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
+    +'<span>Reviewed '+fmtCapacity(totals.reviewed)+'</span>'
     +'<span>Scoped '+fmtCapacity(totals.scoped)+'</span>'
-    +'<span>In progress '+fmtCapacity(totals.progress)+'</span>'
+    +'<span>Ongoing '+fmtCapacity(totals.progress)+'</span>'
     +'<span>Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
     +'</div>';
 }
@@ -279,9 +286,9 @@ function renderVibeInitiatives(search, list){
   Object.keys(grouped).sort(compareTeams).forEach(function(team){
     var teamEntries = [];
     Object.keys(grouped[team]).forEach(function(subteam){ teamEntries = teamEntries.concat(grouped[team][subteam]); });
-    html += '<div class="team-group"><div class="team-heading-row"><div class="team-heading">'+safeText(team)+'</div>'+hcSummaryHtml(teamEntries, team, true)+'</div>';
+    html += '<div class="team-group"><div class="team-heading-row"><div class="team-heading">'+safeText(team)+'</div>'+hcSummaryHtml(teamEntries, team, true, null)+'</div>';
     Object.keys(grouped[team]).sort().forEach(function(subteam){
-      html += '<div class="subteam-group"><div class="subteam-heading-row"><div class="subteam-heading">'+safeText(subteam)+'</div>'+hcSummaryHtml(grouped[team][subteam], null, false)+'</div><div class="initiative-card-grid">'
+      html += '<div class="subteam-group"><div class="subteam-heading-row"><div class="subteam-heading">'+safeText(subteam)+'</div>'+hcSummaryHtml(grouped[team][subteam], team, false, subteam)+'</div><div class="initiative-card-grid">'
         +grouped[team][subteam].map(function(entry){ return initiativeCardHtml(entry[0], entry[1]); }).join('')
         +'</div></div>';
     });
@@ -407,6 +414,17 @@ function workstreamTaskRowHtml(ticketId, taskId, task, workstreamName){
     +'</div>';
 }
 
+function taskComposerHtml(workstreamId){
+  var id = domId(workstreamId);
+  return '<div class="task-add-row">'
+    +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')" />'
+    +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions('')+'</select>'
+    +'<input id="task-due-'+id+'" type="date" />'
+    +'<input id="task-sprint-'+id+'" placeholder="Sprint label" value="'+safeText(App.activeSprintLabel || '')+'" />'
+    +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button">Add</button>'
+    +'</div>';
+}
+
 function renderWorkstreamsAndTasks(ticketId){
   var t = App.allTickets[ticketId]; if(!t) return;
   var section = document.getElementById('vibe-workstream-section');
@@ -414,28 +432,32 @@ function renderWorkstreamsAndTasks(ticketId){
   if(section) section.style.display = 'block';
   if(!list) return;
   var tasks = taskEntries(ticketId, t);
-  var html = workstreamEntries(t).map(function(ws){
+  var generalTasks = tasks.filter(function(item){ return item.workstreamId === VIBE_GENERAL_WORKSTREAM_ID; })
+    .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
+  var html = '<div class="task-primary-panel">'
+    +'<div class="task-list">'+(generalTasks.length ? generalTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, 'General'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
+    +taskComposerHtml(VIBE_GENERAL_WORKSTREAM_ID)
+    +'</div>';
+  var groups = customWorkstreamEntries(t);
+  if(groups.length){
+    html += '<div class="task-group-list"><div class="vibe-section-title">Task groups</div>';
+  }
+  html += groups.map(function(ws){
     var wsTasks = tasks.filter(function(item){ return item.workstreamId === ws.id; })
       .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
-    var id = domId(ws.id);
     return '<div class="workstream-card">'
-      +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'General')+'</div><div class="microcopy">'+(ws.virtual?'Default bucket for legacy or uncategorized tasks.':'Epic inside this initiative.')+'</div></div><div class="workstream-count">'+wsTasks.filter(function(item){return !item.task.done;}).length+' active</div></div>'
-      +'<div class="task-list">'+(wsTasks.length ? wsTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, ws.name || 'General'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
-      +'<div class="task-add-row">'
-      +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(ws.id)+'\')" />'
-      +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions('')+'</select>'
-      +'<input id="task-due-'+id+'" type="date" />'
-      +'<input id="task-sprint-'+id+'" placeholder="Sprint label" value="'+safeText(App.activeSprintLabel || '')+'" />'
-      +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(ws.id)+'\')" type="button">Add</button>'
-      +'</div>'
+      +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'Group')+'</div><div class="microcopy">Optional task group for a separate track of work.</div></div><div class="workstream-count">'+wsTasks.filter(function(item){return !item.task.done;}).length+' active</div></div>'
+      +'<div class="task-list">'+(wsTasks.length ? wsTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, ws.name || 'Group'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
+      +taskComposerHtml(ws.id)
       +'</div>';
   }).join('');
+  if(groups.length) html += '</div>';
   list.innerHTML = html;
 }
 
 window.addWorkstream = function(){
   if(!App.selectedTicketId) return;
-  var name = prompt('Workstream name');
+  var name = prompt('Group name');
   name = name ? name.trim() : '';
   if(!name) return;
   var t = App.allTickets[App.selectedTicketId] || {};

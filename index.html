@@ -163,16 +163,18 @@
         <div>
           <div class="section-label">Teams</div>
           <div id="automation-team-list" class="hierarchy-list"></div>
-          <div class="add-link-row" style="margin-top:10px">
+          <div class="add-link-row hierarchy-add-row" style="margin-top:10px">
             <input id="automation-team-name" placeholder="Add team..." onkeydown="if(event.key==='Enter')addAutomationTeam()" />
+            <input id="automation-team-size" placeholder="Team size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')addAutomationTeam()" />
             <button class="btn btn-sm btn-primary" onclick="addAutomationTeam()">Add</button>
           </div>
         </div>
         <div>
           <div class="section-label">Subteams</div>
           <div id="automation-subteam-list" class="hierarchy-list"></div>
-          <div class="add-link-row" style="margin-top:10px">
+          <div class="add-link-row hierarchy-add-row" style="margin-top:10px">
             <input id="automation-subteam-name" placeholder="Add subteam under selected team..." onkeydown="if(event.key==='Enter')addAutomationSubteam()" />
+            <input id="automation-subteam-size" placeholder="Subteam size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')addAutomationSubteam()" />
             <button class="btn btn-sm btn-primary" onclick="addAutomationSubteam()">Add</button>
           </div>
         </div>
@@ -217,13 +219,14 @@
           </div>
         </div>
         <div class="form-row">
+          <div class="field"><label>Reviewed for automation</label><input id="nt-automation-reviewed-hc" type="number" min="0" step="0.1" /></div>
           <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
-          <div class="field"><label>In progress automation</label><input id="nt-automation-progress-hc" type="number" min="0" step="0.1" /></div>
         </div>
         <div class="form-row">
+          <div class="field"><label>Ongoing projects</label><input id="nt-automation-progress-hc" type="number" min="0" step="0.1" /></div>
           <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
-          <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
         </div>
+        <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
       </div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="p0">P0 — Critical</option><option value="p1" selected>P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option></select></div>
@@ -260,10 +263,10 @@
       <div class="vibe-workstream-section" id="vibe-workstream-section" style="display:none">
         <div class="section-head-row">
           <div>
-            <div class="section-label" style="margin-bottom:2px">Workstreams &amp; Tasks</div>
-            <div class="microcopy">Workstreams are epics. Tasks can be pulled into a sprint with a sprint label.</div>
+            <div class="section-label" style="margin-bottom:2px">Tasks</div>
+            <div class="microcopy">Add tasks directly. Use groups only when the initiative has separate tracks of work.</div>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="addWorkstream()" type="button">+ Workstream</button>
+          <button class="btn btn-sm btn-primary" onclick="addWorkstream()" type="button">+ Group</button>
         </div>
         <div id="vibe-workstream-list"></div>
       </div>
@@ -327,14 +330,17 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Team size</label><input id="d-team-size-hc" readonly /></div>
-          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
+          <div class="field"><label>Team/subteam size</label><input id="d-team-size-hc" readonly /></div>
+          <div class="field"><label>Reviewed for automation</label><input id="d-automation-reviewed-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationReviewedHc',this.value)" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>In progress automation</label><input id="d-automation-progress-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationInProgressHc',this.value)" /></div>
-          <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
+          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
+          <div class="field"><label>Ongoing projects</label><input id="d-automation-progress-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationInProgressHc',this.value)" /></div>
         </div>
-        <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
+        <div class="form-row">
+          <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
+          <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
+        </div>
       </div>
       </div>
 
