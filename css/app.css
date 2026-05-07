@@ -169,6 +169,14 @@
   .team-hc-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--text3)}
   .team-hc-strip span{padding:2px 7px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);white-space:nowrap}
   .initiative-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  .support-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem;padding:8px 0}
+  .support-filter-label{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--text3);white-space:nowrap}
+  .support-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;border:1px solid rgba(124,111,247,.35);background:rgba(124,111,247,.1);color:var(--accent);font-size:11px;font-family:var(--mono);white-space:nowrap}
+  .support-chip-remove{border:none;background:none;color:var(--accent);cursor:pointer;padding:0 0 0 2px;font-size:11px;line-height:1;opacity:.7}
+  .support-chip-remove:hover{opacity:1}
+  .support-chips-wrap{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:28px}
+  .support-team-input{border:none;background:none;color:var(--text);font-family:var(--font);font-size:13px;outline:none;padding:2px 4px;min-width:120px}
+  .support-team-input::placeholder{color:var(--text3)}
   .who-filter-row{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.75rem}
   .who-filter-row.visible{display:grid}
   .who-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.5rem;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;display:flex;flex-direction:column;gap:6px}

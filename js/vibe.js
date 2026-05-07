@@ -228,6 +228,7 @@ function updateVibeShell(){
   var whoRow = document.getElementById('who-filter-row');
   if(statsRow) statsRow.style.display = isSprint ? 'none' : '';
   if(whoRow) whoRow.classList.toggle('visible', !!isSprint);
+  if(!vibe || isSprint) { var sfb = document.getElementById('support-team-filter-bar'); if(sfb) sfb.style.display = 'none'; }
 }
 
 window.toggleVibeFilters = function(){
@@ -257,6 +258,19 @@ window.setWeeklyPlanDateFromInput = function(){
   localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
+  renderList();
+};
+
+window.toggleVibeSupportFilter = function(team){
+  var f = App.vibeSupportFilter || [];
+  var idx = f.indexOf(team);
+  if(idx > -1) f.splice(idx, 1); else f.push(team);
+  App.vibeSupportFilter = f;
+  renderList();
+};
+
+window.clearVibeSupportFilter = function(){
+  App.vibeSupportFilter = [];
   renderList();
 };
 
@@ -367,6 +381,16 @@ function dueThisWeekCount(t){
   }).length;
 }
 
+function getSupportingTeams(t){
+  if(!t || !t.supportingTeams) return [];
+  return Array.isArray(t.supportingTeams) ? t.supportingTeams : Object.values(t.supportingTeams);
+}
+
+function supportChipsHtml(teams){
+  if(!teams || !teams.length) return '';
+  return teams.map(function(team){ return '<span class="support-chip">'+safeText(team)+'</span>'; }).join('');
+}
+
 function initiativeCardHtml(id, t){
   var stats = initiativeTaskStats(t);
   var pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
@@ -378,6 +402,7 @@ function initiativeCardHtml(id, t){
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
     +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
+    +(getSupportingTeams(t).length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+supportChipsHtml(getSupportingTeams(t))+'</div>' : '')
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
     +(weeklyDue?'<span>'+weeklyDue+' due this week</span>':'')
@@ -421,12 +446,39 @@ function editableSubteamHeadingHtml(teamName, subteamName){
     +'</button>';
 }
 
+function renderSupportTeamFilterBar(allEntries){
+  var bar = document.getElementById('support-team-filter-bar');
+  var pillsEl = document.getElementById('support-team-filter-pills');
+  if(!bar || !pillsEl) return;
+  var allTeams = [];
+  allEntries.forEach(function(entry){
+    getSupportingTeams(entry[1]).forEach(function(team){
+      if(allTeams.indexOf(team) === -1) allTeams.push(team);
+    });
+  });
+  if(!allTeams.length){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  var active = App.vibeSupportFilter || [];
+  pillsEl.innerHTML = '<button class="filter-pill'+(active.length ? '' : ' active')+'" onclick="clearVibeSupportFilter()">All</button>'
+    +allTeams.sort().map(function(team){
+      var on = active.indexOf(team) > -1;
+      return '<button class="filter-pill'+(on?' active':'')+'" onclick="toggleVibeSupportFilter(\''+jsArg(team)+'\')">'+safeText(team)+'</button>';
+    }).join('');
+}
+
 function renderVibeInitiatives(search, list){
-  var entries = Object.entries(App.allTickets || {})
-    .filter(initiativeMatchesFilter)
+  var allEntries = Object.entries(App.allTickets || {}).filter(initiativeMatchesFilter);
+  renderSupportTeamFilterBar(allEntries);
+  var entries = allEntries
     .filter(function(entry){ return initiativeMatchesVibeMetric(entry[1]); })
     .filter(function(entry){ return App.currentPriorityFilter === 'all' || (entry[1].priority || 'p1') === App.currentPriorityFilter; })
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
+    .filter(function(entry){
+      var f = App.vibeSupportFilter || [];
+      if(!f.length) return true;
+      var teams = getSupportingTeams(entry[1]);
+      return f.some(function(ft){ return teams.indexOf(ft) > -1; });
+    })
     .sort(function(a,b){
       return compareTeams(normalizeTeamName(a[1].teamArea), normalizeTeamName(b[1].teamArea))
         || compareSubteams(normalizeSubteamName(a[1].subteam), normalizeSubteamName(b[1].subteam))
@@ -776,6 +828,40 @@ window.toggleVibeTaskFromList = function(ticketId, taskId, current){
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
 };
 
+function renderSupportingTeamsField(ticketId){
+  var el = document.getElementById('d-support-teams');
+  if(!el) return;
+  var t = App.allTickets[ticketId] || {};
+  var teams = getSupportingTeams(t);
+  el.innerHTML = teams.map(function(team){
+    return '<span class="support-chip">'+safeText(team)
+      +'<button class="support-chip-remove" onclick="removeSupportingTeam(\''+jsArg(team)+'\')" type="button" title="Remove">✕</button></span>';
+  }).join('')
+  +'<input class="support-team-input" id="support-team-input" placeholder="Add team…"'
+  +' onkeydown="if(event.key===\'Enter\'||event.key===\',\'){event.preventDefault();var v=this.value.trim();if(v){addSupportingTeam(v);this.value=\'\';}}"/>';
+}
+
+window.addSupportingTeam = function(team){
+  if(!team || !App.selectedTicketId) return;
+  var t = App.allTickets[App.selectedTicketId] || {};
+  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
+  teams.push(team);
+  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams});
+  t.supportingTeams = teams;
+  renderSupportingTeamsField(App.selectedTicketId);
+  renderList();
+};
+
+window.removeSupportingTeam = function(team){
+  if(!App.selectedTicketId) return;
+  var t = App.allTickets[App.selectedTicketId] || {};
+  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
+  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
+  t.supportingTeams = teams.length ? teams : null;
+  renderSupportingTeamsField(App.selectedTicketId);
+  renderList();
+};
+
 function updateDetailLayoutForView(){
   var vibe = isSprintView();
   var vibeSection = document.getElementById('vibe-workstream-section');
@@ -791,6 +877,9 @@ function updateDetailLayoutForView(){
   setDisplay(advancedBody, vibe ? 'none' : 'block');
   setDisplay(ownerField, vibe ? 'block' : 'none');
   setDisplay(linksSection, 'block');
+  var supportField = document.getElementById('d-support-teams-field');
+  setDisplay(supportField, vibe ? 'block' : 'none');
+  if(vibe && App.selectedTicketId) renderSupportingTeamsField(App.selectedTicketId);
   var chevron = document.getElementById('detail-advanced-chevron');
   if(chevron) chevron.style.transform = 'rotate(0deg)';
   if(deleteBtn) deleteBtn.textContent = vibe ? 'Delete initiative' : 'Delete project';

@@ -28,6 +28,7 @@ var App = {
   currentVibeView: 'initiatives',
   vibeMetricFilter: 'all',
   vibeWhoFilter: 'all',
+  vibeSupportFilter: [],
   activePlanWeekStart: localStorage.getItem('spxbi_active_week_start') || '',
   vibeFiltersOpen: false,
   selectedTicketId: null,
