@@ -428,7 +428,11 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" onclick="deleteTicket()">Delete project</button>
-      <button class="btn" onclick="closeDetailModal()">Close</button>
+      <div class="detail-footer-actions">
+        <span class="detail-save-status" id="detail-save-status"></span>
+        <button class="btn btn-primary" onclick="saveDetailChanges()">Save changes</button>
+        <button class="btn" onclick="closeDetailModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>

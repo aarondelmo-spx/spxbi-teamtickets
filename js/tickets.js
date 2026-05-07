@@ -12,47 +12,61 @@ window.createTicket = function(){
   closeNewModal();
 };
 
-window.updateTicketField = function(field,value){
-  if(!App.selectedTicketId) return;
-  var numericFields={
+function ticketNumericFields(){
+  return {
     scopedHc:true,fteRepurpose:true,fteBuffer:true,bpoNfteReduction:true,
     automationReviewedHc:true,automationScopedHc:true,automationInProgressHc:true,actualHcSavings:true,excessCapacityHc:true
   };
+}
+
+function normalizeTicketFieldValue(field, value){
+  return ticketNumericFields()[field] ? (value===''?null:numVal(value)) : (value===''?null:value);
+}
+
+function applyLocalTicketPatch(id, upd){
+  if(!id || !upd) return null;
+  var t = App.allTickets[id];
+  if(!t) return null;
+  Object.keys(upd).forEach(function(k){ t[k] = upd[k]; });
+  var tickets = currentTickets();
+  if(tickets && tickets[id]) Object.keys(upd).forEach(function(k){ tickets[id][k] = upd[k]; });
+  return t;
+}
+
+function refreshAfterTicketUpdate(id, upd, options){
+  var t = applyLocalTicketPatch(id, upd);
+  if(App.selectedTicketId === id && t && typeof refreshDetailFields === 'function'){
+    refreshDetailFields(t, options || {});
+  }
+  if(typeof updateStats === 'function') updateStats();
+  if(typeof renderList === 'function') renderList();
+  if(typeof updateCounts === 'function') updateCounts();
+  if(typeof updateWarnings === 'function') updateWarnings();
+  if(typeof renderWorkload === 'function') renderWorkload();
+  if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
+  if(typeof renderCalendar === 'function'){
+    var cal = document.getElementById('cal-overlay');
+    if(cal && cal.style.display !== 'none') renderCalendar();
+  }
+}
+
+window.updateTicketField = function(field,value){
+  if(!App.selectedTicketId) return;
+  var id = App.selectedTicketId;
+  var before = App.allTickets[id] || {};
   var upd={};
-  if(numericFields[field]) upd[field]=(value===''?null:numVal(value));
-  else upd[field]=(value===''?null:value);
-  activeTicketRef(App.selectedTicketId).update(upd);
+  upd[field]=normalizeTicketFieldValue(field,value);
+  activeTicketRef(id).update(upd);
   if(field==='status'){
-    var tStatus=App.allTickets[App.selectedTicketId];
-    if(tStatus) tStatus.status=value;
-    document.getElementById('d-status-badge').className='status-badge '+statusClass(value);
-    document.getElementById('d-status-badge').textContent=value;
-    renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);
-    if(tStatus) logActivity('status',tStatus.title,value);
-    if(typeof populateSprintDetail === 'function' && tStatus) populateSprintDetail(tStatus);
-    if(typeof updateStats === 'function') updateStats();
-    if(typeof renderList === 'function') renderList();
-    if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
+    if(before) logActivity('status',before.title,value);
   }
   if(field==='deadline'){
-    renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
-    if(value){var t3=App.allTickets[App.selectedTicketId];if(t3) logActivity('setdeadline',t3.title,'',App.selectedTicketId,t3.deadline||'none',value);}
-  }
-  if(numericFields[field]){
-    var tnum=App.allTickets[App.selectedTicketId];
-    if(tnum){
-      tnum[field]=upd[field];
-      populateSprintDetail(tnum);
-      if(typeof updateStats === 'function') updateStats();
-      if(typeof renderList === 'function') renderList();
-      if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
-    }
+    if(value && before) logActivity('setdeadline',before.title,'',id,before.deadline||'none',value);
   }
   if(field==='priority'){
-    var pb=document.getElementById('d-priority-badge');
-    if(pb){pb.className='priority-badge '+pbClass(value);pb.textContent=value;}
-    var t2b=App.allTickets[App.selectedTicketId]; if(t2b) logActivity('priority',t2b.title,'',App.selectedTicketId,t2b.priority,value);
+    if(before) logActivity('priority',before.title,'',id,before.priority,value);
   }
+  refreshAfterTicketUpdate(id, upd);
 };
 
 window.clearDeadline = function(){

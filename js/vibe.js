@@ -1,4 +1,5 @@
 var VIBE_GENERAL_WORKSTREAM_ID = '_general';
+var VIBE_WEEKLY_PLAN_WEEKS = 5;
 
 function jsArg(value){
   return String(value == null ? '' : value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -74,6 +75,19 @@ function taskInWeek(task, start){
   if(!due) return false;
   var end = addDays(start, 6);
   return due >= start && due <= end;
+}
+
+function taskInWeekWindow(task, start, weekCount){
+  var due = parseYmd(task && task.deadline);
+  if(!due) return false;
+  var end = addDays(start, weekCount * 7 - 1);
+  return due >= start && due <= end;
+}
+
+function weekLabelForOffset(offset){
+  if(offset === 0) return 'Selected week';
+  if(offset === 1) return 'Next week';
+  return offset + ' weeks out';
 }
 
 function workstreamEntries(t){
@@ -219,7 +233,7 @@ function updateVibeStats(initiatives, extra){
   document.getElementById('s-extra').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
-    ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())
+    ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())+' onward'
     : App.currentVibeView === 'tasks' ? 'Task queue' : 'Initiative planning';
   document.getElementById('ticket-count-sub').textContent=initiatives.length+' initiative'+(initiatives.length!==1?'s':'')+' total - '+viewLabel;
   syncWeeklyPlanControls();
@@ -330,8 +344,8 @@ function renderVibeInitiatives(search, list){
     .filter(function(entry){ return App.currentPriorityFilter === 'all' || (entry[1].priority || 'p1') === App.currentPriorityFilter; })
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
     .sort(function(a,b){
-      return compareTeams(a[1].teamArea || 'Unassigned', b[1].teamArea || 'Unassigned')
-        || normalizeSubteamName(a[1].subteam).localeCompare(normalizeSubteamName(b[1].subteam))
+      return compareTeams(normalizeTeamName(a[1].teamArea), normalizeTeamName(b[1].teamArea))
+        || compareSubteams(normalizeSubteamName(a[1].subteam), normalizeSubteamName(b[1].subteam))
         || (b[1].createdTs || 0) - (a[1].createdTs || 0);
     });
   if(!entries.length){
@@ -352,7 +366,7 @@ function renderVibeInitiatives(search, list){
     var teamEntries = [];
     Object.keys(grouped[team]).forEach(function(subteam){ teamEntries = teamEntries.concat(grouped[team][subteam]); });
     html += '<div class="team-group"><div class="team-heading-row">'+editableTeamHeadingHtml(team)+hcSummaryHtml(teamEntries, team, true, null)+'</div>';
-    Object.keys(grouped[team]).sort().forEach(function(subteam){
+    Object.keys(grouped[team]).sort(compareSubteams).forEach(function(subteam){
       html += '<div class="subteam-group"><div class="subteam-heading-row">'+editableSubteamHeadingHtml(team, subteam)+hcSummaryHtml(grouped[team][subteam], team, false, subteam)+'</div><div class="initiative-card-grid">'
         +grouped[team][subteam].map(function(entry){ return initiativeCardHtml(entry[0], entry[1]); }).join('')
         +'</div></div>';
@@ -400,11 +414,7 @@ function taskRowHtml(item, mode){
     +'</div>';
 }
 
-function renderGroupedTasks(items, list, emptyText, mode){
-  if(!items.length){
-    list.innerHTML = '<div class="vibe-empty">'+safeText(emptyText)+'</div>';
-    return;
-  }
+function groupedTasksHtml(items, mode){
   var grouped = {};
   items.forEach(function(item){
     if(!grouped[item.ticketId]) grouped[item.ticketId] = {title:item.initiative.title || 'Untitled initiative', workstreams:{}};
@@ -420,6 +430,39 @@ function renderGroupedTasks(items, list, emptyText, mode){
     });
     html += '</div>';
   });
+  return html;
+}
+
+function renderGroupedTasks(items, list, emptyText, mode){
+  if(!items.length){
+    list.innerHTML = '<div class="vibe-empty">'+safeText(emptyText)+'</div>';
+    return;
+  }
+  list.innerHTML = groupedTasksHtml(items, mode);
+}
+
+function renderWeeklyPlanGroups(items, list, start){
+  if(!items.length){
+    var end = addDays(start, VIBE_WEEKLY_PLAN_WEEKS * 7 - 1);
+    list.innerHTML = '<div class="vibe-empty">No tasks are due from '+safeText(weekRangeLabel(start))+' through '+safeText(weekRangeLabel(addDays(end, -6)))+'. Add due dates to place tasks into the Weekly Plan.</div>';
+    return;
+  }
+  var grouped = {};
+  items.forEach(function(item){
+    var weekStart = weekStartForDate(item.task.deadline);
+    var key = ymd(weekStart);
+    if(!grouped[key]) grouped[key] = {start:weekStart, items:[]};
+    grouped[key].items.push(item);
+  });
+  var html = '';
+  Object.keys(grouped).sort().forEach(function(key){
+    var week = grouped[key];
+    var offset = Math.round((week.start - start) / (7 * 24 * 60 * 60 * 1000));
+    html += '<div class="vibe-week-group">'
+      +'<div class="vibe-week-heading"><div><div class="vibe-section-title">'+safeText(weekLabelForOffset(offset))+'</div><div class="week-label">'+safeText(weekRangeLabel(week.start))+'</div></div><span>'+week.items.length+' task'+(week.items.length!==1?'s':'')+'</span></div>'
+      +groupedTasksHtml(week.items, 'weekly')
+      +'</div>';
+  });
   list.innerHTML = html;
 }
 
@@ -427,10 +470,10 @@ function renderVibeWeeklyPlan(search, list){
   syncWeeklyPlanControls();
   var start = selectedWeekStart();
   var items = collectVibeTasks()
-    .filter(function(item){ return taskInWeek(item.task, start); })
+    .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
-  renderGroupedTasks(items, list, 'No tasks are due in '+weekRangeLabel(start)+'. Add a due date to place tasks into the Weekly Plan.', 'weekly');
+  renderWeeklyPlanGroups(items, list, start);
 }
 
 function renderVibeSprint(search, list){
@@ -505,8 +548,10 @@ function renderWorkstreamsAndTasks(ticketId){
   html += groups.map(function(ws){
     var wsTasks = tasks.filter(function(item){ return item.workstreamId === ws.id; })
       .sort(function(a,b){ return taskDueRank(a.task) - taskDueRank(b.task) || (a.task.ts || 0) - (b.task.ts || 0); });
+    var activeCount = wsTasks.filter(function(item){return !item.task.done;}).length;
     return '<div class="workstream-card">'
-      +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'Group')+'</div><div class="microcopy">Optional task group for a separate track of work.</div></div><div class="workstream-count">'+wsTasks.filter(function(item){return !item.task.done;}).length+' active</div></div>'
+      +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'Group')+'</div><div class="microcopy">Optional task group for a separate track of work.</div></div>'
+      +'<div class="workstream-actions"><div class="workstream-count">'+activeCount+' active</div><button class="btn-icon workstream-delete" onclick="deleteWorkstream(\''+jsArg(ticketId)+'\',\''+jsArg(ws.id)+'\')" title="Delete task group" type="button">x</button></div></div>'
       +'<div class="task-list">'+(wsTasks.length ? wsTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, ws.name || 'Group'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
       +taskComposerHtml(ws.id)
       +'</div>';
@@ -529,6 +574,37 @@ window.addWorkstream = function(){
     createdTs:Date.now(),
     createdBy:App.currentUser || 'Unknown'
   });
+};
+
+window.deleteWorkstream = function(ticketId, workstreamId){
+  if(!ticketId || !workstreamId || workstreamId === VIBE_GENERAL_WORKSTREAM_ID) return;
+  var t = App.allTickets[ticketId];
+  if(!t || !t.workstreams || !t.workstreams[workstreamId]) return;
+  var groupName = t.workstreams[workstreamId].name || 'this group';
+  var affectedTasks = Object.entries(t.subtasks || {}).filter(function(entry){
+    return entry[1] && entry[1].workstreamId === workstreamId;
+  });
+  var message = 'Delete task group "'+groupName+'"?';
+  if(affectedTasks.length){
+    message += '\n\nIts '+affectedTasks.length+' task'+(affectedTasks.length!==1?'s':'')+' will move back to the main task list.';
+  }
+  if(!confirm(message)) return;
+  var updates = {};
+  updates['sprintProjects/'+ticketId+'/workstreams/'+workstreamId] = null;
+  affectedTasks.forEach(function(entry){
+    updates['sprintProjects/'+ticketId+'/subtasks/'+entry[0]+'/workstreamId'] = null;
+  });
+  App.db.ref().update(updates);
+  delete t.workstreams[workstreamId];
+  affectedTasks.forEach(function(entry){
+    if(t.subtasks && t.subtasks[entry[0]]) t.subtasks[entry[0]].workstreamId = null;
+  });
+  if(App.sprintTickets && App.sprintTickets[ticketId]) App.sprintTickets[ticketId] = t;
+  if(App.selectedTicketId === ticketId) renderWorkstreamsAndTasks(ticketId);
+  renderList();
+  updateStats();
+  updateWarnings();
+  renderWorkload();
 };
 
 window.addVibeTask = function(workstreamId){

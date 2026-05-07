@@ -27,45 +27,142 @@ window.setDetailStatusOptions = function(currentStatus){
   el.value = value;
 };
 
+function staticDetailTextEl(field, value){
+  var el = document.createElement('div');
+  el.id = 'd-'+field;
+  el.className = field === 'title' ? 'detail-title' : 'detail-desc';
+  el.title = 'Double-click to edit';
+  el.style.cursor = 'text';
+  el.ondblclick = function(){ editDetailField(field); };
+  el.textContent = value;
+  return el;
+}
+
+function renderStaticDetailText(field, value, force){
+  var el = document.getElementById('d-'+field);
+  if(!el) return;
+  var editing = el.getAttribute && el.getAttribute('data-detail-edit-field');
+  if(editing && !force) return;
+  var displayValue = field === 'desc' ? (value || 'No description.') : (value || 'Untitled');
+  if(editing){
+    el.replaceWith(staticDetailTextEl(field, displayValue));
+    return;
+  }
+  el.textContent = displayValue;
+}
+
+function readDetailTextField(field){
+  var el = document.getElementById('d-'+field);
+  if(!el) return '';
+  if(el.getAttribute && el.getAttribute('data-detail-edit-field')) return el.value.trim();
+  if(field === 'desc' && el.textContent === 'No description.') return '';
+  return el.textContent.trim();
+}
+
+function setDetailSaveStatus(message){
+  var el = document.getElementById('detail-save-status');
+  if(!el) return;
+  el.textContent = message || '';
+  if(message){
+    setTimeout(function(){ if(el.textContent === message) el.textContent = ''; }, 1800);
+  }
+}
+
+window.refreshDetailFields = function(t, options){
+  options = options || {};
+  renderStaticDetailText('title', t.title, options.forceText);
+  renderStaticDetailText('desc', t.desc, options.forceText);
+  var priorityBadge = document.getElementById('d-priority-badge');
+  if(priorityBadge){ priorityBadge.className='priority-badge '+pbClass(t.priority); priorityBadge.textContent=t.priority||'p1'; }
+  var statusBadge = document.getElementById('d-status-badge');
+  if(statusBadge){ statusBadge.className='status-badge '+statusClass(t.status); statusBadge.textContent=t.status||'open'; }
+  setDetailStatusOptions(t.status);
+  var prioritySel = document.getElementById('d-priority-sel');
+  if(prioritySel) prioritySel.value=t.priority||'p1';
+  var deadlineInp = document.getElementById('d-deadline-inp');
+  if(deadlineInp) deadlineInp.value=t.deadline||'';
+  renderDeadlineStatus(t.deadline,t.status);
+  if(typeof populateSprintDetail === 'function') populateSprintDetail(t);
+};
+
 window.editDetailField = function(field){
   var el=document.getElementById('d-'+field); if(!el) return;
-  var current=el.textContent;
+  var ticket=App.allTickets[App.selectedTicketId] || {};
+  var current=field==='title' ? (ticket.title || el.textContent) : (ticket.desc || '');
   var isTitle=field==='title';
   var input=document.createElement(isTitle?'input':'textarea');
   input.value=current;
+  input.id='d-'+field;
+  input.setAttribute('data-detail-edit-field',field);
   input.style.cssText='width:100%;padding:6px 8px;border-radius:var(--radius);border:1px solid var(--accent);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:'+(isTitle?'17px':'13px')+';font-weight:'+(isTitle?'500':'400')+';outline:none;resize:vertical';
   if(!isTitle) input.rows=3;
   el.replaceWith(input);
   input.focus();
   input.select();
+  var done = false;
   function save(){
+    if(done) return;
+    done = true;
     var newVal=input.value.trim()||current;
     var dbField=field==='title'?'title':'desc';
-    activeTicketRef(App.selectedTicketId).update({[dbField]:newVal});
-    var t=App.allTickets[App.selectedTicketId];
-    if(t&&newVal!==current) logActivity('edited'+dbField,t.title,'',App.selectedTicketId,current.slice(0,40),newVal.slice(0,40));
+    var id = App.selectedTicketId;
+    var upd = {};
+    upd[dbField] = newVal;
+    activeTicketRef(id).update(upd);
+    var t=App.allTickets[id];
+    if(t&&newVal!==current) logActivity('edited'+dbField,t.title,'',id,current.slice(0,40),newVal.slice(0,40));
+    if(typeof refreshAfterTicketUpdate === 'function') refreshAfterTicketUpdate(id, upd, {forceText:true});
+    else input.replaceWith(staticDetailTextEl(field, field==='desc' ? (newVal || 'No description.') : newVal));
+    setDetailSaveStatus('Saved');
+  }
+  function cancel(){
+    if(done) return;
+    done = true;
+    input.replaceWith(staticDetailTextEl(field, field==='desc' ? (current || 'No description.') : current));
   }
   input.addEventListener('blur',save);
   input.addEventListener('keydown',function(e){
     if(isTitle&&e.key==='Enter'){e.preventDefault();save();input.blur();}
-    if(e.key==='Escape'){input.value=current;input.blur();}
+    if(e.key==='Escape'){e.preventDefault();cancel();}
   });
+};
+
+window.saveDetailChanges = function(){
+  if(!App.selectedTicketId) return;
+  var id = App.selectedTicketId;
+  var upd = {
+    title: readDetailTextField('title') || 'Untitled',
+    desc: readDetailTextField('desc') || 'No description.',
+    status: document.getElementById('d-status-sel').value || 'open',
+    priority: document.getElementById('d-priority-sel').value || 'p1',
+    deadline: document.getElementById('d-deadline-inp').value || null,
+    contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null,
+    assignee: App.dSelectedContribs[0] || 'Unassigned'
+  };
+  if(isSprintView()){
+    upd.teamArea = normalizeTeamName(document.getElementById('d-team-area').value);
+    upd.subteam = normalizeSubteamName(document.getElementById('d-subteam').value);
+    upd.sprintCycle = document.getElementById('d-sprint-cycle').value || null;
+    upd.timelineStart = document.getElementById('d-timeline-start').value || null;
+    upd.timelineEnd = document.getElementById('d-timeline-end').value || null;
+    upd.stage = document.getElementById('d-stage').value || null;
+    upd.confidence = document.getElementById('d-confidence').value || null;
+    upd.automationReviewedHc = normalizeTicketFieldValue('automationReviewedHc', document.getElementById('d-automation-reviewed-hc').value);
+    upd.automationScopedHc = normalizeTicketFieldValue('automationScopedHc', document.getElementById('d-automation-scoped-hc').value);
+    upd.actualHcSavings = normalizeTicketFieldValue('actualHcSavings', document.getElementById('d-actual-hc-savings').value);
+    upd.excessCapacityHc = normalizeTicketFieldValue('excessCapacityHc', document.getElementById('d-excess-capacity-hc').value);
+  }
+  activeTicketRef(id).update(upd);
+  refreshAfterTicketUpdate(id, upd, {forceText:true});
+  setDetailSaveStatus('Saved');
 };
 
 window.openDetailModal = function(id){
   App.selectedTicketId=id;
   var t=App.allTickets[id]; if(!t)return;
+  setDetailSaveStatus('');
   document.getElementById('d-id').textContent='#'+id.slice(-6).toUpperCase();
-  document.getElementById('d-title').textContent=t.title;
-  document.getElementById('d-desc').textContent=t.desc||'No description.';
-  document.getElementById('d-priority-badge').className='priority-badge '+pbClass(t.priority);
-  document.getElementById('d-priority-badge').textContent=t.priority||'p1';
-  document.getElementById('d-status-badge').className='status-badge '+statusClass(t.status);
-  document.getElementById('d-status-badge').textContent=t.status;
-  setDetailStatusOptions(t.status);
-  document.getElementById('d-priority-sel').value=t.priority||'p1';
-  document.getElementById('d-deadline-inp').value=t.deadline||'';
-  renderDeadlineStatus(t.deadline,t.status);
+  refreshDetailFields(t, {forceText:true});
   App.dSelectedContribs=t.contributors?t.contributors.slice():[];
   App.stSelectedContribs=[];
   renderContribPicker('d-contributor-picker',App.dSelectedContribs,function(sel){App.dSelectedContribs=sel;saveContributors();});
