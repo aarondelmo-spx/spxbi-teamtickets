@@ -344,29 +344,39 @@ function defaultAutomationSubteams(){
   ];
 }
 
+function hierarchyKey(value){
+  return String(value || '').trim().toLowerCase();
+}
+
 function automationTeamList(){
-  var byId = {};
+  var byName = {};
   defaultAutomationTeams().forEach(function(team){
-    byId[team.id] = Object.assign({}, team);
+    byName[hierarchyKey(team.name)] = Object.assign({}, team);
   });
   Object.entries(App.automationTeams || {}).forEach(function(entry){
-    byId[entry[0]] = Object.assign({}, byId[entry[0]] || {}, {id: entry[0]}, entry[1]);
+    var team = Object.assign({id: entry[0]}, entry[1]);
+    var key = hierarchyKey(team.name);
+    if(!key) return;
+    byName[key] = Object.assign({}, byName[key] || {}, team);
   });
-  return Object.values(byId).sort(function(a,b){
+  return Object.values(byName).sort(function(a,b){
     return compareTeams(a.name, b.name) || numVal(a.sortOrder) - numVal(b.sortOrder);
   });
 }
 
 function automationSubteamList(teamName){
-  var byId = {};
+  var byName = {};
   defaultAutomationSubteams().filter(function(sub){ return sub.teamName === teamName; }).forEach(function(sub){
-    byId[sub.id] = Object.assign({}, sub);
+    byName[hierarchyKey(sub.name)] = Object.assign({}, sub);
   });
   Object.entries(App.automationSubteams || {}).forEach(function(entry){
     var sub = Object.assign({id: entry[0]}, entry[1]);
-    if((sub.teamName || '') === teamName) byId[entry[0]] = Object.assign({}, byId[entry[0]] || {}, sub);
+    if((sub.teamName || '') !== teamName) return;
+    var key = hierarchyKey(sub.name);
+    if(!key) return;
+    byName[key] = Object.assign({}, byName[key] || {}, sub);
   });
-  return Object.values(byId).sort(function(a,b){ return (a.name || '').localeCompare(b.name || ''); });
+  return Object.values(byName).sort(function(a,b){ return (a.name || '').localeCompare(b.name || ''); });
 }
 
 function automationTeamByName(teamName){
@@ -599,7 +609,7 @@ function renderAutomationHierarchyLists(){
     var size = teamSizeFieldValue(team.name);
     return '<div class="hierarchy-row hierarchy-edit-row'+(active?' active':'')+'">'
       +'<button class="hierarchy-name-btn" onclick="selectAutomationTeam(\''+safeText(jsDataArg(team.name))+'\')" type="button">'+safeText(team.name)+'</button>'
-      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Team size" onchange="updateAutomationTeamSize(\''+safeText(jsDataArg(team.id))+'\',this.value)" />'
+      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Size" onchange="updateAutomationTeamSize(\''+safeText(jsDataArg(team.id))+'\',this.value)" />'
       +'</div>';
   }).join('');
   var subteams = automationSubteamList(App.hierarchySelectedTeam || '');
@@ -611,7 +621,7 @@ function renderAutomationHierarchyLists(){
     var size = subteamSizeFieldValue(subteam.teamName || App.hierarchySelectedTeam || '', subteam.name);
     return '<div class="hierarchy-row static hierarchy-edit-row">'
       +'<span class="hierarchy-name-text">'+safeText(subteam.name)+'</span>'
-      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Subteam size" onchange="updateAutomationSubteamSize(\''+safeText(jsDataArg(subteam.id))+'\',this.value)" />'
+      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Size" onchange="updateAutomationSubteamSize(\''+safeText(jsDataArg(subteam.id))+'\',this.value)" />'
       +(subteam.id && !String(subteam.id).startsWith('default-') ? '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationSubteam(\''+safeText(jsDataArg(subteam.id))+'\',\''+safeText(jsDataArg(subteam.name))+'\',\''+safeText(jsDataArg(subteam.teamName || App.hierarchySelectedTeam || ''))+'\')" title="Delete subteam" type="button">x</button>' : '')
       +'</div>';
   }).join('');
