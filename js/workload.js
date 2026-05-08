@@ -53,7 +53,7 @@ window.showWlPopover = function(memberName, bucket, btnEl){
   document.getElementById('wl-popover-body').innerHTML = items.map(function(item){
     return '<div class="wl-popover-item" onclick="closeWlPopover();openDetailModal(&quot;'+item.id+'&quot;)">'
       +'<div class="wl-item-dot" style="background:'+color+'"></div>'
-      +'<div><div class="wl-item-title">'+item.title+'</div><div class="wl-item-sub">'+item.sub+(item.isSubtask?' · subtask':'')+'</div></div>'
+      +'<div><div class="wl-item-title">'+item.title+'</div><div class="wl-item-sub">'+item.sub+(item.isSubtask?(isSprintView()?' · task':' · subtask'):'')+'</div></div>'
       +'</div>';
   }).join('');
   var pop = document.getElementById('wl-popover');

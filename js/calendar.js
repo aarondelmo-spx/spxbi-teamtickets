@@ -33,8 +33,9 @@ function calCollectDeadlines(){
   }
   Object.entries(App.allTickets).forEach(function(e){
     var id = e[0], t = e[1];
-    if(t.deadline){
-      add(t.deadline, {title:t.title, isSubtask:false, status:t.status, priority:t.priority||'p1', id:id, subId:null});
+    var projectDueDate = t.deadline || (isSprintView() ? t.timelineEnd : null);
+    if(projectDueDate){
+      add(projectDueDate, {title:t.title, isSubtask:false, status:t.status, priority:t.priority||'p1', id:id, subId:null});
     }
     if(t.subtasks){
       Object.entries(t.subtasks).forEach(function(se){
@@ -101,7 +102,7 @@ function renderCalendar(){
   }).join('');
   document.getElementById('cal-grid').innerHTML = html;
   if(App.calSelectedDate) renderCalDetail(App.calSelectedDate, deadlines[App.calSelectedDate]||[]);
-  else { document.getElementById('cal-detail-date').textContent='Select a date'; document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">Click a day to see<br>deliverables &amp; subtasks</div>'; }
+  else { document.getElementById('cal-detail-date').textContent='Select a date'; document.getElementById('cal-detail-body').innerHTML='<div class="cal-detail-empty">Click a day to see<br>deliverables &amp; '+(isSprintView()?'tasks':'subtasks')+'</div>'; }
 }
 
 window.calSelectDate = function(dateStr){
@@ -136,7 +137,8 @@ function renderCalDetail(dateStr, items){
     if(it.contributors && it.contributors.length){
       contribs = '<div style="margin-top:3px">'+avatarStackHtml(it.contributors,14)+'</div>';
     }
-    var subLabel = it.isSubtask ? '<span class="cal-di-sub-label">↳ subtask of: '+escHtml((it.parentTitle||'').slice(0,24))+'</span>' : '';
+    var subLabelText = isSprintView() ? 'task in: ' : 'subtask of: ';
+    var subLabel = it.isSubtask ? '<span class="cal-di-sub-label">↳ '+subLabelText+escHtml((it.parentTitle||'').slice(0,24))+'</span>' : '';
     return '<div class="cal-detail-item" onclick="closeCalendar();openDetailModal(\''+it.id+'\')">'
       +'<div class="cal-di-title">'+escHtml(it.title)+'</div>'
       +(subLabel?'<div>'+subLabel+'</div>':'')

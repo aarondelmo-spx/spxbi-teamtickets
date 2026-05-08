@@ -6,7 +6,7 @@ window.addLink = function(){
   url=ensureHttp(url);
   var label=labelInput.value.trim()||url;
   var t=App.allTickets[App.selectedTicketId];
-  App.db.ref('tickets/'+App.selectedTicketId+'/links').push({url:url,label:label,addedBy:App.currentUser||'Unknown',ts:Date.now()});
+  activeTicketRef(App.selectedTicketId).child('links').push({url:url,label:label,addedBy:App.currentUser||'Unknown',ts:Date.now()});
   if(t) logActivity('addedlink',t.title,label,App.selectedTicketId);
   urlInput.value=''; labelInput.value='';
 };
@@ -16,7 +16,7 @@ window.deleteLink = function(lid){
   var t=App.allTickets[App.selectedTicketId];
   var lnk=t&&t.links&&t.links[lid];
   if(t&&lnk) logActivity('deletedlink',t.title,lnk.label||lnk.url,App.selectedTicketId);
-  App.db.ref('tickets/'+App.selectedTicketId+'/links/'+lid).remove();
+  activeTicketRef(App.selectedTicketId).child('links/'+lid).remove();
 };
 
 function renderLinks(ticketId){

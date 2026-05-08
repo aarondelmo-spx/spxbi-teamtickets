@@ -63,15 +63,23 @@
       </div>
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
-    <button class="new-btn" onclick="openNewModal()">+ New Project</button>
-    <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
-    <button class="team-btn" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
-    <button class="team-btn" onclick="openCalendar()" style="margin-top:2px">📅 Calendar view</button>
-    <div class="sidebar-section">Filter by status</div>
-    <button class="nav-item active" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
+    <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
+    <button class="team-btn" onclick="openManagerView()">📊 Manager view</button>
+    <details class="sidebar-settings">
+      <summary>Settings</summary>
+      <button class="team-btn shell-tool" onclick="openTeamModal()">👥 Manage team</button>
+      <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
+      <button class="team-btn shell-tool" onclick="openCalendar()">📅 Calendar view</button>
+    </details>
+    <div class="sidebar-section">Workspace</div>
+    <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
+    <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Vibe Coding Projects<span class="nav-count" id="view-sprint-count">0</span></button>
+    <div class="sidebar-section" id="status-filter-label">Filter by status</div>
+    <button class="nav-item active" id="nav-active" onclick="setFilter('active')"><span class="nav-dot" style="background:var(--open)"></span>Active<span class="nav-count" id="cnt-active">0</span></button>
+    <button class="nav-item" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>
     <button class="nav-item" id="nav-open" onclick="setFilter('open')"><span class="nav-dot" style="background:var(--open)"></span>Open<span class="nav-count" id="cnt-open">0</span></button>
     <button class="nav-item" id="nav-done" onclick="setFilter('done')"><span class="nav-dot" style="background:var(--done)"></span>Done<span class="nav-count" id="cnt-done">0</span></button>
-    <div class="section-label" style="margin-top:.5rem">Priority</div>
+    <div class="section-label" id="priority-filter-label" style="margin-top:.5rem">Priority</div>
     <button class="nav-item" id="nav-p0" onclick="setPriorityFilter('p0')"><span class="nav-dot" style="background:var(--high)"></span>P0 — Critical<span class="nav-count" id="cnt-p0">0</span></button>
     <button class="nav-item" id="nav-p1" onclick="setPriorityFilter('p1')"><span class="nav-dot" style="background:var(--med)"></span>P1 — High<span class="nav-count" id="cnt-p1">0</span></button>
     <button class="nav-item" id="nav-p2" onclick="setPriorityFilter('p2')"><span class="nav-dot" style="background:#6fa8f7"></span>P2 — Medium<span class="nav-count" id="cnt-p2">0</span></button>
@@ -83,15 +91,56 @@
     <div class="page-header">
       <div><div class="page-title">Team Projects</div><div class="page-sub" id="ticket-count-sub">Loading...</div></div>
     </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-label">Total</div><div class="stat-num" id="s-total">—</div></div>
-      <div class="stat"><div class="stat-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
-      <div class="stat"><div class="stat-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
-      <div class="stat"><div class="stat-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+    <div class="vibe-view-bar" id="vibe-view-bar" style="display:none">
+      <div class="vibe-tabs" role="tablist" aria-label="Vibe Coding views">
+        <button class="vibe-tab active" id="vibe-tab-initiatives" onclick="setVibeView('initiatives')" type="button">Initiatives</button>
+        <button class="vibe-tab" id="vibe-tab-sprint" onclick="setVibeView('sprint')" type="button">Weekly Plan</button>
+      </div>
+      <div class="vibe-view-actions">
+        <div class="vibe-sprint-controls" id="vibe-sprint-controls" style="display:none">
+          <button class="btn btn-sm" onclick="shiftWeeklyPlanWeek(-1)" type="button">Prev</button>
+          <input id="vibe-week-date" type="date" title="Pick any date in the week" aria-label="Weekly plan date" onchange="setWeeklyPlanDateFromInput()" />
+          <span class="week-label" id="vibe-week-label"></span>
+          <button class="btn btn-sm" onclick="shiftWeeklyPlanWeek(1)" type="button">Next</button>
+        </div>
+        <button class="btn btn-sm" id="vibe-done-toggle" onclick="setFilter('done')" type="button">Done</button>
+        <button class="btn btn-sm" onclick="openHierarchyModal()" type="button">Manage hierarchy</button>
+        <button class="btn btn-sm" id="vibe-filter-toggle" onclick="toggleVibeFilters()" type="button">Filters</button>
+      </div>
+    </div>
+    <div class="stats" id="stats-row">
+      <div class="stat" data-vibe-metric="teamSize" onclick="setVibeMetricFilter('teamSize')"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div></div>
+      <div class="stat" data-vibe-metric="reviewed" onclick="setVibeMetricFilter('reviewed')"><div class="stat-label" id="s-open-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
+      <div class="stat" data-vibe-metric="scoped" onclick="setVibeMetricFilter('scoped')"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
+      <div class="stat" data-vibe-metric="inProgress" onclick="setVibeMetricFilter('inProgress')"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
+      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
+    </div>
+    <div class="who-filter-row" id="who-filter-row">
+      <div class="who-card active" id="who-card-all" onclick="setVibeWhoFilter('all')">
+        <div class="who-card-label">Showing</div>
+        <div class="who-card-title">All tasks</div>
+      </div>
+      <div class="who-card" id="who-card-mine" onclick="setVibeWhoFilter('mine')">
+        <div class="who-card-label">Filter to</div>
+        <div class="who-card-title">Mine</div>
+      </div>
+    </div>
+    <div class="support-filter-bar" id="support-team-filter-bar" style="display:none">
+      <span class="support-filter-label">Supporting team</span>
+      <div id="support-team-filter-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="sprint-board" id="sprint-board" style="display:none">
+      <div class="sprint-board-head">
+        <div class="workload-title" style="margin-bottom:0">Team / subteam hierarchy</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="openHierarchyModal()">Manage hierarchy</button>
+        </div>
+      </div>
+      <div id="sprint-team-summary"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 300px;gap:14px;margin-bottom:1.25rem;align-items:start" id="dashboard-row">
       <div class="warn-banner" id="warn-banner" style="margin-bottom:0">
-        <div class="warn-banner-title">⚠ Deadline alerts</div>
+        <div class="warn-banner-title" id="warn-banner-title">⚠ Deadline alerts</div>
         <div id="warn-list"></div>
       </div>
       <div class="workload-panel" id="workload-panel">
@@ -105,14 +154,15 @@
     </div>
     <div class="toolbar">
       <input class="search" placeholder="Search tickets..." id="search-input" oninput="renderList()" />
-      <button class="filter-pill active" id="pill-all" onclick="setFilter('all')">All</button>
-      <button class="filter-pill" id="pill-open" onclick="setFilter('open')">Open</button>
+      <button class="filter-pill active" id="pill-active" onclick="setFilter('active')">Active</button>
+      <button class="filter-pill vibe-advanced-filter" id="pill-all" onclick="setFilter('all')">All</button>
+      <button class="filter-pill vibe-advanced-filter" id="pill-open" onclick="setFilter('open')">Open</button>
       <button class="filter-pill" id="pill-done" onclick="setFilter('done')">Done</button>
-      <span style="width:1px;height:16px;background:var(--border);display:inline-block;margin:0 2px;vertical-align:middle"></span>
-      <button class="filter-pill" id="pill-p0" onclick="setPriorityFilter('p0')" style="border-color:rgba(247,112,111,.3);color:var(--high)">P0</button>
-      <button class="filter-pill" id="pill-p1" onclick="setPriorityFilter('p1')" style="border-color:rgba(247,168,111,.3);color:var(--med)">P1</button>
-      <button class="filter-pill" id="pill-p2" onclick="setPriorityFilter('p2')" style="border-color:rgba(111,168,247,.3);color:#6fa8f7">P2</button>
-      <button class="filter-pill" id="pill-p3" onclick="setPriorityFilter('p3')" style="border-color:rgba(111,212,168,.3);color:var(--low)">P3</button>
+      <span class="vibe-advanced-filter" id="toolbar-priority-sep" style="width:1px;height:16px;background:var(--border);display:inline-block;margin:0 2px;vertical-align:middle"></span>
+      <button class="filter-pill vibe-advanced-filter" id="pill-p0" onclick="setPriorityFilter('p0')" style="border-color:rgba(247,112,111,.3);color:var(--high)">P0</button>
+      <button class="filter-pill vibe-advanced-filter" id="pill-p1" onclick="setPriorityFilter('p1')" style="border-color:rgba(247,168,111,.3);color:var(--med)">P1</button>
+      <button class="filter-pill vibe-advanced-filter" id="pill-p2" onclick="setPriorityFilter('p2')" style="border-color:rgba(111,168,247,.3);color:#6fa8f7">P2</button>
+      <button class="filter-pill vibe-advanced-filter" id="pill-p3" onclick="setPriorityFilter('p3')" style="border-color:rgba(111,212,168,.3);color:var(--low)">P3</button>
     </div>
     <div class="toolbar" id="contrib-filter-row" style="margin-top:-4px">
       <span style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;padding:5px 0">Contributor:</span>
@@ -123,13 +173,103 @@
   </main>
 </div>
 
+<!-- Automation hierarchy modal -->
+<div class="modal-overlay" id="hierarchy-modal" style="display:none" onclick="if(event.target===this)closeHierarchyModal()">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header"><h3>Team hierarchy</h3><button class="modal-close" onclick="closeHierarchyModal()">×</button></div>
+    <div class="modal-body">
+      <div class="hierarchy-grid">
+        <div>
+          <div class="section-label">Teams</div>
+          <div id="automation-team-list" class="hierarchy-list"></div>
+          <div class="add-link-row hierarchy-add-row" style="margin-top:10px">
+            <input id="automation-team-name" placeholder="Add team..." onkeydown="if(event.key==='Enter')addAutomationTeam()" />
+            <button class="btn btn-sm btn-primary" onclick="addAutomationTeam()">Add</button>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">Subteams</div>
+          <div id="automation-subteam-list" class="hierarchy-list"></div>
+          <div class="add-link-row hierarchy-add-row" style="margin-top:10px">
+            <input id="automation-subteam-name" placeholder="Add subteam under selected team..." onkeydown="if(event.key==='Enter')addAutomationSubteam()" />
+            <input id="automation-subteam-size" placeholder="Subteam size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')addAutomationSubteam()" />
+            <button class="btn btn-sm btn-primary" onclick="addAutomationSubteam()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeHierarchyModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Team/subteam edit modal -->
+<div class="modal-overlay" id="hierarchy-edit-modal" style="display:none" onclick="if(event.target===this)closeHierarchyEditModal()">
+  <div class="modal" style="max-width:430px">
+    <div class="modal-header">
+      <h3 id="hierarchy-edit-title">Edit team</h3>
+      <button class="modal-close" onclick="closeHierarchyEditModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="hierarchy-edit-context" id="hierarchy-edit-context" style="display:none"></div>
+      <div class="field">
+        <label id="hierarchy-edit-name-label">Team name</label>
+        <input id="hierarchy-edit-name" onkeydown="if(event.key==='Enter')saveHierarchyEdit()" />
+      </div>
+      <div class="field">
+        <label id="hierarchy-edit-size-label">Team size</label>
+        <input id="hierarchy-edit-size" type="number" min="0" step="0.1" onkeydown="if(event.key==='Enter')saveHierarchyEdit()" />
+      </div>
+      <div class="microcopy">Renaming will update existing Vibe Coding initiatives that use this team or subteam.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeHierarchyEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHierarchyEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- New Ticket Modal -->
 <div class="modal-overlay" id="new-modal" style="display:none" onclick="if(event.target===this)closeNewModal()">
   <div class="modal">
-    <div class="modal-header"><h3>New Project</h3><button class="modal-close" onclick="closeNewModal()">×</button></div>
+    <div class="modal-header"><h3 id="new-modal-title">New Project</h3><button class="modal-close" onclick="closeNewModal()">×</button></div>
     <div class="modal-body">
       <div class="field"><label>Title</label><input id="nt-title" placeholder="What needs to be done?" onkeydown="if(event.key==='Enter')createTicket()" /></div>
       <div class="field"><label>Description</label><textarea id="nt-desc" placeholder="Add more context..."></textarea></div>
+      <div id="nt-sprint-fields" style="display:none">
+        <div class="section-label">Vibe initiative details</div>
+        <div class="form-row">
+          <div class="field"><label>Team</label>
+            <select id="nt-team-area" onchange="renderSubteamSelect('nt','Other')"></select>
+          </div>
+          <div class="field"><label>Subteam</label><select id="nt-subteam"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Planning note</label><input id="nt-sprint-cycle" placeholder="Optional context..." /></div>
+          <div class="field"><label>Timeline Start</label><input id="nt-timeline-start" type="date" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Target End</label><input id="nt-timeline-end" type="date" /></div>
+          <div class="field"><label>Stage</label>
+            <select id="nt-stage">
+              <option value="scoping">Scoping</option><option value="validating">Validating</option><option value="build_uat">Build/UAT</option><option value="live_stabilizing">Live/Stabilizing</option><option value="capacity_review">Ready for capacity review</option><option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Confidence</label>
+            <select id="nt-confidence"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
+          <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
+        </div>
+      </div>
       <div class="form-row">
         <div class="field"><label>Priority</label><select id="nt-priority"><option value="p0">P0 — Critical</option><option value="p1" selected>P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option></select></div>
         <div class="field"><label>Deadline (optional)</label><input type="date" id="nt-deadline" style="color-scheme:dark" /></div>
@@ -142,7 +282,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeNewModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createTicket()">Create Project</button>
+      <button class="btn btn-primary" id="create-ticket-btn" onclick="createTicket()">Create Project</button>
     </div>
   </div>
 </div>
@@ -162,35 +302,98 @@
       <div class="detail-title" id="d-title" title="Double-click to edit" ondblclick="editDetailField('title')" style="cursor:text"></div>
       <div class="detail-desc" id="d-desc" title="Double-click to edit" ondblclick="editDetailField('desc')" style="cursor:text"></div>
 
-      <div class="form-row" style="margin-bottom:.75rem">
-        <div class="field"><label>Status</label>
-          <select id="d-status-sel" onchange="updateTicketField('status',this.value)">
-            <option value="open">Open</option><option value="done">Done</option>
-          </select>
+      <div class="detail-core-fields" id="detail-core-fields">
+        <div class="form-row" style="margin-bottom:.75rem">
+          <div class="field"><label>Status</label>
+            <select id="d-status-sel" onchange="updateTicketField('status',this.value)">
+              <option value="open">Open</option><option value="done">Done</option>
+            </select>
+          </div>
+          <div class="field"><label>Priority</label>
+            <select id="d-priority-sel" onchange="updateTicketField('priority',this.value)">
+              <option value="p0">P0 — Critical</option><option value="p1">P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option>
+            </select>
+          </div>
         </div>
-        <div class="field"><label>Priority</label>
-          <select id="d-priority-sel" onchange="updateTicketField('priority',this.value)">
-            <option value="p0">P0 — Critical</option><option value="p1">P1 — High</option><option value="p2">P2 — Medium</option><option value="p3">P3 — Low</option>
-          </select>
+        <div class="form-row">
+          <div class="field" id="detail-owner-field"><label>Owner</label>
+            <select id="d-owner-sel" onchange="updateTicketOwner(this.value)"></select>
+          </div>
+          <div class="field">
+            <label>Deadline</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
+              <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+            </div>
+            <div id="d-deadline-status"></div>
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label>Deadline</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
-          <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+
+        <div class="field">
+          <label>Contributors</label>
+          <div class="contributor-picker" id="d-contributor-picker"></div>
+          <div id="d-contributors-display" class="contributors-display"></div>
         </div>
-        <div id="d-deadline-status"></div>
+        <div class="field" id="d-support-teams-field" style="display:none">
+          <label>Supporting teams</label>
+          <div class="support-chips-wrap" id="d-support-teams"></div>
+        </div>
       </div>
 
-      <div class="field">
-        <label>Contributors</label>
-        <div class="contributor-picker" id="d-contributor-picker"></div>
-        <div id="d-contributors-display" class="contributors-display"></div>
+      <div class="vibe-workstream-section" id="vibe-workstream-section" style="display:none">
+        <div class="section-head-row">
+          <div>
+            <div class="section-label" style="margin-bottom:2px">Tasks</div>
+            <div class="microcopy">Add tasks directly. Use groups only when the initiative has separate tracks of work.</div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="addWorkstream()" type="button">+ Group</button>
+        </div>
+        <div id="vibe-workstream-list"></div>
+      </div>
+      <div class="detail-advanced-toggle" id="detail-advanced-toggle" style="display:none" onclick="toggleSection('detail-advanced')">
+        <span class="section-label" style="margin-bottom:0">Automation details</span>
+        <span id="detail-advanced-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
+      </div>
+      <div id="detail-advanced-body">
+      <div id="d-sprint-fields" style="display:none">
+        <div class="divider"></div>
+        <div class="form-row">
+          <div class="field"><label>Team</label>
+            <select id="d-team-area" onchange="updateSprintTeamSelection()"></select>
+          </div>
+          <div class="field"><label>Subteam</label><select id="d-subteam" onchange="updateSprintSubteamSelection()"></select></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Planning note</label><input id="d-sprint-cycle" onchange="updateTicketField('sprintCycle',this.value)" /></div>
+          <div class="field"><label>Timeline Start</label><input id="d-timeline-start" type="date" onchange="updateTicketField('timelineStart',this.value)" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Target End</label><input id="d-timeline-end" type="date" onchange="updateTicketField('timelineEnd',this.value)" /></div>
+          <div class="field"><label>Stage</label>
+            <select id="d-stage" onchange="updateTicketField('stage',this.value)">
+              <option value="scoping">Scoping</option><option value="validating">Validating</option><option value="build_uat">Build/UAT</option><option value="live_stabilizing">Live/Stabilizing</option><option value="capacity_review">Ready for capacity review</option><option value="closed">Closed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Confidence</label>
+            <select id="d-confidence" onchange="updateTicketField('confidence',this.value)"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="confirmed">Confirmed</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Team/subteam size</label><input id="d-team-size-hc" readonly /></div>
+          <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
+          <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
+        </div>
+      </div>
       </div>
 
       <div class="divider"></div>
 
+      <div id="legacy-subtasks-section">
       <!-- Subtasks collapsible -->
       <div onclick="toggleSection('subtasks')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
         <div style="display:flex;align-items:center;gap:8px">
@@ -211,23 +414,26 @@
           <div class="contributor-picker" id="subtask-contributor-picker"></div>
         </div>
       </div>
-
-      <div class="divider"></div>
-
-      <!-- Links collapsible -->
-      <div onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="section-label" style="margin-bottom:0">Links</span>
-          <span id="d-link-count" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
-        </div>
-        <span id="links-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
       </div>
-      <div id="links-body" style="display:none;margin-top:.75rem">
-        <div id="d-link-list" class="link-list"></div>
-        <div class="add-link-row">
-          <input id="link-url-input" placeholder="https://..." onkeydown="if(event.key==='Enter')addLink()" />
-          <input id="link-label-input" placeholder="Label (optional)" onkeydown="if(event.key==='Enter')addLink()" />
-          <button class="btn btn-sm btn-primary" onclick="addLink()">Add</button>
+
+      <div id="detail-links-section">
+        <div class="divider"></div>
+
+        <!-- Links collapsible -->
+        <div onclick="toggleSection('links')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;user-select:none">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="section-label" style="margin-bottom:0">Links</span>
+            <span id="d-link-count" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+          </div>
+          <span id="links-chevron" style="font-size:11px;color:var(--text3);transition:transform .2s">▶</span>
+        </div>
+        <div id="links-body" style="display:none;margin-top:.75rem">
+          <div id="d-link-list" class="link-list"></div>
+          <div class="add-link-row">
+            <input id="link-url-input" placeholder="https://..." onkeydown="if(event.key==='Enter')addLink()" />
+            <input id="link-label-input" placeholder="Label (optional)" onkeydown="if(event.key==='Enter')addLink()" />
+            <button class="btn btn-sm btn-primary" onclick="addLink()">Add</button>
+          </div>
         </div>
       </div>
 
@@ -247,7 +453,11 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" onclick="deleteTicket()">Delete project</button>
-      <button class="btn" onclick="closeDetailModal()">Close</button>
+      <div class="detail-footer-actions">
+        <span class="detail-save-status" id="detail-save-status"></span>
+        <button class="btn btn-primary" onclick="saveDetailChanges()">Save changes</button>
+        <button class="btn" onclick="closeDetailModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -306,6 +516,8 @@
 <script src="js/state.js"></script>
 <script src="js/config.js"></script>
 <script src="js/helpers.js"></script>
+<script src="js/sprints.js"></script>
+<script src="js/vibe.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/activity.js"></script>
 <script src="js/warnings.js"></script>
@@ -319,6 +531,7 @@
 <script src="js/list.js"></script>
 <script src="js/workload.js"></script>
 <script src="js/calendar.js"></script>
+<script src="js/manager.js"></script>
 <script src="js/listeners.js"></script>
 <script src="js/auth.js"></script>
 </body>

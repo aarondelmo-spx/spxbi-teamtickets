@@ -6,7 +6,7 @@ window.addSubtask = function(){
   var dl=dlInput?dlInput.value:'';
   var contribs=App.stSelectedContribs.slice();
   var st=App.allTickets[App.selectedTicketId];
-  App.db.ref('tickets/'+App.selectedTicketId+'/subtasks').push({text:text,done:false,deadline:dl||null,contributors:contribs.length?contribs:null,createdBy:App.currentUser||'Unknown',ts:Date.now()});
+  activeTicketRef(App.selectedTicketId).child('subtasks').push({text:text,done:false,deadline:dl||null,contributors:contribs.length?contribs:null,createdBy:App.currentUser||'Unknown',ts:Date.now()});
   if(st) logActivity('subtask',st.title,text);
   input.value=''; if(dlInput)dlInput.value='';
   App.stSelectedContribs=[];
@@ -15,7 +15,7 @@ window.addSubtask = function(){
 
 window.toggleSubtask = function(sid,cur){
   if(!App.selectedTicketId)return;
-  App.db.ref('tickets/'+App.selectedTicketId+'/subtasks/'+sid).update({done:!cur});
+  activeTicketRef(App.selectedTicketId).child('subtasks/'+sid).update({done:!cur});
   if(!cur){
     var tt=App.allTickets[App.selectedTicketId];
     var sub=tt&&tt.subtasks&&tt.subtasks[sid];
@@ -28,7 +28,7 @@ window.deleteSubtask = function(sid){
   var t=App.allTickets[App.selectedTicketId];
   var sub=t&&t.subtasks&&t.subtasks[sid];
   if(t&&sub) logActivity('deletedsubtask',t.title,sub.text,App.selectedTicketId);
-  App.db.ref('tickets/'+App.selectedTicketId+'/subtasks/'+sid).remove();
+  activeTicketRef(App.selectedTicketId).child('subtasks/'+sid).remove();
 };
 
 window.editSubtask = function(sid){
@@ -42,7 +42,7 @@ window.editSubtask = function(sid){
   input.select();
   function save(){
     var newText=input.value.trim()||current;
-    App.db.ref('tickets/'+App.selectedTicketId+'/subtasks/'+sid).update({text:newText});
+    activeTicketRef(App.selectedTicketId).child('subtasks/'+sid).update({text:newText});
     var t=App.allTickets[App.selectedTicketId];
     if(t&&newText!==current) logActivity('editedsubtask',t.title,'',App.selectedTicketId,current.slice(0,40),newText.slice(0,40));
   }
@@ -54,6 +54,10 @@ window.editSubtask = function(sid){
 };
 
 function renderSubtasks(ticketId){
+  if(isSprintView() && typeof renderWorkstreamsAndTasks === 'function'){
+    renderWorkstreamsAndTasks(ticketId);
+    return;
+  }
   var t=App.allTickets[ticketId]; if(!t) return;
   var subtasks=t.subtasks?Object.entries(t.subtasks).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
   var stats=subtaskStats(t.subtasks);

@@ -33,10 +33,12 @@ window.toggleContrib = function(containerId, name){
 
 function saveContributors(){
   if(!App.selectedTicketId) return;
-  App.db.ref('tickets/'+App.selectedTicketId).update({
-    contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null,
-    assignee: App.dSelectedContribs[0]||'Unassigned'
-  });
+  var upd = {
+    contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null
+  };
+  if(!isSprintView()) upd.assignee = App.dSelectedContribs[0]||'Unassigned';
+  activeTicketRef(App.selectedTicketId).update(upd);
+  if(typeof refreshAfterTicketUpdate === 'function') refreshAfterTicketUpdate(App.selectedTicketId, upd);
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('updatedcontribs',t.title,App.dSelectedContribs.join(', ')||'none',App.selectedTicketId);
 }

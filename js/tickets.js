@@ -2,33 +2,83 @@ window.createTicket = function(){
   var title=document.getElementById('nt-title').value.trim(); if(!title){document.getElementById('nt-title').focus();return;}
   var dl=document.getElementById('nt-deadline').value;
   var assignee=App.ntSelectedContribs[0]||'Unassigned';
-  App.ticketsRef.push({title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
+  var payload={title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
     priority:document.getElementById('nt-priority').value,status:'open',
     assignee:assignee,contributors:App.ntSelectedContribs.length?App.ntSelectedContribs:null,
-    deadline:dl||null,created:fmtDate(),createdTs:Date.now()});
+    deadline:dl||null,created:fmtDate(),createdTs:Date.now(),projectType:App.currentProjectView};
+  if(isSprintView()) Object.assign(payload, sprintPayloadFromNewModal());
+  currentTicketsRef().push(payload);
   logActivity('created',title,'');
   closeNewModal();
 };
 
+function ticketNumericFields(){
+  return {
+    scopedHc:true,fteRepurpose:true,fteBuffer:true,bpoNfteReduction:true,
+    automationScopedHc:true,automationInProgressHc:true,actualHcSavings:true,excessCapacityHc:true
+  };
+}
+
+function normalizeTicketFieldValue(field, value){
+  return ticketNumericFields()[field] ? (value===''?null:numVal(value)) : (value===''?null:value);
+}
+
+function applyLocalTicketPatch(id, upd){
+  if(!id || !upd) return null;
+  var t = App.allTickets[id];
+  if(!t) return null;
+  Object.keys(upd).forEach(function(k){ t[k] = upd[k]; });
+  var tickets = currentTickets();
+  if(tickets && tickets[id]) Object.keys(upd).forEach(function(k){ tickets[id][k] = upd[k]; });
+  return t;
+}
+
+function refreshAfterTicketUpdate(id, upd, options){
+  var t = applyLocalTicketPatch(id, upd);
+  if(App.selectedTicketId === id && t && typeof refreshDetailFields === 'function'){
+    refreshDetailFields(t, options || {});
+  }
+  if(typeof updateStats === 'function') updateStats();
+  if(typeof renderList === 'function') renderList();
+  if(typeof updateCounts === 'function') updateCounts();
+  if(typeof updateWarnings === 'function') updateWarnings();
+  if(typeof renderWorkload === 'function') renderWorkload();
+  if(typeof renderSprintDashboard === 'function') renderSprintDashboard();
+  if(typeof renderCalendar === 'function'){
+    var cal = document.getElementById('cal-overlay');
+    if(cal && cal.style.display !== 'none') renderCalendar();
+  }
+}
+
 window.updateTicketField = function(field,value){
   if(!App.selectedTicketId) return;
-  var upd={}; upd[field]=(value===''?null:value);
-  App.db.ref('tickets/'+App.selectedTicketId).update(upd);
+  var id = App.selectedTicketId;
+  var before = App.allTickets[id] || {};
+  var upd={};
+  upd[field]=normalizeTicketFieldValue(field,value);
+  activeTicketRef(id).update(upd);
   if(field==='status'){
-    document.getElementById('d-status-badge').className='status-badge '+statusClass(value);
-    document.getElementById('d-status-badge').textContent=value;
-    renderDeadlineStatus(document.getElementById('d-deadline-inp').value,value);
-    var t2=App.allTickets[App.selectedTicketId]; if(t2) logActivity('status',t2.title,value);
+    if(before) logActivity('status',before.title,value);
   }
   if(field==='deadline'){
-    renderDeadlineStatus(value,document.getElementById('d-status-sel').value);
-    if(value){var t3=App.allTickets[App.selectedTicketId];if(t3) logActivity('setdeadline',t3.title,'',App.selectedTicketId,t3.deadline||'none',value);}
+    if(value && before) logActivity('setdeadline',before.title,'',id,before.deadline||'none',value);
   }
   if(field==='priority'){
-    var pb=document.getElementById('d-priority-badge');
-    if(pb){pb.className='priority-badge '+pbClass(value);pb.textContent=value;}
-    var t2b=App.allTickets[App.selectedTicketId]; if(t2b) logActivity('priority',t2b.title,'',App.selectedTicketId,t2b.priority,value);
+    if(before) logActivity('priority',before.title,'',id,before.priority,value);
   }
+  refreshAfterTicketUpdate(id, upd);
+};
+
+window.updateTicketOwner = function(value){
+  if(!App.selectedTicketId) return;
+  var id = App.selectedTicketId;
+  var owner = value || 'Unassigned';
+  var before = App.allTickets[id] || {};
+  var upd = {assignee: owner};
+  activeTicketRef(id).update(upd);
+  if(before) logActivity('owner', before.title, '', id, before.assignee || 'Unassigned', owner);
+  refreshAfterTicketUpdate(id, upd);
+  if(isSprintView() && typeof renderWorkstreamsAndTasks === 'function') renderWorkstreamsAndTasks(id);
 };
 
 window.clearDeadline = function(){
@@ -41,10 +91,10 @@ window.clearDeadline = function(){
 
 window.deleteTicket = function(){
   if(!App.selectedTicketId)return;
-  if(!confirm('Delete this project? This cannot be undone.'))return;
+  if(!confirm('Delete this '+(isSprintView()?'initiative':'project')+'? This cannot be undone.'))return;
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('deleted',t.title,'',App.selectedTicketId);
-  App.db.ref('tickets/'+App.selectedTicketId).remove();
+  activeTicketRef(App.selectedTicketId).remove();
   closeDetailModal();
 };
 

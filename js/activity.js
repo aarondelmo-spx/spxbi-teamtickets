@@ -5,6 +5,7 @@ function logActivity(type, ticketTitle, detail, ticketId, from, to){
     ticketTitle: ticketTitle||'',
     detail: detail||'',
     ticketId: ticketId||App.selectedTicketId||'',
+    projectView: App.currentProjectView || 'main',
     from: from||'',
     to: to||'',
     ts: Date.now()
@@ -32,26 +33,34 @@ function timeAgo(ts){
 }
 
 function renderActivity(snap){
-  var data = snap.val()||{};
-  var items = Object.values(data).sort(function(a,b){return b.ts-a.ts;});
+  App.activityData = snap.val()||{};
+  renderActivityList();
+}
+
+function renderActivityList(){
+  var data = App.activityData||{};
+  var items = Object.values(data)
+    .filter(function(item){ return (item.projectView||'main') === App.currentProjectView; })
+    .sort(function(a,b){return b.ts-a.ts;});
   var el = document.getElementById('activity-list'); if(!el) return;
   if(!items.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No activity yet.</div>'; return; }
   var typeMap = {
     comment:{label:'commented',cls:'ab-comment'},
     replied:{label:'replied',cls:'ab-comment'},
-    done:{label:'completed subtask',cls:'ab-done'},
-    created:{label:'created project',cls:'ab-created'},
-    deleted:{label:'deleted project',cls:'ab-status'},
+    done:{label:isSprintView()?'completed task':'completed subtask',cls:'ab-done'},
+    created:{label:isSprintView()?'created initiative':'created project',cls:'ab-created'},
+    deleted:{label:isSprintView()?'deleted initiative':'deleted project',cls:'ab-status'},
     status:{label:'updated status',cls:'ab-status'},
-    subtask:{label:'added subtask',cls:'ab-subtask'},
-    deletedsubtask:{label:'removed subtask',cls:'ab-status'},
+    subtask:{label:isSprintView()?'added task':'added subtask',cls:'ab-subtask'},
+    deletedsubtask:{label:isSprintView()?'removed task':'removed subtask',cls:'ab-status'},
     addedlink:{label:'added link',cls:'ab-subtask'},
     deletedlink:{label:'removed link',cls:'ab-status'},
     setdeadline:{label:'set deadline',cls:'ab-status'},
     cleareddeadline:{label:'cleared deadline',cls:'ab-status'},
     updatedcontribs:{label:'updated contributors',cls:'ab-subtask'},
+    owner:{label:'changed owner',cls:'ab-status'},
     priority:{label:'changed priority',cls:'ab-status'},
-    editedsubtask:{label:'edited subtask',cls:'ab-subtask'},
+    editedsubtask:{label:isSprintView()?'edited task':'edited subtask',cls:'ab-subtask'},
     editedtitle:{label:'edited title',cls:'ab-status'},
     editeddesc:{label:'edited description',cls:'ab-status'}
   };
