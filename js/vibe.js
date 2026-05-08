@@ -198,7 +198,7 @@ function updateVibeShell(){
     el.style.display = vibe ? 'none' : '';
   });
   setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
-  setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
+  setDisplay(document.getElementById('contrib-filter-row'), 'flex');
   document.querySelectorAll('.shell-tool').forEach(function(el){
     el.style.display = vibe ? 'none' : '';
   });
@@ -473,6 +473,12 @@ function renderVibeInitiatives(search, list){
     .filter(function(entry){ return initiativeMatchesVibeMetric(entry[1]); })
     .filter(function(entry){ return App.currentPriorityFilter === 'all' || (entry[1].priority || 'p1') === App.currentPriorityFilter; })
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
+    .filter(function(entry){
+      if(App.currentContrib === 'all') return true;
+      var t = entry[1];
+      var contribs = t.contributors && t.contributors.length ? t.contributors : (t.assignee && t.assignee !== 'Unassigned' ? [t.assignee] : []);
+      return contribs.indexOf(App.currentContrib) > -1;
+    })
     .filter(function(entry){
       var f = App.vibeSupportFilter || [];
       if(!f.length) return true;
