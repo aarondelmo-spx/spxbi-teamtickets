@@ -539,20 +539,35 @@ function taskOwnerSelectHtml(item){
   return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)">'+options+'</select>';
 }
 
+function taskRowControlTarget(target){
+  return target && target.closest && target.closest('button,input,select,textarea,a,[contenteditable="true"],.subtask-check');
+}
+
+window.openVibeTaskRow = function(event, ticketId){
+  if(event && taskRowControlTarget(event.target)) return;
+  if(event && event.type === 'keydown'){
+    if(event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+  }
+  openDetailModal(ticketId);
+};
+
 function taskRowHtml(item, mode){
   var task = item.task;
   var checked = !!task.done;
-  var action = '<button class="btn btn-sm" onclick="openDetailModal(\''+jsArg(item.ticketId)+'\')" type="button">Open</button>';
+  var ticketArg = jsArg(item.ticketId);
+  var taskArg = jsArg(item.taskId);
+  var action = '<button class="btn btn-sm" onclick="event.stopPropagation();openDetailModal(\''+ticketArg+'\')" type="button">Open</button>';
   var _team = normalizeTeamName(item.initiative.teamArea) || '';
   var _sub  = normalizeSubteamName(item.initiative.subteam) || '';
   var _init = item.initiative.title || 'Untitled initiative';
   var _grp  = item.workstreamName;
   var _bc   = [_team, _sub, _init, _grp].filter(Boolean).join(' / ');
-  return '<div class="vibe-task-row'+(checked?' done-task':'')+'">'
-    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\','+checked+')"></div>'
+  return '<div class="vibe-task-row vibe-task-row-clickable'+(checked?' done-task':'')+'" onclick="openVibeTaskRow(event,\''+ticketArg+'\')" onkeydown="openVibeTaskRow(event,\''+ticketArg+'\')" role="button" tabindex="0">'
+    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="event.stopPropagation();toggleVibeTaskFromList(\''+ticketArg+'\',\''+taskArg+'\','+checked+')"></div>'
     +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(_bc)+'</div></div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'deadline\',this.value)" />'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+ticketArg+'\',\''+taskArg+'\',\'deadline\',this.value)" />'
     +'<div style="display:flex;gap:5px;justify-content:flex-end">'+action+'</div>'
     +'</div>';
 }
