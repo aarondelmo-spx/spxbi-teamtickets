@@ -6,119 +6,166 @@ function exitManagerView(){
   window.location.href = window.location.pathname;
 }
 
+function isAccessAdmin(){
+  return (App.currentUserEmail || '').toLowerCase() === (App.ADMIN_EMAIL || '').toLowerCase();
+}
+
 function showManagerView(){
   document.querySelector('.app').classList.add('app--manager-mode');
 
   document.querySelector('.main').innerHTML =
-    '<div class="manager-view" id="manager-view">'
+    '<div class="manager-view access-manager-view" id="manager-view">'
     + '<div class="manager-header">'
-    +   '<div><div class="page-title">Manager View</div><div class="page-sub" id="manager-sub">Loading...</div></div>'
-    +   '<button class="manager-back" onclick="exitManagerView()">&#8592; Doer mode</button>'
+    +   '<div><div class="page-title">Team &amp; access</div><div class="page-sub" id="manager-sub">Manage contributor names and sign-in access.</div></div>'
+    +   '<button class="manager-back" onclick="exitManagerView()">&#8592; Back to projects</button>'
     + '</div>'
     + '<div class="manager-stats" id="manager-stats-row">'
-    +   '<div class="manager-stat"><div class="manager-stat-label">BPO/NFTE Reduction</div><div class="manager-stat-num c-done" id="mgr-reduction">—</div></div>'
-    +   '<div class="manager-stat"><div class="manager-stat-label">Open</div><div class="manager-stat-num c-high" id="mgr-open">—</div></div>'
-    +   '<div class="manager-stat"><div class="manager-stat-label">Overdue</div><div class="manager-stat-num c-high" id="mgr-overdue">—</div></div>'
-    +   '<div class="manager-stat"><div class="manager-stat-label">P0 Critical</div><div class="manager-stat-num c-high" id="mgr-p0">—</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Team members</div><div class="manager-stat-num" id="mgr-team-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Access entries</div><div class="manager-stat-num" id="mgr-access-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Signed in as</div><div class="manager-stat-text" id="mgr-current-user">-</div></div>'
     + '</div>'
-    + '<div class="manager-section"><div class="manager-section-title">Red Flags</div><div id="manager-flags"><div class="loading">Loading...</div></div></div>'
-    + '<div class="manager-section"><div class="manager-section-title">Progress by Area</div><div id="manager-progress"><div class="loading">Loading...</div></div></div>'
+    + '<div class="manager-grid">'
+    +   '<section class="manager-panel">'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Team roster</div><p>These names appear in contributor and owner pickers.</p></div></div>'
+    +     '<div id="manager-team-list"><div class="loading">Loading...</div></div>'
+    +     '<div class="manager-add-row">'
+    +       '<input id="manager-team-name-input" placeholder="Add team member name..." maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerTeamMember()" />'
+    +       '<button class="btn btn-primary btn-sm" onclick="addManagerTeamMember()" type="button">Add</button>'
+    +     '</div>'
+    +   '</section>'
+    +   '<section class="manager-panel">'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Access control</div><p id="manager-access-note">Only whitelisted emails can sign in.</p></div></div>'
+    +     '<div id="manager-access-list"><div class="loading">Loading...</div></div>'
+    +     '<div class="manager-add-row manager-access-add-row" id="manager-access-add-row">'
+    +       '<input id="manager-access-email-input" placeholder="email@spxexpress.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerAccessEntry()" />'
+    +       '<input id="manager-access-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerAccessEntry()" />'
+    +       '<button class="btn btn-primary btn-sm" onclick="addManagerAccessEntry()" type="button">Add</button>'
+    +     '</div>'
+    +   '</section>'
+    + '</div>'
     + '<div class="manager-ts" id="manager-ts"></div>'
     + '</div>';
 
-  App.mainTicketsRef.on('value', function(snap){
+  App.teamRef.on('value', function(snap){
     var data = snap.val() || {};
-    App.mainTickets = {};
-    Object.keys(data).forEach(function(k){ App.mainTickets[k] = data[k]; App.mainTickets[k].id = k; });
-    renderManagerView();
+    App.teamMembers = Object.entries(data).map(function(entry){
+      return {id:entry[0], name:entry[1].name};
+    }).filter(function(member){ return !!member.name; }).sort(function(a,b){
+      return a.name.localeCompare(b.name);
+    });
+    renderManagerTeamAccessView();
   });
 
-  App.sprintTicketsRef.on('value', function(snap){
-    var data = snap.val() || {};
-    App.sprintTickets = {};
-    Object.keys(data).forEach(function(k){ App.sprintTickets[k] = data[k]; App.sprintTickets[k].id = k; });
-    renderManagerView();
+  App.whitelistRef.on('value', function(snap){
+    App.managerWhitelistEntries = Object.entries(snap.val() || {}).map(function(entry){
+      return {
+        id: entry[0],
+        email: (entry[1].email || '').toLowerCase(),
+        name: entry[1].name || ''
+      };
+    }).filter(function(entry){ return !!entry.email; }).sort(function(a,b){
+      return a.email.localeCompare(b.email);
+    });
+    renderManagerTeamAccessView();
   });
+
+  renderManagerTeamAccessView();
 }
 
-function renderManagerView(){
-  var mainArr = Object.values(App.mainTickets);
-  var sprintArr = Object.values(App.sprintTickets);
-
-  // Stat cards
-  var reduction = sprintArr.reduce(function(a, t){ return a + numVal(t.bpoNfteReduction); }, 0);
-  var openCount = mainArr.filter(function(t){ return t.status === 'open'; }).length;
-  var overdueCount = mainArr.filter(function(t){
-    if(t.status === 'done' || !t.deadline) return false;
-    var d = deadlineDiff(t.deadline);
-    return d !== null && d < 0;
-  }).length;
-  var p0Count = mainArr.filter(function(t){ return t.priority === 'p0' && t.status !== 'done'; }).length;
-
-  var redEl = document.getElementById('mgr-reduction');
-  var opEl  = document.getElementById('mgr-open');
-  var ovEl  = document.getElementById('mgr-overdue');
-  var p0El  = document.getElementById('mgr-p0');
-  if(redEl) redEl.textContent = fmtCapacity(reduction);
-  if(opEl)  opEl.textContent  = openCount;
-  if(ovEl)  ovEl.textContent  = overdueCount;
-  if(p0El)  p0El.textContent  = p0Count;
-
-  // Sub-header
-  var subEl = document.getElementById('manager-sub');
-  if(subEl) subEl.textContent = mainArr.length + ' main · ' + sprintArr.length + ' vibe coding';
-
-  // Red flags
-  var flags = [];
-  mainArr.forEach(function(t){
-    if(t.status === 'done') return;
-    if(t.deadline){
-      var d = deadlineDiff(t.deadline);
-      if(d !== null && d < 0){
-        flags.push({title: t.title || 'Untitled', reason: 'overdue ' + Math.abs(Math.round(d)) + 'd', cls: 'badge-overdue'});
-        return;
-      }
-    }
-    if(t.priority === 'p0' && (!t.assignee || t.assignee === 'Unassigned')){
-      flags.push({title: t.title || 'Untitled', reason: 'P0 — no assignee', cls: 's-open'});
-    }
-  });
-
-  var flagsEl = document.getElementById('manager-flags');
-  if(flagsEl){
-    if(!flags.length){
-      flagsEl.innerHTML = '<div class="manager-all-clear">&#10003; No issues — all projects on track</div>';
-    } else {
-      flagsEl.innerHTML = flags.map(function(f){
-        return '<div class="manager-flag-item">'
-          + '<span class="status-badge ' + f.cls + '">' + safeText(f.reason) + '</span>'
-          + '<span>' + safeText(f.title) + '</span>'
-          + '</div>';
-      }).join('');
-    }
-  }
-
-  // Progress by area
-  var mainDone  = mainArr.filter(function(t){ return t.status === 'done'; }).length;
-  var sprintDone = sprintArr.filter(function(t){ return t.status === 'done'; }).length;
-  var mainPct   = mainArr.length   ? Math.round(mainDone   / mainArr.length   * 100) : 0;
-  var sprintPct = sprintArr.length ? Math.round(sprintDone / sprintArr.length * 100) : 0;
-
-  var progEl = document.getElementById('manager-progress');
-  if(progEl){
-    progEl.innerHTML = [
-      {label: 'Main Projects', done: mainDone,   total: mainArr.length,   pct: mainPct},
-      {label: 'Vibe Coding',   done: sprintDone, total: sprintArr.length, pct: sprintPct}
-    ].map(function(row){
-      return '<div class="manager-progress-item">'
-        + '<span class="manager-bar-label">' + row.label + '</span>'
-        + '<div class="manager-bar"><div class="manager-bar-fill" style="width:' + row.pct + '%"></div></div>'
-        + '<span class="manager-bar-text">' + row.done + '/' + row.total + ' done</span>'
-        + '</div>';
-    }).join('');
-  }
-
-  // Timestamp
+function renderManagerTeamAccessView(){
+  var teamMembers = App.teamMembers || [];
+  var accessEntries = App.managerWhitelistEntries || [];
+  var teamCount = document.getElementById('mgr-team-count');
+  var accessCount = document.getElementById('mgr-access-count');
+  var currentUser = document.getElementById('mgr-current-user');
+  var accessNote = document.getElementById('manager-access-note');
+  var accessAdd = document.getElementById('manager-access-add-row');
   var tsEl = document.getElementById('manager-ts');
+
+  if(teamCount) teamCount.textContent = teamMembers.length;
+  if(accessCount) accessCount.textContent = accessEntries.length;
+  if(currentUser) currentUser.textContent = (App.currentUser || 'Unknown') + ' / ' + (App.currentUserEmail || 'no email');
+  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Only whitelisted emails can sign in.' : 'Access control is visible to admins only.';
+  if(accessAdd) accessAdd.style.display = isAccessAdmin() ? 'grid' : 'none';
   if(tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+
+  renderManagerTeamList(teamMembers);
+  renderManagerAccessList(accessEntries);
 }
+
+function renderManagerTeamList(teamMembers){
+  var el = document.getElementById('manager-team-list');
+  if(!el) return;
+  if(!teamMembers.length){
+    el.innerHTML = '<div class="manager-empty">No team members yet.</div>';
+    return;
+  }
+  el.innerHTML = teamMembers.map(function(member){
+    var c = colorFor(member.name);
+    return '<div class="manager-person-row">'
+      + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+initials(member.name)+'</div>'
+      + '<div class="manager-person-main"><div class="manager-person-name">'+safeText(member.name)+'</div><div class="manager-person-sub">Contributor picker name</div></div>'
+      + '<button class="btn-icon" onclick="removeManagerTeamMember(\''+jsArg(member.id)+'\')" title="Remove">x</button>'
+      + '</div>';
+  }).join('');
+}
+
+function renderManagerAccessList(accessEntries){
+  var el = document.getElementById('manager-access-list');
+  if(!el) return;
+  if(!isAccessAdmin()){
+    el.innerHTML = '<div class="manager-empty">Ask the admin to add or remove sign-in access.</div>';
+    return;
+  }
+  if(!accessEntries.length){
+    el.innerHTML = '<div class="manager-empty">No access entries yet.</div>';
+    return;
+  }
+  el.innerHTML = accessEntries.map(function(entry){
+    var isSelf = entry.email === (App.currentUserEmail || '').toLowerCase();
+    return '<div class="manager-person-row">'
+      + '<div class="manager-person-avatar">'+initials(entry.name || entry.email)+'</div>'
+      + '<div class="manager-person-main"><div class="manager-person-name">'+safeText(entry.name || 'Unnamed')+(isSelf?' <span class="manager-self-tag">You</span>':'')+'</div><div class="manager-person-sub">'+safeText(entry.email)+'</div></div>'
+      + (isSelf ? '<button class="btn-icon" disabled title="Current user">x</button>' : '<button class="btn-icon" onclick="removeManagerAccessEntry(\''+jsArg(entry.id)+'\')" title="Remove access">x</button>')
+      + '</div>';
+  }).join('');
+}
+
+window.addManagerTeamMember = function(){
+  var input = document.getElementById('manager-team-name-input');
+  var name = input ? input.value.trim() : '';
+  if(!name) return;
+  if((App.teamMembers || []).some(function(member){ return member.name.toLowerCase() === name.toLowerCase(); })){
+    if(input) input.value = '';
+    return;
+  }
+  App.teamRef.push({name:name});
+  if(input) input.value = '';
+};
+
+window.removeManagerTeamMember = function(id){
+  if(!id) return;
+  App.teamRef.child(id).remove();
+};
+
+window.addManagerAccessEntry = function(){
+  if(!isAccessAdmin()) return;
+  var emailInput = document.getElementById('manager-access-email-input');
+  var nameInput = document.getElementById('manager-access-name-input');
+  var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  var name = nameInput ? nameInput.value.trim() : '';
+  if(!email || !name) return;
+  if((App.managerWhitelistEntries || []).some(function(entry){ return entry.email === email; })){
+    if(emailInput) emailInput.value = '';
+    if(nameInput) nameInput.value = '';
+    return;
+  }
+  App.whitelistRef.push({email:email, name:name});
+  if(emailInput) emailInput.value = '';
+  if(nameInput) nameInput.value = '';
+};
+
+window.removeManagerAccessEntry = function(id){
+  if(!isAccessAdmin() || !id) return;
+  App.whitelistRef.child(id).remove();
+};

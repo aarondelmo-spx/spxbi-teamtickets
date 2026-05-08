@@ -132,11 +132,12 @@ window.setFilter = function(f){
 };
 
 window.setPriorityFilter = function(p){
-  App.currentPriorityFilter=p;
+  var clearing = App.currentPriorityFilter === p && App.currentFilter === 'active';
+  App.currentPriorityFilter=clearing?'all':p;
   App.currentFilter='active';
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('.filter-pill').forEach(function(b){b.classList.remove('active');});
-  var n=document.getElementById('nav-'+p),pill=document.getElementById('pill-'+p);
+  var n=document.getElementById(clearing?'nav-active':'nav-'+p),pill=document.getElementById(clearing?'pill-active':'pill-'+p);
   if(n)n.classList.add('active');if(pill)pill.classList.add('active');
   renderList();
 };

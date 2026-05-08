@@ -191,11 +191,13 @@ function updateVibeShell(){
   ['status-filter-label','nav-active','nav-all','nav-open','nav-done','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
-  ['pill-active','pill-all','pill-open','toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+  ['pill-active','pill-all','pill-open'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
   document.querySelectorAll('.vibe-advanced-filter').forEach(function(el){
-    el.style.display = vibe ? 'none' : '';
+    var id = el.id || '';
+    var isPriorityControl = id === 'toolbar-priority-sep' || id === 'pill-p0' || id === 'pill-p1' || id === 'pill-p2' || id === 'pill-p3';
+    el.style.display = vibe && !isPriorityControl ? 'none' : (id === 'toolbar-priority-sep' ? 'inline-block' : '');
   });
   setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
   setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
@@ -589,9 +591,10 @@ function initiativeCardHtml(id, t){
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
   var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
+  var priority = String(t.priority || 'p1').toLowerCase();
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
-    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
+    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +(getSupportingTeams(t).length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+supportChipsHtml(getSupportingTeams(t))+'</div>' : '')
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
@@ -615,12 +618,13 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   subteamName = subteamName ? normalizeSubteamName(subteamName) : '';
   var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
   var reviewed = subteamName ? subteamReviewedCoverage(teamName, subteamName) : (teamName ? teamReviewedCoverage(teamName) : totals.reviewed);
+  var sizeLabel = subteamName ? 'Subteam size' : 'Team size';
   return '<div class="team-hc-strip">'
-    +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
-    +'<span>Reviewed '+fmtCapacity(reviewed)+'</span>'
-    +'<span>Scoped '+fmtCapacity(totals.scoped)+'</span>'
-    +'<span>In progress '+fmtCapacity(totals.progress)+'</span>'
-    +'<span>Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
+    +((showTeamSize || subteamName) ? '<div class="team-size-badge'+(subteamName ? ' subteam-size-badge' : '')+'"><span class="team-size-label">'+sizeLabel+'</span><span class="team-size-value">'+fmtCapacity(size)+'</span></div>' : '')
+    +'<span class="team-metric">Reviewed '+fmtCapacity(reviewed)+'</span>'
+    +'<span class="team-metric">Scoped '+fmtCapacity(totals.scoped)+'</span>'
+    +'<span class="team-metric">In progress '+fmtCapacity(totals.progress)+'</span>'
+    +'<span class="team-metric">Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
     +'</div>';
 }
 
@@ -672,6 +676,7 @@ function renderVibeInitiatives(search, list){
     .sort(function(a,b){
       return compareTeams(normalizeTeamName(a[1].teamArea), normalizeTeamName(b[1].teamArea))
         || compareSubteams(normalizeSubteamName(a[1].subteam), normalizeSubteamName(b[1].subteam))
+        || pOrder(a[1].priority || 'p1') - pOrder(b[1].priority || 'p1')
         || (b[1].createdTs || 0) - (a[1].createdTs || 0);
     });
   if(!entries.length){
@@ -845,7 +850,12 @@ function renderVibeWeeklyPlan(search, list){
     .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
-    .sort(function(a,b){ var da=a.task.deadline||'',db=b.task.deadline||''; return da<db?-1:da>db?1:0; });
+    .sort(function(a,b){
+      var da=a.task.deadline||'',db=b.task.deadline||'';
+      return (da<db?-1:da>db?1:0)
+        || pOrder(a.initiative.priority || 'p1') - pOrder(b.initiative.priority || 'p1')
+        || (a.task.ts || 0) - (b.task.ts || 0);
+    });
   renderWeeklyPlanGroups(items, list, start);
 }
 

@@ -20,6 +20,7 @@ var App = {
   hierarchyEditTarget: null,
   currentProjectView: 'main',
   whitelist: {},
+  managerWhitelistEntries: [],
   activityData: {},
   teamMembers: [],
   currentFilter: 'active',

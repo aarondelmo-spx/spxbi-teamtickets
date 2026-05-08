@@ -166,8 +166,14 @@
   .edit-heading:hover .edit-hint{color:var(--accent)}
   .team-heading-row,.subteam-heading-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .subteam-heading-row{margin-top:.45rem}
-  .team-hc-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--text3)}
-  .team-hc-strip span{padding:2px 7px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);white-space:nowrap}
+  .team-hc-strip{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;color:var(--text3)}
+  .team-hc-strip .team-metric{padding:2px 7px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);white-space:nowrap}
+  .team-size-badge{display:inline-grid;grid-template-columns:auto auto;align-items:baseline;gap:7px;padding:6px 10px;border:1px solid rgba(124,111,247,.34);border-radius:var(--radius);background:rgba(124,111,247,.1);white-space:nowrap}
+  .team-size-label{text-transform:uppercase;letter-spacing:.06em;font-size:9px;color:var(--accent)}
+  .team-size-value{font-size:22px;line-height:1;font-weight:500;color:var(--text)}
+  .subteam-size-badge{padding:5px 9px;background:rgba(111,168,247,.08);border-color:rgba(111,168,247,.28)}
+  .subteam-size-badge .team-size-label{color:#6fa8f7}
+  .subteam-size-badge .team-size-value{font-size:18px}
   .initiative-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
   .support-filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem;padding:8px 0}
   .support-filter-label{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--text3);white-space:nowrap}
@@ -505,26 +511,37 @@
   /* Manager mode */
   .app--manager-mode{grid-template-columns:1fr}
   .app--manager-mode .sidebar{display:none}
-  .manager-view{max-width:900px;margin:0 auto;padding:2rem}
-  .manager-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
-  .manager-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem}
+  .manager-view{max-width:1040px;margin:0 auto;padding:2rem}
+  .manager-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:2rem}
+  .manager-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.25rem}
   .manager-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
   .manager-stat-label{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
   .manager-stat-num{font-size:28px;font-weight:300;font-family:var(--mono)}
-  .manager-section{margin-bottom:2rem}
-  .manager-section-title{font-size:10px;font-weight:500;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
-  .manager-flag-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
-  .manager-flag-item:last-child{border-bottom:none}
-  .manager-progress-item{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:13px}
-  .manager-bar{flex:1;height:6px;background:var(--border2);border-radius:3px;overflow:hidden}
-  .manager-bar-fill{height:100%;background:var(--done);border-radius:3px;transition:width .3s}
-  .manager-bar-label{min-width:130px;font-size:12px;color:var(--text2)}
-  .manager-bar-text{font-family:var(--mono);font-size:11px;color:var(--text2);white-space:nowrap}
-  .manager-all-clear{color:var(--done);font-size:13px;padding:8px 0}
+  .manager-stat-text{font-size:13px;color:var(--text2);line-height:1.45;overflow:hidden;text-overflow:ellipsis}
+  .manager-grid{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:14px;align-items:start}
+  .manager-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem}
+  .manager-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:.85rem}
+  .manager-panel p{font-size:12px;color:var(--text3);line-height:1.45;margin-top:.25rem}
+  .manager-section-title{font-size:10px;font-weight:500;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em}
+  .manager-person-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);min-width:0}
+  .manager-person-row:last-child{border-bottom:none}
+  .manager-person-avatar{width:28px;height:28px;border-radius:50%;background:rgba(124,111,247,.16);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex:0 0 auto}
+  .manager-person-main{flex:1;min-width:0}
+  .manager-person-name{font-size:13px;color:var(--text);font-weight:500;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .manager-person-sub{font-size:11px;color:var(--text3);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .manager-person-row .btn-icon:disabled{opacity:.35;cursor:not-allowed}
+  .manager-person-row .btn-icon:disabled:hover{color:var(--text3);background:none}
+  .manager-self-tag{display:inline-block;margin-left:5px;padding:1px 6px;border:1px solid rgba(124,111,247,.3);border-radius:9px;background:rgba(124,111,247,.1);color:var(--accent);font-size:9px;font-family:var(--mono);font-weight:400;vertical-align:middle}
+  .manager-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:1rem}
+  .manager-access-add-row{grid-template-columns:minmax(180px,1.2fr) minmax(120px,.8fr) auto}
+  .manager-add-row input{min-width:0;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none}
+  .manager-add-row input:focus{border-color:var(--accent)}
+  .manager-empty{font-size:12px;color:var(--text3);padding:.4rem 0}
   .manager-back{font-family:var(--mono);font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;padding:0}
   .manager-back:hover{color:var(--text)}
   .manager-ts{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2rem;text-align:right}
-  @media(max-width:600px){.manager-stats{grid-template-columns:1fr 1fr}}
+  @media(max-width:760px){.manager-grid,.manager-access-add-row{grid-template-columns:1fr}.manager-header{align-items:flex-start;flex-direction:column}.manager-stats{grid-template-columns:1fr}}
+  @media(max-width:600px){.manager-stats{grid-template-columns:1fr}}
   @media(max-width:380px){.manager-stats{grid-template-columns:1fr}}
 
   /* Sidebar settings collapse */
