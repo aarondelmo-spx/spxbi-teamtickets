@@ -36,6 +36,7 @@ var App = {
   currentUserEmail: '',
   replyingTo: null,
   ntSelectedContribs: [],
+  ntSelectedSupportTeams: [],
   dSelectedContribs: [],
   stSelectedContribs: [],
   wlPopoverOpen: false,

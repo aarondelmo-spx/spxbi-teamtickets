@@ -349,6 +349,7 @@ function initiativeMatchesSearch(t, search){
   if((t.desc||'').toLowerCase().includes(search)) return true;
   if((t.teamArea||'').toLowerCase().includes(search)) return true;
   if((t.subteam||'').toLowerCase().includes(search)) return true;
+  if(getSupportingTeams(t).some(function(team){ return (team || '').toLowerCase().includes(search); })) return true;
   return taskEntries('', t).some(function(item){
     return (item.task.text||'').toLowerCase().includes(search)
       || (item.workstreamName||'').toLowerCase().includes(search);
@@ -391,6 +392,194 @@ function supportChipsHtml(teams){
   if(!teams || !teams.length) return '';
   return teams.map(function(team){ return '<span class="support-chip">'+safeText(team)+'</span>'; }).join('');
 }
+
+function supportTeamKey(team){
+  return String(team || '').trim().toLowerCase();
+}
+
+function cleanSupportTeamName(team){
+  return String(team || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeSupportTeamList(teams){
+  var byKey = {};
+  (teams || []).forEach(function(team){
+    var name = cleanSupportTeamName(team);
+    var key = supportTeamKey(name);
+    if(key && !byKey[key]) byKey[key] = name;
+  });
+  return Object.values(byKey);
+}
+
+function allSupportingTeamOptions(extraTeams){
+  var byKey = {};
+  function add(team){
+    var name = cleanSupportTeamName(team);
+    var key = supportTeamKey(name);
+    if(key && !byKey[key]) byKey[key] = name;
+  }
+  Object.values(App.sprintTickets || {}).forEach(function(t){
+    getSupportingTeams(t).forEach(add);
+  });
+  Object.values(App.allTickets || {}).forEach(function(t){
+    getSupportingTeams(t).forEach(add);
+  });
+  (extraTeams || []).forEach(add);
+  return Object.values(byKey).sort(function(a,b){ return a.localeCompare(b); });
+}
+
+function supportTeamContainerId(mode){
+  return mode === 'new' ? 'nt-support-teams' : 'd-support-teams';
+}
+
+function supportTeamInputId(mode){
+  return mode === 'new' ? 'nt-support-team-input' : 'support-team-input';
+}
+
+function supportTeamSuggestId(mode){
+  return mode === 'new' ? 'nt-support-team-suggestions' : 'support-team-suggestions';
+}
+
+function selectedSupportTeamsForMode(mode){
+  if(mode === 'new') return App.ntSelectedSupportTeams || [];
+  var t = App.allTickets[App.selectedTicketId] || {};
+  return getSupportingTeams(t);
+}
+
+function canonicalSupportTeamName(team, selected){
+  var name = cleanSupportTeamName(team);
+  var key = supportTeamKey(name);
+  if(!key) return '';
+  var match = allSupportingTeamOptions(selected).find(function(option){ return supportTeamKey(option) === key; });
+  return match || name;
+}
+
+function setSupportTeamsForMode(mode, teams){
+  teams = normalizeSupportTeamList(teams);
+  if(mode === 'new'){
+    App.ntSelectedSupportTeams = teams;
+    renderSupportTeamPicker('new');
+    return;
+  }
+  if(!App.selectedTicketId) return;
+  var t = App.allTickets[App.selectedTicketId] || {};
+  t.supportingTeams = teams.length ? teams : null;
+  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
+  renderSupportTeamPicker('detail');
+  renderList();
+}
+
+function matchingSupportTeamOptions(mode){
+  var input = document.getElementById(supportTeamInputId(mode));
+  var query = input ? cleanSupportTeamName(input.value) : '';
+  if(!query) return [];
+  var selected = selectedSupportTeamsForMode(mode);
+  var selectedKeys = {};
+  selected.forEach(function(team){ selectedKeys[supportTeamKey(team)] = true; });
+  var q = query.toLowerCase();
+  return allSupportingTeamOptions(selected)
+    .filter(function(option){
+      var key = supportTeamKey(option);
+      return key && !selectedKeys[key] && key.indexOf(q) > -1;
+    })
+    .slice(0, 6);
+}
+
+function renderSupportTeamPicker(mode){
+  var el = document.getElementById(supportTeamContainerId(mode));
+  if(!el) return;
+  var teams = selectedSupportTeamsForMode(mode);
+  var inputId = supportTeamInputId(mode);
+  var suggestId = supportTeamSuggestId(mode);
+  el.innerHTML = teams.map(function(team){
+    return '<span class="support-chip">'+safeText(team)
+      +'<button class="support-chip-remove" onclick="removeSupportTeamFromMode(\''+mode+'\',\''+safeText(jsArg(team))+'\')" type="button" title="Remove">x</button></span>';
+  }).join('')
+  +'<input class="support-team-input" id="'+inputId+'" placeholder="Add team..." autocomplete="off"'
+    +' oninput="renderSupportTeamSuggestions(\''+mode+'\')"'
+    +' onfocus="renderSupportTeamSuggestions(\''+mode+'\')"'
+    +' onblur="setTimeout(function(){hideSupportTeamSuggestions(\''+mode+'\')},120)"'
+    +' onkeydown="handleSupportTeamInputKey(event,\''+mode+'\')" />'
+  +'<div class="support-suggest-list" id="'+suggestId+'"></div>';
+}
+
+window.renderSupportTeamSuggestions = function(mode){
+  var list = document.getElementById(supportTeamSuggestId(mode));
+  if(!list) return;
+  var matches = matchingSupportTeamOptions(mode);
+  if(!matches.length){
+    list.innerHTML = '';
+    list.classList.remove('open');
+    return;
+  }
+  list.innerHTML = matches.map(function(team){
+    return '<button type="button" class="support-suggest-item"'
+      +' onmousedown="event.preventDefault();chooseSupportTeamSuggestion(\''+mode+'\',\''+safeText(jsArg(team))+'\')">'+safeText(team)+'</button>';
+  }).join('');
+  list.classList.add('open');
+};
+
+window.hideSupportTeamSuggestions = function(mode){
+  var list = document.getElementById(supportTeamSuggestId(mode));
+  if(!list) return;
+  list.classList.remove('open');
+};
+
+window.handleSupportTeamInputKey = function(event, mode){
+  if(event.key === 'Enter' || event.key === ','){
+    event.preventDefault();
+    commitSupportTeamInput(mode);
+    return;
+  }
+  if(event.key === 'Tab'){
+    var matches = matchingSupportTeamOptions(mode);
+    if(matches.length){
+      event.preventDefault();
+      addSupportTeamToMode(mode, matches[0]);
+    }
+    return;
+  }
+  if(event.key === 'Escape') hideSupportTeamSuggestions(mode);
+};
+
+window.commitSupportTeamInput = function(mode){
+  var input = document.getElementById(supportTeamInputId(mode));
+  if(!input) return;
+  var raw = input.value || '';
+  var parts = raw.split(',').map(cleanSupportTeamName).filter(Boolean);
+  if(!parts.length) return;
+  parts.forEach(function(part){ addSupportTeamToMode(mode, part); });
+};
+
+window.chooseSupportTeamSuggestion = function(mode, team){
+  addSupportTeamToMode(mode, team);
+};
+
+window.addSupportTeamToMode = function(mode, team){
+  var selected = selectedSupportTeamsForMode(mode);
+  var name = canonicalSupportTeamName(team, selected);
+  if(!name) return;
+  var teams = selected.filter(function(existing){ return supportTeamKey(existing) !== supportTeamKey(name); });
+  teams.push(name);
+  setSupportTeamsForMode(mode, teams);
+  var input = document.getElementById(supportTeamInputId(mode));
+  if(input){
+    input.value = '';
+    input.focus();
+  }
+  hideSupportTeamSuggestions(mode);
+};
+
+window.removeSupportTeamFromMode = function(mode, team){
+  var teams = selectedSupportTeamsForMode(mode).filter(function(existing){
+    return supportTeamKey(existing) !== supportTeamKey(team);
+  });
+  setSupportTeamsForMode(mode, teams);
+};
+
+window.renderNewSupportingTeamsField = function(){
+  renderSupportTeamPicker('new');
+};
 
 function initiativeCardHtml(id, t){
   var stats = initiativeTaskStats(t);
@@ -850,37 +1039,15 @@ window.toggleVibeTaskFromList = function(ticketId, taskId, current){
 };
 
 function renderSupportingTeamsField(ticketId){
-  var el = document.getElementById('d-support-teams');
-  if(!el) return;
-  var t = App.allTickets[ticketId] || {};
-  var teams = getSupportingTeams(t);
-  el.innerHTML = teams.map(function(team){
-    return '<span class="support-chip">'+safeText(team)
-      +'<button class="support-chip-remove" onclick="removeSupportingTeam(\''+jsArg(team)+'\')" type="button" title="Remove">✕</button></span>';
-  }).join('')
-  +'<input class="support-team-input" id="support-team-input" placeholder="Add team…"'
-  +' onkeydown="if(event.key===\'Enter\'||event.key===\',\'){event.preventDefault();var v=this.value.trim();if(v){addSupportingTeam(v);this.value=\'\';}}"/>';
+  renderSupportTeamPicker('detail');
 }
 
 window.addSupportingTeam = function(team){
-  if(!team || !App.selectedTicketId) return;
-  var t = App.allTickets[App.selectedTicketId] || {};
-  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
-  teams.push(team);
-  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams});
-  t.supportingTeams = teams;
-  renderSupportingTeamsField(App.selectedTicketId);
-  renderList();
+  addSupportTeamToMode('detail', team);
 };
 
 window.removeSupportingTeam = function(team){
-  if(!App.selectedTicketId) return;
-  var t = App.allTickets[App.selectedTicketId] || {};
-  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
-  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
-  t.supportingTeams = teams.length ? teams : null;
-  renderSupportingTeamsField(App.selectedTicketId);
-  renderList();
+  removeSupportTeamFromMode('detail', team);
 };
 
 function updateDetailLayoutForView(){

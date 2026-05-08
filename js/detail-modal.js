@@ -149,6 +149,7 @@ window.editDetailField = function(field){
 
 window.saveDetailChanges = function(){
   if(!App.selectedTicketId) return;
+  if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('detail');
   var id = App.selectedTicketId;
   var upd = {
     title: readDetailTextField('title') || 'Untitled',

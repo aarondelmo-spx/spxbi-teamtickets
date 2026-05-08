@@ -198,6 +198,7 @@ function sprintPayloadFromNewModal(){
     projectType: 'sprint',
     teamArea: teamName,
     subteam: normalizeSubteamName(cleanTextField('nt-subteam')),
+    supportingTeams: App.ntSelectedSupportTeams && App.ntSelectedSupportTeams.length ? App.ntSelectedSupportTeams.slice() : null,
     sprintCycle: cleanTextField('nt-sprint-cycle'),
     timelineStart: cleanTextField('nt-timeline-start'),
     timelineEnd: cleanTextField('nt-timeline-end'),
@@ -230,6 +231,8 @@ function clearSprintNewFields(){
   renderSubteamSelect('nt');
   if(stage) stage.value = 'scoping';
   if(confidence) confidence.value = 'medium';
+  App.ntSelectedSupportTeams = [];
+  if(typeof renderNewSupportingTeamsField === 'function') renderNewSupportingTeamsField();
 }
 
 function updateAppShell(){

@@ -245,6 +245,10 @@
           </div>
           <div class="field"><label>Subteam</label><select id="nt-subteam"></select></div>
         </div>
+        <div class="field">
+          <label>Supporting teams</label>
+          <div class="support-chips-wrap" id="nt-support-teams"></div>
+        </div>
         <div class="form-row">
           <div class="field"><label>Planning note</label><input id="nt-sprint-cycle" placeholder="Optional context..." /></div>
           <div class="field"><label>Timeline Start</label><input id="nt-timeline-start" type="date" /></div>
@@ -444,10 +448,10 @@
       <div id="d-comments"></div>
       <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-start">
         <div id="d-my-avatar" style="margin-top:2px;flex-shrink:0"></div>
-        <input id="d-comment-input" placeholder="Write a comment... (Enter to post)"
-          style="flex:1;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none"
+        <textarea id="d-comment-input" rows="2" placeholder="Write a comment... (Enter to post, Shift/Ctrl+Enter for new line)"
+          style="flex:1;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5;outline:none;resize:vertical;min-height:38px"
           onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"
-          onkeydown="if(event.key==='Enter')postComment()" />
+          onkeydown="handleCommentKey(event)" ></textarea>
         <button class="btn btn-primary btn-sm" style="margin-top:2px" onclick="postComment()">Post</button>
       </div>
     </div>

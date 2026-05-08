@@ -1,0 +1,190 @@
+{
+  "team": {
+    "-member1": {
+      "name": "Maya Chen"
+    },
+    "-member2": {
+      "name": "Ravi Singh"
+    },
+    "-member3": {
+      "name": "Lina Tan"
+    }
+  },
+  "automationTeams": {
+    "-team-finops": {
+      "name": "FinOps",
+      "teamSizeHc": 104,
+      "sortOrder": 1
+    },
+    "-team-claims": {
+      "name": "Claims",
+      "teamSizeHc": 48,
+      "sortOrder": 2
+    }
+  },
+  "automationSubteams": {
+    "-sub-agency-billing": {
+      "teamName": "FinOps",
+      "name": "Agency Billing Validation",
+      "subteamSizeHc": 22,
+      "automationReviewed": true,
+      "automationReviewedTs": 1778120000000,
+      "automationReviewedBy": "Maya Chen"
+    },
+    "-sub-rb-calc": {
+      "teamName": "FinOps",
+      "name": "RB Calculation",
+      "subteamSizeHc": 18,
+      "automationReviewed": false
+    },
+    "-sub-cleo": {
+      "teamName": "Claims",
+      "name": "CLEO",
+      "subteamSizeHc": 14,
+      "automationReviewed": true,
+      "automationReviewedTs": 1778120000000,
+      "automationReviewedBy": "Lina Tan"
+    }
+  },
+  "sprintProjects": {
+    "-init-finops-audit": {
+      "title": "Invoice audit automation",
+      "desc": "Automate weekly invoice exception checks and route mismatches for review.",
+      "priority": "p0",
+      "status": "in progress",
+      "assignee": "Maya Chen",
+      "contributors": [
+        "Maya Chen",
+        "Ravi Singh"
+      ],
+      "teamArea": "FinOps",
+      "subteam": "Agency Billing Validation",
+      "stage": "build_uat",
+      "confidence": "medium",
+      "timelineStart": "2026-05-01",
+      "timelineEnd": "2026-05-22",
+      "automationScopedHc": 8,
+      "actualHcSavings": 0,
+      "excessCapacityHc": 2,
+      "created": "May 1",
+      "createdTs": 1777564800000,
+      "workstreams": {
+        "-ws-uat": {
+          "name": "UAT",
+          "sortOrder": 1777564800000,
+          "createdBy": "Maya Chen",
+          "createdTs": 1777564800000
+        }
+      },
+      "subtasks": {
+        "-task-uat-signoff": {
+          "text": "Complete UAT signoff with finance ops",
+          "done": false,
+          "deadline": "2026-05-07",
+          "contributors": [
+            "Maya Chen"
+          ],
+          "workstreamId": "-ws-uat",
+          "createdBy": "Maya Chen",
+          "ts": 1777651200000
+        },
+        "-task-exception-report": {
+          "text": "Publish exception report sample",
+          "done": false,
+          "deadline": "2026-05-15",
+          "contributors": [
+            "Ravi Singh"
+          ],
+          "createdBy": "Ravi Singh",
+          "ts": 1777737600000
+        }
+      }
+    },
+    "-init-rb-calc": {
+      "title": "RB calculation helper",
+      "desc": "Reduce manual calculation checks during rate updates.",
+      "priority": "p1",
+      "status": "open",
+      "assignee": "Unassigned",
+      "teamArea": "FinOps",
+      "subteam": "RB Calculation",
+      "stage": "validating",
+      "confidence": "low",
+      "sprintCycle": "May sprint",
+      "automationScopedHc": 4,
+      "actualHcSavings": 0,
+      "excessCapacityHc": 1,
+      "created": "May 3",
+      "createdTs": 1777737600000,
+      "subtasks": {
+        "-task-owner": {
+          "text": "Confirm process owner",
+          "done": false,
+          "deadline": "2026-05-12",
+          "createdBy": "Maya Chen",
+          "ts": 1777824000000
+        }
+      }
+    },
+    "-init-cleo-triage": {
+      "title": "CLEO claim triage assist",
+      "desc": "Use rules and generated drafts to reduce repeated claim triage effort.",
+      "priority": "p1",
+      "status": "done",
+      "assignee": "Lina Tan",
+      "contributors": [
+        "Lina Tan"
+      ],
+      "teamArea": "Claims",
+      "subteam": "CLEO",
+      "stage": "closed",
+      "confidence": "high",
+      "timelineStart": "2026-04-15",
+      "timelineEnd": "2026-05-05",
+      "automationScopedHc": 6,
+      "actualHcSavings": 3,
+      "excessCapacityHc": 1,
+      "created": "Apr 15",
+      "createdTs": 1776182400000,
+      "subtasks": {
+        "-task-rollout": {
+          "text": "Roll out triage checklist",
+          "done": true,
+          "deadline": "2026-05-05",
+          "contributors": [
+            "Lina Tan"
+          ],
+          "createdBy": "Lina Tan",
+          "ts": 1776268800000
+        }
+      }
+    }
+  },
+  "activity": {
+    "-act1": {
+      "type": "status",
+      "who": "Maya Chen",
+      "ticketTitle": "Invoice audit automation",
+      "projectView": "sprint",
+      "from": "open",
+      "to": "in progress",
+      "ts": 1777996800000
+    },
+    "-act2": {
+      "type": "done",
+      "who": "Lina Tan",
+      "ticketTitle": "CLEO claim triage assist",
+      "detail": "Roll out triage checklist",
+      "projectView": "sprint",
+      "ts": 1778083200000
+    },
+    "-act3": {
+      "type": "subtask",
+      "who": "Maya Chen",
+      "ticketTitle": "RB calculation helper",
+      "detail": "Confirm process owner",
+      "projectView": "sprint",
+      "ts": 1778169600000
+    }
+  }
+}

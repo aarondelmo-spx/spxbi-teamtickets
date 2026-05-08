@@ -166,6 +166,7 @@ function renderContribPills(){
 
 window.openNewModal = function(){
   App.ntSelectedContribs=[];
+  App.ntSelectedSupportTeams=[];
   updateAppShell();
   clearSprintNewFields();
   renderContribPicker('nt-contributor-picker',App.ntSelectedContribs,function(sel){App.ntSelectedContribs=sel;});
@@ -178,4 +179,5 @@ window.closeNewModal = function(){
   ['nt-title','nt-desc','nt-deadline'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   clearSprintNewFields();
   App.ntSelectedContribs=[];
+  App.ntSelectedSupportTeams=[];
 };

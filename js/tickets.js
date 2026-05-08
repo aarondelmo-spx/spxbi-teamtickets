@@ -1,5 +1,6 @@
 window.createTicket = function(){
   var title=document.getElementById('nt-title').value.trim(); if(!title){document.getElementById('nt-title').focus();return;}
+  if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('new');
   var dl=document.getElementById('nt-deadline').value;
   var assignee=App.ntSelectedContribs[0]||'Unassigned';
   var payload={title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
