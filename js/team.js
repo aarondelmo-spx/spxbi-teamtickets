@@ -10,7 +10,7 @@ function normalizeTeamMemberRecord(id, raw){
 
 function normalizeUserRole(role){
   role = String(role || '').toLowerCase();
-  return role === 'viewer' || role === 'editor' || role === 'admin' ? role : 'editor';
+  return role === 'viewer' || role === 'editor' || role === 'admin' ? role : 'admin';
 }
 
 function normalizeWhitelistUserRecord(id, raw){
@@ -20,7 +20,8 @@ function normalizeWhitelistUserRecord(id, raw){
     id: id,
     email: email,
     name: String(raw.name || '').trim(),
-    role: normalizeUserRole(raw.role),
+    role: 'admin',
+    storedRole: String(raw.role || '').toLowerCase(),
     legacy: false,
     source: 'whitelist'
   };
@@ -42,6 +43,14 @@ function currentUserRecord(){
 
 function isCurrentUserAdmin(){
   return userIsEffectiveAdmin(currentUserRecord()) || String(App.currentUserEmail || '').toLowerCase() === String(App.ADMIN_EMAIL || '').toLowerCase();
+}
+
+function promoteAllWhitelistUsersToAdmin(){
+  if(!isCurrentUserAdmin()) return;
+  (App.users || []).forEach(function(user){
+    if(!user.id || user.storedRole === 'admin') return;
+    App.whitelistRef.child(user.id).update({role:'admin'});
+  });
 }
 
 function assignmentNameKey(name){

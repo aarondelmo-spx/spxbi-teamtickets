@@ -41,6 +41,7 @@ function startApp(){
       App.currentUserRole = me.role;
       updateWho();
     }
+    promoteAllWhitelistUsersToAdmin();
     rebuildTeamMembers();
     renderWhitelistPanel();
     refreshTeamMemberUi();

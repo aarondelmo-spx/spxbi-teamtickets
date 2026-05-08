@@ -6,7 +6,7 @@ window.addWhitelist = function(){
   var name = nameInput.value.trim();
   if(!email||!name) return;
   if(duplicateWhitelistEmail(email) || duplicateWhitelistName(name)) return;
-  App.whitelistRef.push({email:email, name:name, role:'editor'});
+  App.whitelistRef.push({email:email, name:name, role:'admin'});
   emailInput.value=''; nameInput.value='';
 };
 

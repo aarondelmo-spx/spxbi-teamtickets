@@ -2,11 +2,11 @@ function seedWhitelistIfEmpty(){
   App.whitelistRef.once('value', function(snap){
     if(snap.val()) return;
     var initialList = [
-      {email:'karl.kue@spxexpress.com', name:'Karl', role:'editor'},
+      {email:'karl.kue@spxexpress.com', name:'Karl', role:'admin'},
       {email:'aaron.delmo@spxexpress.com', name:'Will', role:'admin'},
-      {email:'aliya.galang@spxexpress.com', name:'Aliya', role:'editor'},
-      {email:'charlie.dimaala@spxexpress.com', name:'Chao', role:'editor'},
-      {email:'ryandrei.garcia@spxexpress.com', name:'RD', role:'editor'}
+      {email:'aliya.galang@spxexpress.com', name:'Aliya', role:'admin'},
+      {email:'charlie.dimaala@spxexpress.com', name:'Chao', role:'admin'},
+      {email:'ryandrei.garcia@spxexpress.com', name:'RD', role:'admin'}
     ];
     initialList.forEach(function(entry){ App.whitelistRef.push(entry); });
   });

@@ -21,19 +21,19 @@ function showManagerView(){
     + '</div>'
     + '<div class="manager-stats" id="manager-stats-row">'
     +   '<div class="manager-stat"><div class="manager-stat-label">Users</div><div class="manager-stat-num" id="mgr-user-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Admins</div><div class="manager-stat-num" id="mgr-admin-count">0</div></div>'
     +   '<div class="manager-stat"><div class="manager-stat-label">Assignable</div><div class="manager-stat-num" id="mgr-assignable-count">0</div></div>'
-    +   '<div class="manager-stat"><div class="manager-stat-label">View only</div><div class="manager-stat-num" id="mgr-viewer-count">0</div></div>'
     +   '<div class="manager-stat"><div class="manager-stat-label">Signed in as</div><div class="manager-stat-text" id="mgr-current-user">-</div></div>'
     + '</div>'
     + '<div class="manager-grid manager-grid-users">'
     +   '<section class="manager-panel">'
-    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Whitelist users</div><p id="manager-access-note">Only whitelisted emails can sign in. Editors and admins are assignable.</p></div></div>'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Whitelist users</div><p id="manager-access-note">Every whitelisted email signs in as admin and is assignable.</p></div></div>'
     +     '<div class="manager-error" id="manager-error" style="display:none"></div>'
     +     '<div id="manager-user-list"><div class="loading">Loading...</div></div>'
     +     '<div class="manager-add-row manager-user-add-row" id="manager-user-add-row">'
     +       '<input id="manager-user-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
     +       '<input id="manager-user-email-input" placeholder="email@spxexpress.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
-    +       '<select id="manager-user-role-input" aria-label="Role"><option value="editor" selected>Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select>'
+    +       '<select id="manager-user-role-input" aria-label="Role" disabled><option value="admin" selected>Admin</option></select>'
     +       '<button class="btn btn-primary btn-sm" onclick="addManagerUser()" type="button">Add</button>'
     +     '</div>'
     +   '</section>'
@@ -61,8 +61,6 @@ function managerFieldId(field, id){
 
 function managerRoleOptions(role){
   var roles = [
-    {value:'viewer', label:'Viewer'},
-    {value:'editor', label:'Editor'},
     {value:'admin', label:'Admin'}
   ];
   return roles.map(function(option){
@@ -94,25 +92,25 @@ function duplicateWhitelistName(name, excludeId){
 
 function managerRoleBadge(user){
   if(userIsAssignable(user)) return '<span class="manager-role-badge assignable">Assignable</span>';
-  return '<span class="manager-role-badge viewer">View only</span>';
+  return '<span class="manager-role-badge assignable">Assignable</span>';
 }
 
 function renderManagerTeamAccessView(){
   var users = App.users || [];
   var legacyMembers = (App.teamMembers || []).filter(function(member){ return member.legacy; });
   var userCount = document.getElementById('mgr-user-count');
+  var adminCount = document.getElementById('mgr-admin-count');
   var assignableCount = document.getElementById('mgr-assignable-count');
-  var viewerCount = document.getElementById('mgr-viewer-count');
   var currentUser = document.getElementById('mgr-current-user');
   var accessNote = document.getElementById('manager-access-note');
   var addRow = document.getElementById('manager-user-add-row');
   var tsEl = document.getElementById('manager-ts');
 
   if(userCount) userCount.textContent = users.length;
+  if(adminCount) adminCount.textContent = users.length;
   if(assignableCount) assignableCount.textContent = users.filter(userIsAssignable).length;
-  if(viewerCount) viewerCount.textContent = users.filter(function(user){ return user.role === 'viewer'; }).length;
   if(currentUser) currentUser.textContent = (App.currentUser || 'Unknown') + ' / ' + (App.currentUserEmail || 'no email');
-  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Only whitelisted emails can sign in. Editors and admins are assignable.' : 'Only admins can change users.';
+  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Every whitelisted email signs in as admin and is assignable.' : 'Every whitelisted email signs in as admin.';
   if(addRow) addRow.style.display = isAccessAdmin() ? 'grid' : 'none';
   if(tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
 
@@ -140,7 +138,7 @@ function renderManagerUsersList(users){
       + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+safeText(initials(user.name || user.email))+'</div>'
       + '<input id="'+nameId+'" value="'+safeText(user.name)+'" maxlength="30" aria-label="Name"'+disabled+' />'
       + '<input id="'+emailId+'" value="'+safeText(user.email)+'" type="email" aria-label="Email"'+(self ? ' disabled' : disabled)+' />'
-      + '<select id="'+roleId+'" aria-label="Role"'+disabled+'>'+managerRoleOptions(user.role)+'</select>'
+      + '<select id="'+roleId+'" aria-label="Role" disabled>'+managerRoleOptions(user.role)+'</select>'
       + managerRoleBadge(user)
       + (self ? '<span class="manager-self-tag">You</span>' : '')
       + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
@@ -183,7 +181,7 @@ window.addManagerUser = function(){
   App.whitelistRef.push({email:email, name:name, role:role});
   if(nameInput) nameInput.value = '';
   if(emailInput) emailInput.value = '';
-  if(roleInput) roleInput.value = 'editor';
+  if(roleInput) roleInput.value = 'admin';
 };
 
 window.saveManagerUser = function(id){
