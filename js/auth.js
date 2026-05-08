@@ -2,11 +2,11 @@ function seedWhitelistIfEmpty(){
   App.whitelistRef.once('value', function(snap){
     if(snap.val()) return;
     var initialList = [
-      {email:'karl.kue@spxexpress.com', name:'Karl'},
-      {email:'aaron.delmo@spxexpress.com', name:'Will'},
-      {email:'aliya.galang@spxexpress.com', name:'Aliya'},
-      {email:'charlie.dimaala@spxexpress.com', name:'Chao'},
-      {email:'ryandrei.garcia@spxexpress.com', name:'RD'}
+      {email:'karl.kue@spxexpress.com', name:'Karl', role:'editor'},
+      {email:'aaron.delmo@spxexpress.com', name:'Will', role:'admin'},
+      {email:'aliya.galang@spxexpress.com', name:'Aliya', role:'editor'},
+      {email:'charlie.dimaala@spxexpress.com', name:'Chao', role:'editor'},
+      {email:'ryandrei.garcia@spxexpress.com', name:'RD', role:'editor'}
     ];
     initialList.forEach(function(entry){ App.whitelistRef.push(entry); });
   });
@@ -58,11 +58,12 @@ App.auth.onAuthStateChanged(function(user){
   App.currentUserEmail = email;
   App.whitelistRef.once('value', function(snap){
     var wl = snap.val()||{};
-    var mappedName = null;
-    Object.values(wl).forEach(function(entry){
-      if(entry.email && entry.email.toLowerCase() === email) mappedName = entry.name;
+    var mappedUser = null;
+    Object.entries(wl).forEach(function(entry){
+      var normalized = normalizeWhitelistUserRecord(entry[0], entry[1]);
+      if(normalized.email === email) mappedUser = normalized;
     });
-    if(!mappedName){
+    if(!mappedUser){
       App.auth.signOut();
       var error = document.getElementById('login-error');
       var btn = document.querySelector('.google-btn');
@@ -71,7 +72,8 @@ App.auth.onAuthStateChanged(function(user){
       document.getElementById('login-loading').style.display = 'none';
       return;
     }
-    App.currentUser = mappedName;
+    App.currentUser = mappedUser.name || mappedUser.email;
+    App.currentUserRole = mappedUser.role;
     document.getElementById('login-screen').style.display = 'none';
     document.querySelector('.app').style.display = 'grid';
     updateWho();

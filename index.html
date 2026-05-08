@@ -64,10 +64,9 @@
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
     <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
-    <button class="team-btn" onclick="openManagerView()">Team &amp; access</button>
+    <button class="team-btn" onclick="openManagerView()">Users</button>
     <details class="sidebar-settings">
       <summary>Settings</summary>
-      <button class="team-btn shell-tool" onclick="openTeamModal()">👥 Manage team</button>
       <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
       <button class="team-btn shell-tool" onclick="openCalendar()">📅 Calendar view</button>
     </details>
@@ -341,6 +340,17 @@
         <div class="field" id="d-support-teams-field" style="display:none">
           <label>Supporting teams</label>
           <div class="support-chips-wrap" id="d-support-teams"></div>
+        </div>
+        <div class="field" id="d-support-contacts-field" style="display:none">
+          <label>Supporting contacts</label>
+          <div id="d-support-contacts-list"></div>
+          <div class="support-contact-add-row">
+            <input id="support-contact-name" placeholder="Name" />
+            <input id="support-contact-role" placeholder="Role / workstream" />
+            <input id="support-contact-email" placeholder="Email" type="email" />
+            <select id="support-contact-team"></select>
+            <button class="btn btn-primary btn-sm" onclick="addSupportContact()" type="button">Add</button>
+          </div>
         </div>
       </div>
 

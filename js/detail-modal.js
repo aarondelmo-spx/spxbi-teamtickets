@@ -13,8 +13,7 @@ function titleCaseStatus(status){
 
 function ownerOptions(selected){
   var value = selected && selected !== 'Unassigned' ? selected : '';
-  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
-  if(value && names.indexOf(value) === -1) names.unshift(value);
+  var names = assignmentPickerNames(value);
   return '<option value="">Unassigned</option>' + names.map(function(name){
     return '<option value="'+safeText(name)+'"'+(value===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
@@ -183,7 +182,7 @@ window.openDetailModal = function(id){
   setDetailSaveStatus('');
   document.getElementById('d-id').textContent='#'+id.slice(-6).toUpperCase();
   refreshDetailFields(t, {forceText:true});
-  App.dSelectedContribs=t.contributors?t.contributors.slice():[];
+  App.dSelectedContribs=t.contributors?t.contributors.slice():(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
   App.stSelectedContribs=[];
   renderContribPicker('d-contributor-picker',App.dSelectedContribs,function(sel){App.dSelectedContribs=sel;saveContributors();});
   renderContributorsDisplay();

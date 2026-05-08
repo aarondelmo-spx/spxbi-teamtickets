@@ -19,9 +19,7 @@ function initiativeOwner(ticket){
 }
 
 function ownerNameList(selected){
-  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
-  if(selected && names.indexOf(selected) === -1) names.unshift(selected);
-  return names;
+  return assignmentPickerNames(selected);
 }
 
 function taskDueRank(task){
@@ -395,6 +393,19 @@ function supportChipsHtml(teams){
   return teams.map(function(team){ return '<span class="support-chip">'+safeText(team)+'</span>'; }).join('');
 }
 
+function supportContactEntries(t){
+  return Object.entries((t && t.supportContacts) || {}).map(function(entry){
+    var contact = entry[1] || {};
+    return {
+      id: entry[0],
+      name: contact.name || '',
+      role: contact.role || '',
+      email: contact.email || '',
+      team: contact.team || ''
+    };
+  });
+}
+
 function supportTeamKey(team){
   return String(team || '').trim().toLowerCase();
 }
@@ -468,6 +479,7 @@ function setSupportTeamsForMode(mode, teams){
   t.supportingTeams = teams.length ? teams : null;
   activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
   renderSupportTeamPicker('detail');
+  renderSupportContactsField(App.selectedTicketId);
   renderList();
 }
 
@@ -590,6 +602,7 @@ function initiativeCardHtml(id, t){
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
+  var supportContacts = supportContactEntries(t);
   var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
   var priority = String(t.priority || 'p1').toLowerCase();
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
@@ -600,6 +613,7 @@ function initiativeCardHtml(id, t){
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
     +(weeklyDue?'<span>'+weeklyDue+' due this week</span>':'')
     +(groupCount?'<span>'+groupCount+' group'+(groupCount!==1?'s':'')+'</span>':'')
+    +(supportContacts.length?'<span>'+supportContacts.length+' support contact'+(supportContacts.length!==1?'s':'')+'</span>':'')
     +'<span>'+hcText+'</span>'
     +'<span>'+dueText+'</span>'
     +'</div>'
@@ -1050,7 +1064,73 @@ window.toggleVibeTaskFromList = function(ticketId, taskId, current){
 
 function renderSupportingTeamsField(ticketId){
   renderSupportTeamPicker('detail');
+  renderSupportContactsField(ticketId);
 }
+
+function supportContactTeamOptions(ticket, selected){
+  var teams = getSupportingTeams(ticket);
+  if(selected && teams.indexOf(selected) === -1) teams = teams.concat([selected]);
+  return '<option value="">Team</option>' + teams.map(function(team){
+    return '<option value="'+safeText(team)+'"'+(selected===team?' selected':'')+'>'+safeText(team)+'</option>';
+  }).join('');
+}
+
+function renderSupportContactsField(ticketId){
+  var list = document.getElementById('d-support-contacts-list');
+  var teamSelect = document.getElementById('support-contact-team');
+  if(!list || !teamSelect) return;
+  var ticket = App.allTickets[ticketId] || {};
+  teamSelect.innerHTML = supportContactTeamOptions(ticket, '');
+  var contacts = supportContactEntries(ticket);
+  if(!contacts.length){
+    list.innerHTML = '<div class="support-contact-empty">No supporting contacts yet.</div>';
+    return;
+  }
+  list.innerHTML = contacts.map(function(contact){
+    var meta = [contact.role, contact.team].filter(Boolean).join(' / ');
+    return '<div class="support-contact-row">'
+      +'<div class="support-contact-main"><div class="support-contact-name">'+safeText(contact.name || contact.email || 'Unnamed contact')+'</div>'
+      +(meta?'<div class="support-contact-meta">'+safeText(meta)+'</div>':'')+'</div>'
+      +(contact.email?'<a class="support-contact-email" href="mailto:'+safeText(contact.email)+'">'+safeText(contact.email)+'</a>':'<span class="support-contact-email muted">No email</span>')
+      +'<button class="btn-icon" onclick="removeSupportContact(\''+jsArg(contact.id)+'\')" title="Remove">x</button>'
+      +'</div>';
+  }).join('');
+}
+
+window.addSupportContact = function(){
+  if(!App.selectedTicketId) return;
+  var nameEl = document.getElementById('support-contact-name');
+  var roleEl = document.getElementById('support-contact-role');
+  var emailEl = document.getElementById('support-contact-email');
+  var teamEl = document.getElementById('support-contact-team');
+  var contact = {
+    name: cleanSupportTeamName(nameEl && nameEl.value),
+    role: cleanSupportTeamName(roleEl && roleEl.value),
+    email: String((emailEl && emailEl.value) || '').trim().toLowerCase(),
+    team: cleanSupportTeamName(teamEl && teamEl.value),
+    createdTs: Date.now()
+  };
+  if(!contact.name && !contact.role && !contact.email && !contact.team) return;
+  var newRef = activeTicketRef(App.selectedTicketId).child('supportContacts').push(contact);
+  var ticket = App.allTickets[App.selectedTicketId] || {};
+  if(!ticket.supportContacts) ticket.supportContacts = {};
+  ticket.supportContacts[newRef.key] = contact;
+  if(nameEl) nameEl.value = '';
+  if(roleEl) roleEl.value = '';
+  if(emailEl) emailEl.value = '';
+  if(teamEl) teamEl.value = '';
+  renderSupportContactsField(App.selectedTicketId);
+  renderList();
+};
+
+window.removeSupportContact = function(contactId){
+  if(!App.selectedTicketId || !contactId) return;
+  activeTicketRef(App.selectedTicketId).child('supportContacts/'+contactId).remove();
+  var ticket = App.allTickets[App.selectedTicketId];
+  if(ticket && ticket.supportContacts) delete ticket.supportContacts[contactId];
+  renderSupportContactsField(App.selectedTicketId);
+  renderList();
+};
 
 window.addSupportingTeam = function(team){
   addSupportTeamToMode('detail', team);
@@ -1077,6 +1157,8 @@ function updateDetailLayoutForView(){
   setDisplay(linksSection, 'block');
   var supportField = document.getElementById('d-support-teams-field');
   setDisplay(supportField, vibe ? 'block' : 'none');
+  var supportContactsField = document.getElementById('d-support-contacts-field');
+  setDisplay(supportContactsField, vibe ? 'block' : 'none');
   if(vibe && App.selectedTicketId) renderSupportingTeamsField(App.selectedTicketId);
   var chevron = document.getElementById('detail-advanced-chevron');
   if(chevron) chevron.style.transform = 'rotate(0deg)';

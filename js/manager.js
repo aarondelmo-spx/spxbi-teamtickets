@@ -7,7 +7,7 @@ function exitManagerView(){
 }
 
 function isAccessAdmin(){
-  return (App.currentUserEmail || '').toLowerCase() === (App.ADMIN_EMAIL || '').toLowerCase();
+  return isCurrentUserAdmin();
 }
 
 function showManagerView(){
@@ -16,156 +16,205 @@ function showManagerView(){
   document.querySelector('.main').innerHTML =
     '<div class="manager-view access-manager-view" id="manager-view">'
     + '<div class="manager-header">'
-    +   '<div><div class="page-title">Team &amp; access</div><div class="page-sub" id="manager-sub">Manage contributor names and sign-in access.</div></div>'
+    +   '<div><div class="page-title">Users</div><div class="page-sub" id="manager-sub">Manage sign-in access, roles, and assignable display names.</div></div>'
     +   '<button class="manager-back" onclick="exitManagerView()">&#8592; Back to projects</button>'
     + '</div>'
     + '<div class="manager-stats" id="manager-stats-row">'
-    +   '<div class="manager-stat"><div class="manager-stat-label">Team members</div><div class="manager-stat-num" id="mgr-team-count">0</div></div>'
-    +   '<div class="manager-stat"><div class="manager-stat-label">Access entries</div><div class="manager-stat-num" id="mgr-access-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Users</div><div class="manager-stat-num" id="mgr-user-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">Assignable</div><div class="manager-stat-num" id="mgr-assignable-count">0</div></div>'
+    +   '<div class="manager-stat"><div class="manager-stat-label">View only</div><div class="manager-stat-num" id="mgr-viewer-count">0</div></div>'
     +   '<div class="manager-stat"><div class="manager-stat-label">Signed in as</div><div class="manager-stat-text" id="mgr-current-user">-</div></div>'
     + '</div>'
-    + '<div class="manager-grid">'
+    + '<div class="manager-grid manager-grid-users">'
     +   '<section class="manager-panel">'
-    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Team roster</div><p>These names appear in contributor and owner pickers.</p></div></div>'
-    +     '<div id="manager-team-list"><div class="loading">Loading...</div></div>'
-    +     '<div class="manager-add-row">'
-    +       '<input id="manager-team-name-input" placeholder="Add team member name..." maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerTeamMember()" />'
-    +       '<button class="btn btn-primary btn-sm" onclick="addManagerTeamMember()" type="button">Add</button>'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Whitelist users</div><p id="manager-access-note">Only whitelisted emails can sign in. Editors and admins are assignable.</p></div></div>'
+    +     '<div class="manager-error" id="manager-error" style="display:none"></div>'
+    +     '<div id="manager-user-list"><div class="loading">Loading...</div></div>'
+    +     '<div class="manager-add-row manager-user-add-row" id="manager-user-add-row">'
+    +       '<input id="manager-user-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
+    +       '<input id="manager-user-email-input" placeholder="email@spxexpress.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
+    +       '<select id="manager-user-role-input" aria-label="Role"><option value="editor" selected>Editor</option><option value="viewer">Viewer</option><option value="admin">Admin</option></select>'
+    +       '<button class="btn btn-primary btn-sm" onclick="addManagerUser()" type="button">Add</button>'
     +     '</div>'
     +   '</section>'
-    +   '<section class="manager-panel">'
-    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Access control</div><p id="manager-access-note">Only whitelisted emails can sign in.</p></div></div>'
-    +     '<div id="manager-access-list"><div class="loading">Loading...</div></div>'
-    +     '<div class="manager-add-row manager-access-add-row" id="manager-access-add-row">'
-    +       '<input id="manager-access-email-input" placeholder="email@spxexpress.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerAccessEntry()" />'
-    +       '<input id="manager-access-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerAccessEntry()" />'
-    +       '<button class="btn btn-primary btn-sm" onclick="addManagerAccessEntry()" type="button">Add</button>'
-    +     '</div>'
+    +   '<section class="manager-panel" id="manager-legacy-panel">'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Legacy assignable names</div><p>These names remain for old tickets but cannot sign in. Add a whitelist user with the same display name to convert one.</p></div></div>'
+    +     '<div id="manager-legacy-list"><div class="loading">Loading...</div></div>'
     +   '</section>'
     + '</div>'
     + '<div class="manager-ts" id="manager-ts"></div>'
     + '</div>';
 
-  App.teamRef.on('value', function(snap){
-    var data = snap.val() || {};
-    App.teamMembers = Object.entries(data).map(function(entry){
-      return {id:entry[0], name:entry[1].name};
-    }).filter(function(member){ return !!member.name; }).sort(function(a,b){
-      return a.name.localeCompare(b.name);
-    });
-    renderManagerTeamAccessView();
-  });
-
-  App.whitelistRef.on('value', function(snap){
-    App.managerWhitelistEntries = Object.entries(snap.val() || {}).map(function(entry){
-      return {
-        id: entry[0],
-        email: (entry[1].email || '').toLowerCase(),
-        name: entry[1].name || ''
-      };
-    }).filter(function(entry){ return !!entry.email; }).sort(function(a,b){
-      return a.email.localeCompare(b.email);
-    });
-    renderManagerTeamAccessView();
-  });
-
   renderManagerTeamAccessView();
 }
 
+function setManagerMessage(message){
+  var el = document.getElementById('manager-error');
+  if(!el) return;
+  el.textContent = message || '';
+  el.style.display = message ? 'block' : 'none';
+}
+
+function managerFieldId(field, id){
+  return 'mgr-user-' + field + '-' + domId(id);
+}
+
+function managerRoleOptions(role){
+  var roles = [
+    {value:'viewer', label:'Viewer'},
+    {value:'editor', label:'Editor'},
+    {value:'admin', label:'Admin'}
+  ];
+  return roles.map(function(option){
+    return '<option value="'+option.value+'"'+(role===option.value?' selected':'')+'>'+option.label+'</option>';
+  }).join('');
+}
+
+function managerAdminCount(){
+  return (App.users || []).filter(userIsEffectiveAdmin).length;
+}
+
+function isSelfUser(user){
+  return !!user && user.email === String(App.currentUserEmail || '').toLowerCase();
+}
+
+function duplicateWhitelistEmail(email, excludeId){
+  email = String(email || '').toLowerCase();
+  return (App.users || []).some(function(user){
+    return user.id !== excludeId && user.email === email;
+  });
+}
+
+function duplicateWhitelistName(name, excludeId){
+  var key = assignmentNameKey(name);
+  return (App.users || []).some(function(user){
+    return user.id !== excludeId && assignmentNameKey(user.name) === key;
+  });
+}
+
+function managerRoleBadge(user){
+  if(userIsAssignable(user)) return '<span class="manager-role-badge assignable">Assignable</span>';
+  return '<span class="manager-role-badge viewer">View only</span>';
+}
+
 function renderManagerTeamAccessView(){
-  var teamMembers = App.teamMembers || [];
-  var accessEntries = App.managerWhitelistEntries || [];
-  var teamCount = document.getElementById('mgr-team-count');
-  var accessCount = document.getElementById('mgr-access-count');
+  var users = App.users || [];
+  var legacyMembers = (App.teamMembers || []).filter(function(member){ return member.legacy; });
+  var userCount = document.getElementById('mgr-user-count');
+  var assignableCount = document.getElementById('mgr-assignable-count');
+  var viewerCount = document.getElementById('mgr-viewer-count');
   var currentUser = document.getElementById('mgr-current-user');
   var accessNote = document.getElementById('manager-access-note');
-  var accessAdd = document.getElementById('manager-access-add-row');
+  var addRow = document.getElementById('manager-user-add-row');
   var tsEl = document.getElementById('manager-ts');
 
-  if(teamCount) teamCount.textContent = teamMembers.length;
-  if(accessCount) accessCount.textContent = accessEntries.length;
+  if(userCount) userCount.textContent = users.length;
+  if(assignableCount) assignableCount.textContent = users.filter(userIsAssignable).length;
+  if(viewerCount) viewerCount.textContent = users.filter(function(user){ return user.role === 'viewer'; }).length;
   if(currentUser) currentUser.textContent = (App.currentUser || 'Unknown') + ' / ' + (App.currentUserEmail || 'no email');
-  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Only whitelisted emails can sign in.' : 'Access control is visible to admins only.';
-  if(accessAdd) accessAdd.style.display = isAccessAdmin() ? 'grid' : 'none';
+  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Only whitelisted emails can sign in. Editors and admins are assignable.' : 'Only admins can change users.';
+  if(addRow) addRow.style.display = isAccessAdmin() ? 'grid' : 'none';
   if(tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
 
-  renderManagerTeamList(teamMembers);
-  renderManagerAccessList(accessEntries);
+  renderManagerUsersList(users);
+  renderManagerLegacyList(legacyMembers);
 }
 
-function renderManagerTeamList(teamMembers){
-  var el = document.getElementById('manager-team-list');
+function renderManagerUsersList(users){
+  var el = document.getElementById('manager-user-list');
   if(!el) return;
-  if(!teamMembers.length){
-    el.innerHTML = '<div class="manager-empty">No team members yet.</div>';
+  if(!users.length){
+    el.innerHTML = '<div class="manager-empty">No users yet.</div>';
     return;
   }
-  el.innerHTML = teamMembers.map(function(member){
+  var canManage = isAccessAdmin();
+  el.innerHTML = users.map(function(user){
+    var self = isSelfUser(user);
+    var c = colorFor(user.name || user.email);
+    var nameId = managerFieldId('name', user.id);
+    var emailId = managerFieldId('email', user.id);
+    var roleId = managerFieldId('role', user.id);
+    var disabled = canManage ? '' : ' disabled';
+    var removeDisabled = (!canManage || (self && userIsEffectiveAdmin(user)) || (userIsEffectiveAdmin(user) && managerAdminCount() <= 1)) ? ' disabled' : '';
+    return '<div class="manager-user-row">'
+      + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+safeText(initials(user.name || user.email))+'</div>'
+      + '<input id="'+nameId+'" value="'+safeText(user.name)+'" maxlength="30" aria-label="Name"'+disabled+' />'
+      + '<input id="'+emailId+'" value="'+safeText(user.email)+'" type="email" aria-label="Email"'+(self ? ' disabled' : disabled)+' />'
+      + '<select id="'+roleId+'" aria-label="Role"'+disabled+'>'+managerRoleOptions(user.role)+'</select>'
+      + managerRoleBadge(user)
+      + (self ? '<span class="manager-self-tag">You</span>' : '')
+      + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
+      + (canManage ? '<button class="btn-icon" onclick="removeManagerUser(\''+jsArg(user.id)+'\')" title="Remove user"'+removeDisabled+'>x</button>' : '')
+      + '</div>';
+  }).join('');
+}
+
+function renderManagerLegacyList(legacyMembers){
+  var el = document.getElementById('manager-legacy-list');
+  if(!el) return;
+  if(!legacyMembers.length){
+    el.innerHTML = '<div class="manager-empty">No legacy names are currently needed.</div>';
+    return;
+  }
+  el.innerHTML = legacyMembers.map(function(member){
     var c = colorFor(member.name);
+    var source = member.source === 'assignment' ? 'Assigned on existing tickets' : 'Legacy /team roster';
     return '<div class="manager-person-row">'
-      + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+initials(member.name)+'</div>'
-      + '<div class="manager-person-main"><div class="manager-person-name">'+safeText(member.name)+'</div><div class="manager-person-sub">Contributor picker name</div></div>'
-      + '<button class="btn-icon" onclick="removeManagerTeamMember(\''+jsArg(member.id)+'\')" title="Remove">x</button>'
+      + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+safeText(initials(member.name))+'</div>'
+      + '<div class="manager-person-main"><div class="manager-person-name">'+safeText(member.name)+'</div><div class="manager-person-sub">'+source+'</div></div>'
+      + '<span class="manager-role-badge legacy">Legacy</span>'
       + '</div>';
   }).join('');
 }
 
-function renderManagerAccessList(accessEntries){
-  var el = document.getElementById('manager-access-list');
-  if(!el) return;
-  if(!isAccessAdmin()){
-    el.innerHTML = '<div class="manager-empty">Ask the admin to add or remove sign-in access.</div>';
-    return;
-  }
-  if(!accessEntries.length){
-    el.innerHTML = '<div class="manager-empty">No access entries yet.</div>';
-    return;
-  }
-  el.innerHTML = accessEntries.map(function(entry){
-    var isSelf = entry.email === (App.currentUserEmail || '').toLowerCase();
-    return '<div class="manager-person-row">'
-      + '<div class="manager-person-avatar">'+initials(entry.name || entry.email)+'</div>'
-      + '<div class="manager-person-main"><div class="manager-person-name">'+safeText(entry.name || 'Unnamed')+(isSelf?' <span class="manager-self-tag">You</span>':'')+'</div><div class="manager-person-sub">'+safeText(entry.email)+'</div></div>'
-      + (isSelf ? '<button class="btn-icon" disabled title="Current user">x</button>' : '<button class="btn-icon" onclick="removeManagerAccessEntry(\''+jsArg(entry.id)+'\')" title="Remove access">x</button>')
-      + '</div>';
-  }).join('');
-}
-
-window.addManagerTeamMember = function(){
-  var input = document.getElementById('manager-team-name-input');
-  var name = input ? input.value.trim() : '';
-  if(!name) return;
-  if((App.teamMembers || []).some(function(member){ return member.name.toLowerCase() === name.toLowerCase(); })){
-    if(input) input.value = '';
-    return;
-  }
-  App.teamRef.push({name:name});
-  if(input) input.value = '';
-};
-
-window.removeManagerTeamMember = function(id){
-  if(!id) return;
-  App.teamRef.child(id).remove();
-};
-
-window.addManagerAccessEntry = function(){
+window.addManagerUser = function(){
   if(!isAccessAdmin()) return;
-  var emailInput = document.getElementById('manager-access-email-input');
-  var nameInput = document.getElementById('manager-access-name-input');
-  var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  var nameInput = document.getElementById('manager-user-name-input');
+  var emailInput = document.getElementById('manager-user-email-input');
+  var roleInput = document.getElementById('manager-user-role-input');
   var name = nameInput ? nameInput.value.trim() : '';
-  if(!email || !name) return;
-  if((App.managerWhitelistEntries || []).some(function(entry){ return entry.email === email; })){
-    if(emailInput) emailInput.value = '';
-    if(nameInput) nameInput.value = '';
-    return;
-  }
-  App.whitelistRef.push({email:email, name:name});
-  if(emailInput) emailInput.value = '';
+  var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  var role = normalizeUserRole(roleInput && roleInput.value);
+  setManagerMessage('');
+  if(!name || !email){ setManagerMessage('Name and email are required.'); return; }
+  if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
+  if(duplicateWhitelistEmail(email)){ setManagerMessage('That email is already whitelisted.'); return; }
+  if(duplicateWhitelistName(name)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
+  App.whitelistRef.push({email:email, name:name, role:role});
   if(nameInput) nameInput.value = '';
+  if(emailInput) emailInput.value = '';
+  if(roleInput) roleInput.value = 'editor';
 };
 
-window.removeManagerAccessEntry = function(id){
+window.saveManagerUser = function(id){
   if(!isAccessAdmin() || !id) return;
+  var user = (App.users || []).find(function(entry){ return entry.id === id; });
+  if(!user) return;
+  var nameEl = document.getElementById(managerFieldId('name', id));
+  var emailEl = document.getElementById(managerFieldId('email', id));
+  var roleEl = document.getElementById(managerFieldId('role', id));
+  var name = nameEl ? nameEl.value.trim() : '';
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : user.email;
+  var role = normalizeUserRole(roleEl && roleEl.value);
+  var next = {id:id, name:name, email:email, role:role};
+  setManagerMessage('');
+  if(!name || !email){ setManagerMessage('Name and email are required.'); return; }
+  if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
+  if(isSelfUser(user) && email !== user.email){ setManagerMessage('You cannot change your own sign-in email.'); return; }
+  if(duplicateWhitelistEmail(email, id)){ setManagerMessage('That email is already whitelisted.'); return; }
+  if(duplicateWhitelistName(name, id)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
+  if(isSelfUser(user) && userIsEffectiveAdmin(user) && user.role !== role && role !== 'admin'){ setManagerMessage('You cannot demote yourself.'); return; }
+  if(userIsEffectiveAdmin(user) && !userIsEffectiveAdmin(next) && managerAdminCount() <= 1){ setManagerMessage('At least one admin must remain.'); return; }
+  App.whitelistRef.child(id).update({email:email, name:name, role:role});
+};
+
+window.removeManagerUser = function(id){
+  if(!isAccessAdmin() || !id) return;
+  var user = (App.users || []).find(function(entry){ return entry.id === id; });
+  if(!user) return;
+  setManagerMessage('');
+  if(isSelfUser(user) && userIsEffectiveAdmin(user)){ setManagerMessage('You cannot remove your own admin access.'); return; }
+  if(userIsEffectiveAdmin(user) && managerAdminCount() <= 1){ setManagerMessage('At least one admin must remain.'); return; }
+  if(!confirm('Remove sign-in access for '+(user.name || user.email)+'? Existing ticket assignments will keep the display name.')) return;
   App.whitelistRef.child(id).remove();
 };

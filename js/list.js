@@ -156,9 +156,9 @@ function renderContribPills(){
   el.innerHTML=App.teamMembers.map(function(m){
     var c=colorFor(m.name);
     var isActive=App.currentContrib===m.name;
-    return '<button class="filter-pill cpill-member'+(isActive?' active':'')+'" data-name="'+m.name+'" style="display:flex;align-items:center;gap:5px">'
+    return '<button class="filter-pill cpill-member'+(isActive?' active':'')+'" data-name="'+safeText(m.name)+'" style="display:flex;align-items:center;gap:5px">'
       +'<div style="width:12px;height:12px;border-radius:50%;background:'+c+';flex-shrink:0"></div>'
-      +m.name+'</button>';
+      +safeText(m.name)+'</button>';
   }).join('');
   el.querySelectorAll('.cpill-member').forEach(function(btn){
     btn.addEventListener('click', function(){ setContribFilter(this.dataset.name); });
