@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./setup --team)"
+      "Bash(./setup --team)",
+      "Bash(dir *)"
     ]
   }
 }

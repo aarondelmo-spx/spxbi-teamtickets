@@ -1,7 +1,25 @@
+window.addEventListener('popstate', function(){
+  var _p = new URLSearchParams(window.location.search);
+  if(_p.get('view') === 'sprint') {
+    App.currentProjectView = 'sprint';
+    App.currentVibeView = _p.get('tab') === 'sprint' ? 'sprint' : 'initiatives';
+  } else {
+    App.currentProjectView = 'main';
+    App.currentVibeView = 'initiatives';
+  }
+  resetFiltersForView();
+  refreshActiveTickets();
+});
+
 function startApp(){
   if(window.location.search.indexOf('view=manager') !== -1){
     showManagerView();
     return;
+  }
+  var _params = new URLSearchParams(window.location.search);
+  if(_params.get('view') === 'sprint') {
+    App.currentProjectView = 'sprint';
+    App.currentVibeView = _params.get('tab') === 'sprint' ? 'sprint' : 'initiatives';
   }
   App.whitelistRef.on('value', function(snap){
     App.whitelist = {};

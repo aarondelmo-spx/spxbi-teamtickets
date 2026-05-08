@@ -319,6 +319,11 @@ window.setProjectView = function(view){
   App.selectedTicketId = null;
   resetFiltersForView();
   refreshActiveTickets();
+  if(view === 'sprint') {
+    history.pushState(null, '', '?view=sprint');
+  } else {
+    history.pushState(null, '', window.location.pathname);
+  }
 };
 
 function sprintStageLabel(stage){

@@ -242,6 +242,7 @@ window.setVibeView = function(view){
   updateVibeShell();
   updateStats();
   renderList();
+  history.pushState(null, '', view === 'sprint' ? '?view=sprint&tab=sprint' : '?view=sprint');
 };
 
 window.setVibeMetricFilter = function(filter){
@@ -542,9 +543,14 @@ function taskRowHtml(item, mode){
   var task = item.task;
   var checked = !!task.done;
   var action = '<button class="btn btn-sm" onclick="openDetailModal(\''+jsArg(item.ticketId)+'\')" type="button">Open</button>';
+  var _team = normalizeTeamName(item.initiative.teamArea) || '';
+  var _sub  = normalizeSubteamName(item.initiative.subteam) || '';
+  var _init = item.initiative.title || 'Untitled initiative';
+  var _grp  = item.workstreamName;
+  var _bc   = [_team, _sub, _init, _grp].filter(Boolean).join(' / ');
   return '<div class="vibe-task-row'+(checked?' done-task':'')+'">'
     +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\','+checked+')"></div>'
-    +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(item.initiative.title || 'Untitled initiative')+' / '+safeText(item.workstreamName)+'</div></div>'
+    +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(_bc)+'</div></div>'
     +taskOwnerSelectHtml(item)
     +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'deadline\',this.value)" />'
     +'<div style="display:flex;gap:5px;justify-content:flex-end">'+action+'</div>'
