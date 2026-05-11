@@ -39,10 +39,59 @@
     return 'Sign in with your approved Google account to continue.';
   }
 
+  function findWhitelistedUser(source, email){
+    var normalizedEmail = String(email || '').trim().toLowerCase();
+    var match = null;
+    normalizeEntries(source).forEach(function(entry){
+      if(match) return;
+      if(String(entry && entry.email || '').trim().toLowerCase() === normalizedEmail){
+        match = entry;
+      }
+    });
+    return match;
+  }
+
+  function withTimeout(promise, timeoutMs, message){
+    return new Promise(function(resolve, reject){
+      var settled = false;
+      var timer = setTimeout(function(){
+        if(settled) return;
+        settled = true;
+        reject(new Error(message || 'Operation timed out.'));
+      }, timeoutMs);
+
+      promise.then(function(value){
+        if(settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      }, function(err){
+        if(settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
+
+  function getWhitelistReadErrorMessage(err){
+    var code = err && err.code;
+    if(code === 'PERMISSION_DENIED'){
+      return 'Sign in succeeded, but app access data could not be read. Check Firebase Database rules for /whitelist.';
+    }
+    if(err && /timed out/i.test(err.message || '')){
+      return 'Sign in succeeded, but loading your access timed out. Check the database connection and /whitelist access.';
+    }
+    return 'Sign in succeeded, but the app could not verify your access. Check the browser console and Firebase /whitelist read access.';
+  }
+
   return {
     collectAllowedLoginDomains: collectAllowedLoginDomains,
     extractEmailDomain: extractEmailDomain,
     getLoginHostedDomain: getLoginHostedDomain,
-    getLoginSubtext: getLoginSubtext
+    getLoginSubtext: getLoginSubtext,
+    findWhitelistedUser: findWhitelistedUser,
+    withTimeout: withTimeout,
+    getWhitelistReadErrorMessage: getWhitelistReadErrorMessage
   };
 });

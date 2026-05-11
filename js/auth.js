@@ -28,6 +28,34 @@ function showLoginError(message){
   }
 }
 
+function setLoginLoading(message){
+  var loading = document.getElementById('login-loading');
+  if(!loading) return;
+  loading.textContent = message || 'Signing in...';
+  loading.style.display = 'block';
+}
+
+function stopLoginLoading(){
+  var loading = document.getElementById('login-loading');
+  if(loading) loading.style.display = 'none';
+}
+
+function resetLoginUi(){
+  var btn = document.querySelector('.google-btn');
+  if(btn) btn.style.display = 'flex';
+  stopLoginLoading();
+}
+
+function fetchWhitelistForAuth(){
+  return AuthHelpers.withTimeout(
+    App.whitelistRef.once('value'),
+    10000,
+    'Whitelist read timed out.'
+  ).then(function(snap){
+    return snap.val() || {};
+  });
+}
+
 function seedWhitelistIfEmpty(){
   App.whitelistRef.once('value', function(snap){
     if(snap.val()){
@@ -50,9 +78,8 @@ window.syncLoginAccessMessaging = syncLoginAccessMessaging;
 
 window.signInWithGoogle = function(){
   var btn = document.querySelector('.google-btn');
-  var loading = document.getElementById('login-loading');
   if(btn) btn.style.display = 'none';
-  if(loading) loading.style.display = 'block';
+  setLoginLoading('Signing in...');
   var error = document.getElementById('login-error');
   if(error) error.style.display = 'none';
   var provider = buildGoogleProvider();
@@ -60,13 +87,11 @@ window.signInWithGoogle = function(){
     if(shouldUseRedirectFallback(err)){
       showLoginError('Popup sign-in was blocked. Redirecting to Google...');
       return App.auth.signInWithRedirect(provider).catch(function(redirectErr){
-        if(btn) btn.style.display = 'flex';
-        if(loading) loading.style.display = 'none';
+        resetLoginUi();
         showLoginError('Sign in failed: ' + redirectErr.message);
       });
     }
-    if(btn) btn.style.display = 'flex';
-    if(loading) loading.style.display = 'none';
+    resetLoginUi();
     showLoginError('Sign in failed: ' + err.message);
   });
 };
@@ -90,10 +115,7 @@ App.auth.onAuthStateChanged(function(user){
   if(!user){
     document.getElementById('login-screen').style.display = 'flex';
     document.querySelector('.app') && (document.querySelector('.app').style.display = 'none');
-    var btn = document.querySelector('.google-btn');
-    var loading = document.getElementById('login-loading');
-    if(btn) btn.style.display = 'flex';
-    if(loading) loading.style.display = 'none';
+    resetLoginUi();
     return;
   }
   if(!user.email){
@@ -103,20 +125,17 @@ App.auth.onAuthStateChanged(function(user){
   }
   var email = user.email.toLowerCase();
   App.currentUserEmail = email;
-  App.whitelistRef.once('value', function(snap){
-    var wl = snap.val()||{};
+  setLoginLoading('Checking access...');
+  console.log('[auth] Google sign-in succeeded for', email);
+  fetchWhitelistForAuth().then(function(wl){
     syncLoginAccessMessaging(wl);
-    var mappedUser = null;
-    Object.entries(wl).forEach(function(entry){
-      var normalized = normalizeWhitelistUserRecord(entry[0], entry[1]);
-      if(normalized.email === email) mappedUser = normalized;
-    });
+    var rawMatch = AuthHelpers.findWhitelistedUser(wl, email);
+    var mappedUser = rawMatch ? normalizeWhitelistUserRecord('auth-match', rawMatch) : null;
+    console.log('[auth] whitelist loaded', { entries: Object.keys(wl || {}).length, matched: !!mappedUser, email: email });
     if(!mappedUser){
       App.auth.signOut();
-      var btn = document.querySelector('.google-btn');
       showLoginError('Access denied. Your email (' + email + ') is not authorized. Contact your admin.');
-      if(btn) btn.style.display = 'flex';
-      document.getElementById('login-loading').style.display = 'none';
+      resetLoginUi();
       return;
     }
     App.currentUser = mappedUser.name || mappedUser.email;
@@ -125,5 +144,10 @@ App.auth.onAuthStateChanged(function(user){
     document.querySelector('.app').style.display = 'grid';
     updateWho();
     startApp();
+  }).catch(function(err){
+    console.error('[auth] whitelist load failed', err);
+    App.auth.signOut();
+    showLoginError(AuthHelpers.getWhitelistReadErrorMessage(err));
+    resetLoginUi();
   });
 });

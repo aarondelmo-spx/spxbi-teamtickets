@@ -26,6 +26,26 @@ function run() {
     AuthHelpers.getLoginSubtext(domains),
     'Sign in with your approved Google account to continue.'
   );
+
+  const whitelist = {
+    a1: { email: 'karl.kue@spxexpress.com', name: 'Karl' },
+    b2: { email: 'juan.sanjuan@shopee.com', name: 'Kai' }
+  };
+
+  assert.deepEqual(
+    AuthHelpers.findWhitelistedUser(whitelist, 'JUAN.SANJUAN@SHOPEE.COM'),
+    { email: 'juan.sanjuan@shopee.com', name: 'Kai' }
+  );
+
+  assert.equal(
+    AuthHelpers.getWhitelistReadErrorMessage({ code: 'PERMISSION_DENIED' }),
+    'Sign in succeeded, but app access data could not be read. Check Firebase Database rules for /whitelist.'
+  );
+
+  assert.equal(
+    AuthHelpers.getWhitelistReadErrorMessage(new Error('Whitelist read timed out.')),
+    'Sign in succeeded, but loading your access timed out. Check the database connection and /whitelist access.'
+  );
 }
 
 run();
