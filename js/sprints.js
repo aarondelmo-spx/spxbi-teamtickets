@@ -527,7 +527,7 @@ function sprintMetaHtml(t){
   if(timeline !== 'TBD') pieces.push('<span>'+safeText(timeline)+'</span>');
   if(automationScopedHc(t)) pieces.push('<span title="'+safeText(SCOPED_HC_HELP_TEXT)+'">'+fmtCapacity(automationScopedHc(t))+' scoped for automation</span>');
   if(automationInProgressHc(t)) pieces.push('<span>'+fmtCapacity(automationInProgressHc(t))+' in progress automation</span>');
-  if(countedActualHcSavings(t) || excessCapacityHc(t)) pieces.push('<span>'+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' HC savings</span>');
+  if(countedActualHcSavings(t) || excessCapacityHc(t)) pieces.push('<span>'+fmtCapacity(excessCapacityHc(t))+' / '+fmtCapacity(countedActualHcSavings(t))+' HC savings (excess / actualized)</span>');
   return pieces.join('<span>&middot;</span>');
 }
 
@@ -637,7 +637,7 @@ function renderSprintDashboard(){
       +'<td>'+fmtCapacity(teamReviewedCoverage(team))+'</td>'
       +'<td>'+fmtCapacity(teamTotals.scoped)+'</td>'
       +'<td>'+fmtCapacity(teamTotals.progress)+'</td>'
-      +'<td>'+fmtCapacity(teamTotals.actual)+' / '+fmtCapacity(teamTotals.excess)+'</td>'
+      +'<td>'+fmtCapacity(teamTotals.excess)+' / '+fmtCapacity(teamTotals.actual)+'</td>'
       +'</tr>');
     Object.keys(teamGroup.subteams).sort(compareSubteams).forEach(function(subteam){
       var subGroup = teamGroup.subteams[subteam];
@@ -652,12 +652,12 @@ function renderSprintDashboard(){
         +'<td>'+fmtCapacity(subteamReviewedCoverage(team, subteam))+'</td>'
         +'<td>'+fmtCapacity(subTotals.scoped)+'</td>'
         +'<td>'+fmtCapacity(subTotals.progress)+'</td>'
-        +'<td>'+fmtCapacity(subTotals.actual)+' / '+fmtCapacity(subTotals.excess)+'</td>'
+        +'<td>'+fmtCapacity(subTotals.excess)+' / '+fmtCapacity(subTotals.actual)+'</td>'
         +'</tr>');
     });
   });
   el.innerHTML = '<table class="sprint-summary-table"><thead><tr>'
-    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Team/subteam size</th><th>Reviewed coverage</th><th><span class="table-heading-with-tip">Scoped for automation '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>In progress automation</th><th>HC savings actual / excess</th>'
+    +'<th>Team</th><th>Subteam</th><th>Initiatives</th><th>Timeline</th><th>Team/subteam size</th><th>Reviewed coverage</th><th><span class="table-heading-with-tip">Scoped for automation '+infoTipHtml(SCOPED_HC_HELP_TEXT)+'</span></th><th>In progress automation</th><th>HC savings excess / actualized</th>'
     +'</tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 }
 

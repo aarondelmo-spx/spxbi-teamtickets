@@ -307,8 +307,8 @@ function updateVibeStats(initiatives, extra){
   document.getElementById('s-open').textContent=fmtCapacity(totals.reviewed);
   document.getElementById('s-prog').textContent=fmtCapacity(totals.scoped);
   document.getElementById('s-done').textContent=fmtCapacity(totals.progress);
-  document.getElementById('s-extra-label').textContent='HC savings';
-  document.getElementById('s-extra').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
+  document.getElementById('s-extra-label').textContent='HC savings (excess / actualized)';
+  document.getElementById('s-extra').textContent=fmtCapacity(totals.excess)+' / '+fmtCapacity(totals.actual);
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
     ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())+' onward'
@@ -605,7 +605,7 @@ function initiativeCardHtml(id, t){
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
   var supportContacts = supportContactEntries(t);
-  var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
+  var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(excessCapacityHc(t))+' excess / '+fmtCapacity(countedActualHcSavings(t))+' actualized';
   var priority = String(t.priority || 'p1').toLowerCase();
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
@@ -640,7 +640,7 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
     +'<span class="team-metric">Reviewed '+fmtCapacity(reviewed)+'</span>'
     +'<span class="team-metric">Scoped '+fmtCapacity(totals.scoped)+'</span>'
     +'<span class="team-metric">In progress '+fmtCapacity(totals.progress)+'</span>'
-    +'<span class="team-metric">Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
+    +'<span class="team-metric">Savings '+fmtCapacity(totals.excess)+' excess / '+fmtCapacity(totals.actual)+' actualized</span>'
     +'</div>';
 }
 
