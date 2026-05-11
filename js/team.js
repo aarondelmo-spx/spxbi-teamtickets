@@ -22,6 +22,11 @@ function normalizeWhitelistUserRecord(id, raw){
     name: String(raw.name || '').trim(),
     role: role,
     storedRole: normalizeUserRole(raw.role),
+    roleWriteAt: raw.roleWriteAt || '',
+    roleWriteByEmail: String(raw.roleWriteByEmail || '').trim().toLowerCase(),
+    roleWriteByName: String(raw.roleWriteByName || '').trim(),
+    roleWriteSource: String(raw.roleWriteSource || '').trim(),
+    roleWriteNonce: String(raw.roleWriteNonce || '').trim(),
     legacy: false,
     source: 'whitelist'
   };

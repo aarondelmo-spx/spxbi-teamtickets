@@ -535,6 +535,7 @@
   .app--manager-mode .sidebar{display:none}
   .manager-view{max-width:1040px;margin:0 auto;padding:2rem}
   .manager-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:2rem}
+  .manager-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .manager-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
   .manager-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
   .manager-stat-label{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
@@ -554,7 +555,7 @@
   .manager-person-sub{font-size:11px;color:var(--text3);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .manager-person-row .btn-icon:disabled{opacity:.35;cursor:not-allowed}
   .manager-person-row .btn-icon:disabled:hover{color:var(--text3);background:none}
-  .manager-user-row{display:grid;grid-template-columns:28px minmax(120px,.9fr) minmax(190px,1.2fr) 120px auto auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+  .manager-user-row{display:grid;grid-template-columns:28px minmax(120px,.9fr) minmax(190px,1.2fr) 120px auto minmax(180px,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
   .manager-user-row:last-child{border-bottom:none}
   .manager-user-row input,.manager-user-row select,.manager-add-row select{min-width:0;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none}
   .manager-user-row input:focus,.manager-user-row select:focus,.manager-add-row select:focus{border-color:var(--accent)}
@@ -566,6 +567,7 @@
   .manager-role-badge.editor{color:var(--done);border-color:rgba(111,212,168,.28);background:rgba(111,212,168,.1)}
   .manager-role-badge.viewer{color:var(--text3);border-color:var(--border);background:var(--surface2)}
   .manager-role-badge.legacy{color:var(--warn);border-color:rgba(247,212,111,.3);background:rgba(247,212,111,.08)}
+  .manager-role-audit{font-size:10px;color:var(--text3);font-family:var(--mono);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .manager-self-tag{display:inline-block;margin-left:5px;padding:1px 6px;border:1px solid rgba(124,111,247,.3);border-radius:9px;background:rgba(124,111,247,.1);color:var(--accent);font-size:9px;font-family:var(--mono);font-weight:400;vertical-align:middle}
   .manager-add-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:1rem}
   .manager-user-add-row{grid-template-columns:minmax(120px,.8fr) minmax(190px,1.2fr) 120px auto}
@@ -577,7 +579,7 @@
   .manager-back{font-family:var(--mono);font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;padding:0}
   .manager-back:hover{color:var(--text)}
   .manager-ts{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2rem;text-align:right}
-  @media(max-width:900px){.manager-user-row{grid-template-columns:28px 1fr}.manager-user-row input,.manager-user-row select,.manager-user-row .manager-role-badge,.manager-user-row .manager-self-tag,.manager-user-row button{grid-column:2}.manager-user-add-row{grid-template-columns:1fr}}
+  @media(max-width:900px){.manager-user-row{grid-template-columns:28px 1fr}.manager-user-row input,.manager-user-row select,.manager-user-row .manager-role-badge,.manager-user-row .manager-role-audit,.manager-user-row .manager-self-tag,.manager-user-row button{grid-column:2}.manager-user-add-row{grid-template-columns:1fr}}
   @media(max-width:760px){.manager-grid,.manager-access-add-row,.support-contact-add-row,.support-contact-row{grid-template-columns:1fr}.manager-header{align-items:flex-start;flex-direction:column}.manager-stats{grid-template-columns:1fr}}
   @media(max-width:600px){.manager-stats{grid-template-columns:1fr}}
   @media(max-width:380px){.manager-stats{grid-template-columns:1fr}}

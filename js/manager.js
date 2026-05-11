@@ -18,7 +18,10 @@ function showManagerView(){
     '<div class="manager-view access-manager-view" id="manager-view">'
     + '<div class="manager-header">'
     +   '<div><div class="page-title">Users</div><div class="page-sub" id="manager-sub">Manage sign-in access, roles, and assignable display names.</div></div>'
-    +   '<button class="manager-back" onclick="exitManagerView()">&#8592; Back to projects</button>'
+    +   '<div class="manager-header-actions">'
+    +     '<button class="btn btn-sm" onclick="forceLogoutAllSessions()" type="button">Force sign-out all sessions</button>'
+    +     '<button class="manager-back" onclick="exitManagerView()">&#8592; Back to projects</button>'
+    +   '</div>'
     + '</div>'
     + '<div class="manager-stats" id="manager-stats-row">'
     +   '<div class="manager-stat"><div class="manager-stat-label">Users</div><div class="manager-stat-num" id="mgr-user-count">0</div></div>'
@@ -123,6 +126,25 @@ function managerRoleBadge(user){
   return '<span class="manager-role-badge '+cls+'">'+safeText(RoleHelpers.roleLabel(role))+'</span>';
 }
 
+function managerRoleAuditText(user){
+  var when = user && user.roleWriteAt ? String(user.roleWriteAt) : '';
+  var who = user && (user.roleWriteByName || user.roleWriteByEmail) ? (user.roleWriteByName || user.roleWriteByEmail) : '';
+  var source = user && user.roleWriteSource ? user.roleWriteSource : '';
+  if(!when && !who && !source) return 'No role write marker yet.';
+  return [when, who, source].filter(Boolean).join(' | ');
+}
+
+function buildRoleWriteMetadata(role){
+  return {
+    role: role,
+    roleWriteAt: new Date().toISOString(),
+    roleWriteByEmail: String(App.currentUserEmail || '').toLowerCase(),
+    roleWriteByName: App.currentUser || '',
+    roleWriteSource: 'manager-ui',
+    roleWriteNonce: 'mgr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+  };
+}
+
 function updateManagerStats(){
   var users = App.users || [];
   var userCount = document.getElementById('mgr-user-count');
@@ -184,6 +206,7 @@ function renderManagerUsersList(users){
       + '<input id="'+emailId+'" value="'+safeText(user.email)+'" type="email" aria-label="Email"'+(self ? ' disabled' : disabled)+' />'
       + '<select id="'+roleId+'" aria-label="Role"'+((fixedAdmin || !canManage) ? ' disabled' : '')+'>'+managerRoleOptions(user.role)+'</select>'
       + managerRoleBadge(user)
+      + '<span class="manager-role-audit" title="'+safeText(managerRoleAuditText(user))+'">'+safeText(managerRoleAuditText(user))+'</span>'
       + (self ? '<span class="manager-self-tag">You</span>' : '')
       + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
       + (canManage ? '<button class="btn-icon" onclick="removeManagerUser(\''+jsArg(user.id)+'\')" title="Remove user"'+removeDisabled+'>x</button>' : '')
@@ -223,9 +246,14 @@ window.addManagerUser = function(){
   if(duplicateWhitelistEmail(email)){ setManagerMessage('That email is already whitelisted.'); return; }
   if(duplicateWhitelistName(name)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
   var newRef = App.whitelistRef.push();
+  var payload = {
+    email: email,
+    name: name
+  };
+  Object.assign(payload, buildRoleWriteMetadata(role));
   console.log('[manager] add user attempt', {email: email, name: name, role: role});
   setManagerMessage('Adding user...');
-  newRef.set({email:email, name:name, role:role}, function(err){
+  newRef.set(payload, function(err){
     if(err){
       console.error('[manager] add user failed', err);
       setManagerMessage('Could not add user: ' + err.message);
@@ -251,6 +279,7 @@ window.saveManagerUser = function(id){
     var email = emailEl ? emailEl.value.trim().toLowerCase() : user.email;
     var role = normalizeUserRole(roleEl && roleEl.value);
     var next = {id:id, name:name, email:email, role:role};
+    var roleMeta = buildRoleWriteMetadata(role);
     setManagerMessage('');
     console.log('[manager] save user attempt', {
       id: id,
@@ -274,7 +303,12 @@ window.saveManagerUser = function(id){
     targetIds.forEach(function(targetId){
       updates['whitelist/' + targetId + '/email'] = email;
       updates['whitelist/' + targetId + '/name'] = name;
-      updates['whitelist/' + targetId + '/role'] = role;
+      updates['whitelist/' + targetId + '/role'] = roleMeta.role;
+      updates['whitelist/' + targetId + '/roleWriteAt'] = roleMeta.roleWriteAt;
+      updates['whitelist/' + targetId + '/roleWriteByEmail'] = roleMeta.roleWriteByEmail;
+      updates['whitelist/' + targetId + '/roleWriteByName'] = roleMeta.roleWriteByName;
+      updates['whitelist/' + targetId + '/roleWriteSource'] = roleMeta.roleWriteSource;
+      updates['whitelist/' + targetId + '/roleWriteNonce'] = roleMeta.roleWriteNonce;
     });
     console.log('[manager] saving user to Firebase', {id: id, email: email, name: name, role: role, targetIds: targetIds});
     setManagerMessage('Saving user...');
@@ -293,6 +327,29 @@ window.saveManagerUser = function(id){
     console.error('[manager] save user crashed', err);
     setManagerMessage('Could not save user: ' + err.message);
   }
+};
+
+window.forceLogoutAllSessions = function(){
+  if(!requireAdminAccess('manage users')) return;
+  if(!confirm('Sign out every open app session? Everyone will need to sign in again.')) return;
+  var version = Date.now();
+  var payload = {
+    forceLogoutVersion: version,
+    requestedAt: new Date(version).toISOString(),
+    requestedByEmail: String(App.currentUserEmail || '').toLowerCase(),
+    requestedByName: App.currentUser || '',
+    requestedSource: 'manager-ui'
+  };
+  setManagerMessage('Sending sign-out command...');
+  App.sessionControlRef.update(payload, function(err){
+    if(err){
+      console.error('[session] force logout request failed', err);
+      setManagerMessage('Could not force sign-out sessions: ' + err.message);
+      return;
+    }
+    console.warn('[session] force logout requested', payload);
+    setManagerMessage('Sign-out command sent. All open sessions should close within a few seconds.');
+  });
 };
 
 window.removeManagerUser = function(id){

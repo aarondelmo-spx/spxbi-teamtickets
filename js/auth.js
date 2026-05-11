@@ -46,6 +46,23 @@ function resetLoginUi(){
   stopLoginLoading();
 }
 
+function showForcedLogoutMessage(message){
+  var text = message || 'Your session was closed by an admin. Please sign in again.';
+  try {
+    sessionStorage.setItem('spxbi_forced_logout_message', text);
+  } catch (_err) {}
+}
+
+function flushForcedLogoutMessage(){
+  try {
+    var message = sessionStorage.getItem('spxbi_forced_logout_message');
+    if(message){
+      sessionStorage.removeItem('spxbi_forced_logout_message');
+      showLoginError(message);
+    }
+  } catch (_err) {}
+}
+
 function fetchWhitelistForAuth(){
   return AuthHelpers.withTimeout(
     App.whitelistRef.once('value'),
@@ -117,6 +134,7 @@ App.auth.onAuthStateChanged(function(user){
     document.getElementById('login-screen').style.display = 'flex';
     document.querySelector('.app') && (document.querySelector('.app').style.display = 'none');
     resetLoginUi();
+    flushForcedLogoutMessage();
     return;
   }
   if(!user.email){
@@ -141,6 +159,8 @@ App.auth.onAuthStateChanged(function(user){
     }
     App.currentUser = mappedUser.name || mappedUser.email;
     App.currentUserRole = mappedUser.role;
+    App.sessionStartedAt = Date.now();
+    App.forceLogoutSeen = 0;
     document.getElementById('login-screen').style.display = 'none';
     document.querySelector('.app').style.display = 'grid';
     updateWho();

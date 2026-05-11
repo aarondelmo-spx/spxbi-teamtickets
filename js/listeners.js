@@ -21,10 +21,27 @@ function startApp(){
     App.currentProjectView = 'sprint';
     App.currentVibeView = _params.get('tab') === 'sprint' ? 'sprint' : 'initiatives';
   }
+  App.sessionControlRef.on('value', function(snap){
+    var data = snap.val() || {};
+    var version = Number(data.forceLogoutVersion || 0);
+    App.sessionControl = data;
+    if(!App.currentUserEmail || !version || !App.sessionStartedAt) return;
+    if(version <= App.sessionStartedAt || version === App.forceLogoutSeen) return;
+    App.forceLogoutSeen = version;
+    console.warn('[session] forced logout triggered', data);
+    if(typeof showForcedLogoutMessage === 'function'){
+      showForcedLogoutMessage('Your session was closed by an admin. Please sign in again.');
+    }
+    App.auth.signOut();
+  });
   App.whitelistRef.on('value', function(snap){
     App.whitelist = {};
     var data = snap.val()||{};
     if(typeof syncLoginAccessMessaging === 'function') syncLoginAccessMessaging(data);
+    var prevUsersById = {};
+    (App.users || []).forEach(function(user){
+      prevUsersById[user.id] = user;
+    });
     App.users = Object.entries(data).map(function(entry){
       return normalizeWhitelistUserRecord(entry[0], entry[1]);
     }).filter(function(user){ return !!user.email; }).sort(function(a,b){
@@ -37,6 +54,23 @@ function startApp(){
     Object.keys(duplicatesByEmail).forEach(function(email){
       if(duplicatesByEmail[email] > 1){
         console.warn('[whitelist] duplicate email records detected', { email: email, count: duplicatesByEmail[email] });
+      }
+    });
+    App.users.forEach(function(user){
+      var prevUser = prevUsersById[user.id];
+      if(!prevUser) return;
+      if(prevUser.role !== user.role || prevUser.roleWriteNonce !== user.roleWriteNonce){
+        console.warn('[whitelist] role record changed', {
+          id: user.id,
+          email: user.email,
+          previousRole: prevUser.role,
+          currentRole: user.role,
+          roleWriteAt: user.roleWriteAt,
+          roleWriteByEmail: user.roleWriteByEmail,
+          roleWriteByName: user.roleWriteByName,
+          roleWriteSource: user.roleWriteSource,
+          roleWriteNonce: user.roleWriteNonce
+        });
       }
     });
     App.managerWhitelistEntries = App.users.slice();
