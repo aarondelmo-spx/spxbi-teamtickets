@@ -8,7 +8,7 @@ function openSection(s){ var b=document.getElementById(s+'-body'),c=document.get
 function closeSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='none'; if(c)c.style.transform='rotate(0deg)'; }
 
 function titleCaseStatus(status){
-  return String(status || 'open').replace(/\b\w/g,function(ch){ return ch.toUpperCase(); });
+  return statusDisplayLabel(status);
 }
 
 function ownerOptions(selected){
@@ -29,8 +29,8 @@ window.setDetailStatusOptions = function(currentStatus){
   if(!el) return;
   var options = isSprintView()
     ? [{value:'open', label:'Open'}, {value:'in progress', label:'In progress'}, {value:'done', label:'Done'}]
-    : [{value:'open', label:'Open'}, {value:'done', label:'Done'}];
-  var value = currentStatus || 'open';
+    : [{value:'open', label:'Open'}, {value:'archived', label:'Archived'}];
+  var value = effectiveStatusValue(currentStatus || 'open');
   if(value && !options.some(function(opt){ return opt.value === value; })){
     options.splice(Math.max(options.length - 1, 1), 0, {value:value, label:titleCaseStatus(value)});
   }
@@ -136,7 +136,7 @@ window.refreshDetailFields = function(t, options){
   var priorityBadge = document.getElementById('d-priority-badge');
   if(priorityBadge){ priorityBadge.className='priority-badge '+pbClass(t.priority); priorityBadge.textContent=t.priority||'p1'; }
   var statusBadge = document.getElementById('d-status-badge');
-  if(statusBadge){ statusBadge.className='status-badge '+statusClass(t.status); statusBadge.textContent=t.status||'open'; }
+  if(statusBadge){ statusBadge.className='status-badge '+statusClass(t.status); statusBadge.textContent=statusDisplayLabel(t.status); }
   setDetailStatusOptions(t.status);
   var prioritySel = document.getElementById('d-priority-sel');
   if(prioritySel) prioritySel.value=t.priority||'p1';

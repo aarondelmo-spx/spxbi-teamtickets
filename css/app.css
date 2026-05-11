@@ -215,6 +215,7 @@
   .initiative-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text3)}
   .initiative-side{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
   .initiative-card .s-open{background:rgba(111,212,168,.12);color:var(--done);border-color:rgba(111,212,168,.24)}
+  .initiative-card .s-done{background:rgba(24,184,111,.22);color:#6ff0b1;border-color:rgba(24,184,111,.42)}
   .initiative-card .btn-primary{background:var(--done);border-color:var(--done)}
   .initiative-card .btn-primary:hover{background:#0f8f58;border-color:#0f8f58}
   .task-progress-mini{min-width:92px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text3)}

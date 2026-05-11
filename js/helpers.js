@@ -9,16 +9,26 @@ function normalizeStatusValue(s){
   if(s === 'complete' || s === 'completed' || s === 'closed' || s === 'finished' || s === 'resolved') return 'done';
   return s;
 }
-function statusClass(s){
+function effectiveStatusValue(s){
   s = normalizeStatusValue(s);
-  return s==='open'?'s-open':s==='in progress'?'s-progress':s==='review'?'s-review':'s-done';
+  if(typeof isSprintView === 'function' && !isSprintView() && s === 'done') return 'archived';
+  return s;
+}
+function statusDisplayLabel(s){
+  var value = effectiveStatusValue(s) || 'open';
+  return String(value).replace(/\b\w/g,function(ch){ return ch.toUpperCase(); });
+}
+function statusClass(s){
+  s = effectiveStatusValue(s);
+  return s==='open'?'s-open':s==='in progress'?'s-progress':s==='review'?'s-review':s==='archived'?'s-archived':'s-done';
 }
 function pbClass(p){ return p==='p0'?'pb-p0':p==='p1'?'pb-p1':p==='p2'?'pb-p2':'pb-p3'; }
 function pOrder(p){ return p==='p0'?0:p==='p1'?1:p==='p2'?2:3; }
 function countComments(c){ if(!c)return 0; return Object.values(c).reduce(function(a,x){return a+1+(x.replies?Object.keys(x.replies).length:0);},0); }
 function deadlineDiff(dl){ if(!dl)return null; var t=new Date();t.setHours(0,0,0,0); var d=new Date(dl+'T00:00:00');d.setHours(0,0,0,0); return Math.round((d-t)/86400000); }
 function deadlineTagHtml(dl,status){
-  if(!dl||normalizeStatusValue(status)==='done') return '';
+  var normalizedStatus = effectiveStatusValue(status);
+  if(!dl||normalizedStatus==='done'||normalizedStatus==='archived') return '';
   var diff=deadlineDiff(dl); if(diff===null) return '';
   if(diff<0) return '<span class="deadline-tag dl-overdue">⏰ overdue '+Math.abs(diff)+'d</span>';
   if(diff===0) return '<span class="deadline-tag dl-soon">⏰ due today</span>';
