@@ -126,7 +126,7 @@ function updateCounts(){
 }
 
 window.setFilter = function(f){
-  if(isSprintView() && f === 'done' && App.currentFilter === 'done') f = 'active';
+  if(isSprintView() && f === 'done' && App.currentFilter === 'done') f = 'all';
   App.currentFilter=f;
   App.currentPriorityFilter='all';
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
@@ -137,12 +137,13 @@ window.setFilter = function(f){
 };
 
 window.setPriorityFilter = function(p){
-  var clearing = App.currentPriorityFilter === p && App.currentFilter === 'active';
+  var baseFilter = isSprintView() ? 'all' : 'active';
+  var clearing = App.currentPriorityFilter === p && App.currentFilter === baseFilter;
   App.currentPriorityFilter=clearing?'all':p;
-  App.currentFilter='active';
+  App.currentFilter=baseFilter;
   document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('.filter-pill').forEach(function(b){b.classList.remove('active');});
-  var n=document.getElementById(clearing?'nav-active':'nav-'+p),pill=document.getElementById(clearing?'pill-active':'pill-'+p);
+  var n=document.getElementById(clearing?('nav-'+baseFilter):'nav-'+p),pill=document.getElementById(clearing?('pill-'+baseFilter):'pill-'+p);
   if(n)n.classList.add('active');if(pill)pill.classList.add('active');
   renderList();
 };

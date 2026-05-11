@@ -4,7 +4,9 @@ function avatarHtml(n,s){ s=s||22; var c=colorFor(n); return '<div style="width:
 function fmtDate(){ var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],n=new Date(); return m[n.getMonth()]+' '+n.getDate(); }
 function normalizeStatusValue(s){
   s = String(s || 'open').trim().toLowerCase();
-  if(s === 'inprogress') return 'in progress';
+  if(s === 'inprogress' || s === 'in-progress' || s === 'in_progress' || s === 'progress' || s === 'wip') return 'in progress';
+  if(s === 'inreview' || s === 'in-review' || s === 'in_review') return 'review';
+  if(s === 'complete' || s === 'completed' || s === 'closed' || s === 'finished' || s === 'resolved') return 'done';
   return s;
 }
 function statusClass(s){

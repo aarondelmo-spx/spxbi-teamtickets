@@ -21,6 +21,7 @@ function startApp(){
     App.currentProjectView = 'sprint';
     App.currentVibeView = _params.get('tab') === 'sprint' ? 'sprint' : 'initiatives';
   }
+  resetFiltersForView();
   App.sessionControlRef.on('value', function(snap){
     var data = snap.val() || {};
     var version = Number(data.forceLogoutVersion || 0);

@@ -269,14 +269,14 @@ function updateProjectViewCounts(){
 }
 
 function resetFiltersForView(){
-  App.currentFilter = 'active';
+  App.currentFilter = isSprintView() ? 'all' : 'active';
   App.currentPriorityFilter = 'all';
   App.currentContrib = 'all';
   App.vibeMetricFilter = 'all';
   document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.remove('active'); });
   document.querySelectorAll('.filter-pill').forEach(function(b){ b.classList.remove('active'); });
-  var navActive = document.getElementById('nav-active');
-  var pillActive = document.getElementById('pill-active');
+  var navActive = document.getElementById(isSprintView() ? 'nav-all' : 'nav-active');
+  var pillActive = document.getElementById(isSprintView() ? 'pill-all' : 'pill-active');
   var cpillAll = document.getElementById('cpill-all');
   if(navActive) navActive.classList.add('active');
   if(pillActive) pillActive.classList.add('active');
