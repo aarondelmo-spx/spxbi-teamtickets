@@ -11,9 +11,6 @@
   }
 
   function resolveUserRole(role, email, adminEmail){
-    var normalizedEmail = String(email || '').trim().toLowerCase();
-    var normalizedAdminEmail = String(adminEmail || '').trim().toLowerCase();
-    if(normalizedEmail && normalizedEmail === normalizedAdminEmail) return 'admin';
     return normalizeUserRole(role);
   }
 

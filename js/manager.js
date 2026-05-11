@@ -87,7 +87,7 @@ function managerAdminCount(){
 }
 
 function isFixedAdminUser(user){
-  return !!user && !!user.email && user.email === String(App.ADMIN_EMAIL || '').toLowerCase();
+  return false;
 }
 
 function isSelfUser(user){
@@ -185,7 +185,6 @@ function renderManagerUsersList(users){
       + '<select id="'+roleId+'" aria-label="Role"'+((fixedAdmin || !canManage) ? ' disabled' : '')+'>'+managerRoleOptions(user.role)+'</select>'
       + managerRoleBadge(user)
       + (self ? '<span class="manager-self-tag">You</span>' : '')
-      + (fixedAdmin ? '<span class="manager-self-tag">Fixed admin</span>' : '')
       + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
       + (canManage ? '<button class="btn-icon" onclick="removeManagerUser(\''+jsArg(user.id)+'\')" title="Remove user"'+removeDisabled+'>x</button>' : '')
       + '</div>';
@@ -263,7 +262,6 @@ window.saveManagerUser = function(id){
     });
     if(!name || !email) return failManagerAction('Name and email are required.', {id: id});
     if(email.indexOf('@') === -1) return failManagerAction('Enter a valid email address.', {id: id, email: email});
-    if(isFixedAdminUser(user) && role !== 'admin') return failManagerAction('This account is the fixed admin account and must remain admin.', {id: id, email: user.email});
     if(isSelfUser(user) && email !== user.email) return failManagerAction('You cannot change your own sign-in email.', {id: id, email: email});
     if(duplicateWhitelistEmail(email, id)) return failManagerAction('That email is already whitelisted.', {id: id, email: email});
     if(duplicateWhitelistName(name, id)) return failManagerAction('That display name is already used by another whitelist user.', {id: id, name: name});

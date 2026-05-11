@@ -33,7 +33,7 @@ function userIsAssignable(user){
 
 function userIsEffectiveAdmin(user){
   if(!user) return false;
-  return RoleHelpers.roleCanManageUsers(user.role) || (!!user.email && user.email === String(App.ADMIN_EMAIL || '').toLowerCase());
+  return RoleHelpers.roleCanManageUsers(user.role);
 }
 
 function currentUserRecord(){
@@ -47,7 +47,7 @@ function currentUserRoleName(){
   var email = String(App.currentUserEmail || '').toLowerCase();
   if(!email) return 'viewer';
   if(App.currentUserRole) return RoleHelpers.resolveUserRole(App.currentUserRole, email, App.ADMIN_EMAIL);
-  return email === String(App.ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'viewer';
+  return 'viewer';
 }
 
 function isCurrentUserAdmin(){

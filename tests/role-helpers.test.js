@@ -9,11 +9,11 @@ function run() {
   assert.equal(RoleHelpers.normalizeUserRole(''), 'admin');
 
   assert.equal(
-    RoleHelpers.resolveUserRole('viewer', 'owner@spxexpress.com', 'owner@spxexpress.com'),
-    'admin'
+    RoleHelpers.resolveUserRole('viewer', 'viewer@spxexpress.com', 'owner@spxexpress.com'),
+    'viewer'
   );
   assert.equal(
-    RoleHelpers.resolveUserRole('viewer', 'viewer@spxexpress.com', 'owner@spxexpress.com'),
+    RoleHelpers.resolveUserRole('viewer', 'owner@spxexpress.com', 'owner@spxexpress.com'),
     'viewer'
   );
 
