@@ -13,4 +13,4 @@ git commit -m $msg
 git push
 
 Write-Host "`n=== Firebase ===" -ForegroundColor Cyan
-& $firebase deploy --only hosting
+& $firebase deploy --only hosting,database

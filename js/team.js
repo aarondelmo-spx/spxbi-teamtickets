@@ -9,31 +9,31 @@ function normalizeTeamMemberRecord(id, raw){
 }
 
 function normalizeUserRole(role){
-  role = String(role || '').toLowerCase();
-  return role === 'viewer' || role === 'editor' || role === 'admin' ? role : 'admin';
+  return RoleHelpers.normalizeUserRole(role);
 }
 
 function normalizeWhitelistUserRecord(id, raw){
   raw = raw || {};
   var email = String(raw.email || '').trim().toLowerCase();
+  var role = RoleHelpers.resolveUserRole(raw.role, email, App.ADMIN_EMAIL);
   return {
     id: id,
     email: email,
     name: String(raw.name || '').trim(),
-    role: 'admin',
-    storedRole: String(raw.role || '').toLowerCase(),
+    role: role,
+    storedRole: normalizeUserRole(raw.role),
     legacy: false,
     source: 'whitelist'
   };
 }
 
 function userIsAssignable(user){
-  return !!user && (user.role === 'editor' || user.role === 'admin');
+  return !!user && RoleHelpers.roleIsAssignable(user.role);
 }
 
 function userIsEffectiveAdmin(user){
   if(!user) return false;
-  return user.role === 'admin' || (!!user.email && user.email === String(App.ADMIN_EMAIL || '').toLowerCase());
+  return RoleHelpers.roleCanManageUsers(user.role) || (!!user.email && user.email === String(App.ADMIN_EMAIL || '').toLowerCase());
 }
 
 function currentUserRecord(){
@@ -41,16 +41,88 @@ function currentUserRecord(){
   return (App.users || []).find(function(user){ return user.email === email; }) || null;
 }
 
-function isCurrentUserAdmin(){
-  return userIsEffectiveAdmin(currentUserRecord()) || String(App.currentUserEmail || '').toLowerCase() === String(App.ADMIN_EMAIL || '').toLowerCase();
+function currentUserRoleName(){
+  var user = currentUserRecord();
+  if(user) return RoleHelpers.resolveUserRole(user.role, user.email, App.ADMIN_EMAIL);
+  var email = String(App.currentUserEmail || '').toLowerCase();
+  if(!email) return 'viewer';
+  if(App.currentUserRole) return RoleHelpers.resolveUserRole(App.currentUserRole, email, App.ADMIN_EMAIL);
+  return email === String(App.ADMIN_EMAIL || '').toLowerCase() ? 'admin' : 'viewer';
 }
 
-function promoteAllWhitelistUsersToAdmin(){
-  if(!isCurrentUserAdmin()) return;
-  (App.users || []).forEach(function(user){
-    if(!user.id || user.storedRole === 'admin') return;
-    App.whitelistRef.child(user.id).update({role:'admin'});
-  });
+function isCurrentUserAdmin(){
+  return RoleHelpers.roleCanManageUsers(currentUserRoleName());
+}
+
+function canManageUsers(){
+  return RoleHelpers.roleCanManageUsers(currentUserRoleName());
+}
+
+function canEditContent(){
+  return RoleHelpers.roleCanEditContent(currentUserRoleName());
+}
+
+function canComment(){
+  return !!String(App.currentUserEmail || '').trim();
+}
+
+function accessDeniedMessage(action){
+  return action
+    ? 'Viewer access: you cannot ' + action + '.'
+    : 'Viewer access: you cannot edit this content.';
+}
+
+function requireContentEditAccess(action){
+  if(canEditContent()) return true;
+  alert(accessDeniedMessage(action));
+  return false;
+}
+
+function requireAdminAccess(action){
+  if(canManageUsers()) return true;
+  alert(action ? 'Admin access required to ' + action + '.' : 'Admin access required.');
+  return false;
+}
+
+function shouldDisableContributorPicker(containerId){
+  return containerId === 'nt-contributor-picker' ||
+    containerId === 'd-contributor-picker' ||
+    containerId === 'subtask-contributor-picker';
+}
+
+window.refreshAccessUi = function(){
+  var canEdit = canEditContent();
+  var canAdmin = canManageUsers();
+  var newBtn = document.getElementById('new-project-btn');
+  if(newBtn){
+    newBtn.disabled = !canEdit;
+    newBtn.title = canEdit ? '' : accessDeniedMessage('create projects');
+  }
+  var usersBtn = document.getElementById('users-btn');
+  if(usersBtn){
+    usersBtn.style.display = canAdmin ? '' : 'none';
+  }
+  var createBtn = document.getElementById('create-ticket-btn');
+  if(createBtn){
+    createBtn.disabled = !canEdit;
+    createBtn.title = canEdit ? '' : accessDeniedMessage('create projects');
+  }
+  if(typeof applyDetailAccessState === 'function') applyDetailAccessState();
+};
+
+window.canManageUsers = canManageUsers;
+window.canEditContent = canEditContent;
+window.canComment = canComment;
+window.requireContentEditAccess = requireContentEditAccess;
+window.requireAdminAccess = requireAdminAccess;
+window.currentUserRoleName = currentUserRoleName;
+window.accessDeniedMessage = accessDeniedMessage;
+
+function userRoleBadgeClass(role){
+  role = normalizeUserRole(role);
+  if(role === 'viewer') return 'viewer';
+  if(role === 'editor') return 'editor';
+  return 'admin';
 }
 
 function assignmentNameKey(name){
@@ -167,16 +239,18 @@ function renderContribPicker(containerId, selected, onChange){
     el.innerHTML='<div style="font-size:12px;color:var(--text3)">No assignable users yet.</div>';
     return;
   }
+  var disabled = shouldDisableContributorPicker(containerId) && !canEditContent();
   el.innerHTML = members.map(function(m){
     var isSel = selected.indexOf(m.name)>-1;
     var c = colorFor(m.name);
-    return '<button class="contributor-chip'+(isSel?' selected':'')+'" onclick="toggleContrib(\''+jsArg(containerId)+'\',\''+jsArg(m.name)+'\')" type="button">'
+    return '<button class="contributor-chip'+(isSel?' selected':'')+'" onclick="toggleContrib(\''+jsArg(containerId)+'\',\''+jsArg(m.name)+'\')" type="button"'+(disabled?' disabled title="'+safeText(accessDeniedMessage('change contributors'))+'"':'')+'>'
       +'<div class="chip-av" style="background:'+c+'22;color:'+c+'">'+safeText(initials(m.name))+'</div>'
       +safeText(m.name)+(m.legacy?' <span class="chip-note">legacy</span>':'')+'</button>';
   }).join('');
 }
 
 window.toggleContrib = function(containerId, name){
+  if(shouldDisableContributorPicker(containerId) && !requireContentEditAccess('change contributors')) return;
   var sel, onChange;
   if(containerId==='nt-contributor-picker'){ sel=App.ntSelectedContribs; onChange=function(s){App.ntSelectedContribs=s;}; }
   else if(containerId==='d-contributor-picker'){ sel=App.dSelectedContribs; onChange=function(s){App.dSelectedContribs=s;saveContributors();}; }
@@ -190,6 +264,7 @@ window.toggleContrib = function(containerId, name){
 
 function saveContributors(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('update contributors')) return;
   var upd = {
     contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null
   };

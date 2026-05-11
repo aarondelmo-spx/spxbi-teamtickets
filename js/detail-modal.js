@@ -44,9 +44,11 @@ function staticDetailTextEl(field, value){
   var el = document.createElement('div');
   el.id = 'd-'+field;
   el.className = field === 'title' ? 'detail-title' : 'detail-desc';
-  el.title = 'Double-click to edit';
-  el.style.cursor = 'text';
-  el.ondblclick = function(){ editDetailField(field); };
+  el.title = canEditContent() ? 'Double-click to edit' : '';
+  el.style.cursor = canEditContent() ? 'text' : 'default';
+  if(canEditContent()){
+    el.ondblclick = function(){ editDetailField(field); };
+  }
   el.textContent = value;
   return el;
 }
@@ -81,6 +83,52 @@ function setDetailSaveStatus(message){
   }
 }
 
+window.applyDetailAccessState = function(){
+  var editable = canEditContent();
+  var commentable = canComment();
+  [
+    'd-status-sel',
+    'd-priority-sel',
+    'd-owner-sel',
+    'd-deadline-inp',
+    'd-team-area',
+    'd-subteam',
+    'd-sprint-cycle',
+    'd-timeline-start',
+    'd-timeline-end',
+    'd-stage',
+    'd-confidence',
+    'd-automation-scoped-hc',
+    'd-actual-hc-savings',
+    'd-excess-capacity-hc',
+    'support-contact-name',
+    'support-contact-role',
+    'support-contact-email',
+    'support-contact-team',
+    'subtask-input',
+    'subtask-deadline',
+    'link-url-input',
+    'link-label-input'
+  ].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.disabled = !editable;
+  });
+  ['detail-delete-btn','detail-save-btn','detail-clear-deadline-btn','detail-add-subtask-btn','detail-add-link-btn','detail-add-workstream-btn','detail-add-support-contact-btn'].forEach(function(id){
+    var btn = document.getElementById(id);
+    if(btn) btn.disabled = !editable;
+  });
+  var commentInput = document.getElementById('d-comment-input');
+  if(commentInput) commentInput.disabled = !commentable;
+  var commentBtn = document.getElementById('detail-comment-post-btn');
+  if(commentBtn) commentBtn.disabled = !commentable;
+  ['title','desc'].forEach(function(field){
+    var el = document.getElementById('d-' + field);
+    if(!el) return;
+    el.style.cursor = editable ? 'text' : 'default';
+    el.title = editable ? 'Double-click to edit' : '';
+  });
+};
+
 window.refreshDetailFields = function(t, options){
   options = options || {};
   renderStaticDetailText('title', t.title, options.forceText);
@@ -102,9 +150,11 @@ window.refreshDetailFields = function(t, options){
   }
   renderDeadlineStatus(t.deadline,t.status);
   if(typeof populateSprintDetail === 'function') populateSprintDetail(t);
+  applyDetailAccessState();
 };
 
 window.editDetailField = function(field){
+  if(!requireContentEditAccess('edit projects')) return;
   var el=document.getElementById('d-'+field); if(!el) return;
   var ticket=App.allTickets[App.selectedTicketId] || {};
   var current=field==='title' ? (ticket.title || el.textContent) : (ticket.desc || '');
@@ -148,6 +198,7 @@ window.editDetailField = function(field){
 
 window.saveDetailChanges = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('save project changes')) return;
   if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('detail');
   var id = App.selectedTicketId;
   var upd = {
@@ -193,6 +244,7 @@ window.openDetailModal = function(id){
   renderLinks(id);
   renderComments(id);
   updateWho();
+  applyDetailAccessState();
   document.getElementById('detail-modal').style.display='flex';
   setTimeout(function(){var el=document.getElementById('d-comment-input');if(el)el.focus();},100);
 };

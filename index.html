@@ -64,7 +64,7 @@
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
     <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
-    <button class="team-btn" onclick="openManagerView()">Users</button>
+    <button class="team-btn" id="users-btn" onclick="openManagerView()">Users</button>
     <details class="sidebar-settings">
       <summary>Settings</summary>
       <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
@@ -326,7 +326,7 @@
             <label>Deadline</label>
             <div style="display:flex;gap:8px;align-items:center">
               <input type="date" id="d-deadline-inp" style="flex:1;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;outline:none;color-scheme:dark" onchange="updateTicketField('deadline',this.value)" />
-              <button class="btn btn-sm" onclick="clearDeadline()">Clear</button>
+              <button class="btn btn-sm" id="detail-clear-deadline-btn" onclick="clearDeadline()">Clear</button>
             </div>
             <div id="d-deadline-status"></div>
           </div>
@@ -349,7 +349,7 @@
             <input id="support-contact-role" placeholder="Role / workstream" />
             <input id="support-contact-email" placeholder="Email" type="email" />
             <select id="support-contact-team"></select>
-            <button class="btn btn-primary btn-sm" onclick="addSupportContact()" type="button">Add</button>
+            <button class="btn btn-primary btn-sm" id="detail-add-support-contact-btn" onclick="addSupportContact()" type="button">Add</button>
           </div>
         </div>
       </div>
@@ -360,7 +360,7 @@
             <div class="section-label" style="margin-bottom:2px">Tasks</div>
             <div class="microcopy">Add tasks directly. Use groups only when the initiative has separate tracks of work.</div>
           </div>
-          <button class="btn btn-sm btn-primary" onclick="addWorkstream()" type="button">+ Group</button>
+          <button class="btn btn-sm btn-primary" id="detail-add-workstream-btn" onclick="addWorkstream()" type="button">+ Group</button>
         </div>
         <div id="vibe-workstream-list"></div>
       </div>
@@ -421,7 +421,7 @@
         <div class="add-subtask-row">
           <input id="subtask-input" placeholder="Add a subtask..." onkeydown="if(event.key==='Enter')addSubtask()" />
           <input type="date" id="subtask-deadline" title="Deadline (optional)" style="padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none;color-scheme:dark;width:136px" />
-          <button class="btn btn-sm btn-primary" onclick="addSubtask()">Add</button>
+          <button class="btn btn-sm btn-primary" id="detail-add-subtask-btn" onclick="addSubtask()">Add</button>
         </div>
         <div style="margin-top:8px">
           <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Subtask contributors</div>
@@ -446,7 +446,7 @@
           <div class="add-link-row">
             <input id="link-url-input" placeholder="https://..." onkeydown="if(event.key==='Enter')addLink()" />
             <input id="link-label-input" placeholder="Label (optional)" onkeydown="if(event.key==='Enter')addLink()" />
-            <button class="btn btn-sm btn-primary" onclick="addLink()">Add</button>
+            <button class="btn btn-sm btn-primary" id="detail-add-link-btn" onclick="addLink()">Add</button>
           </div>
         </div>
       </div>
@@ -462,14 +462,14 @@
           style="flex:1;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5;outline:none;resize:vertical;min-height:38px"
           onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"
           onkeydown="handleCommentKey(event)" ></textarea>
-        <button class="btn btn-primary btn-sm" style="margin-top:2px" onclick="postComment()">Post</button>
+        <button class="btn btn-primary btn-sm" id="detail-comment-post-btn" style="margin-top:2px" onclick="postComment()">Post</button>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" onclick="deleteTicket()">Delete project</button>
+      <button class="btn btn-danger" id="detail-delete-btn" onclick="deleteTicket()">Delete project</button>
       <div class="detail-footer-actions">
         <span class="detail-save-status" id="detail-save-status"></span>
-        <button class="btn btn-primary" onclick="saveDetailChanges()">Save changes</button>
+        <button class="btn btn-primary" id="detail-save-btn" onclick="saveDetailChanges()">Save changes</button>
         <button class="btn" onclick="closeDetailModal()">Close</button>
       </div>
     </div>
@@ -535,6 +535,7 @@
 <script src="js/theme.js"></script>
 <script src="js/activity.js"></script>
 <script src="js/warnings.js"></script>
+<script src="js/role-helpers.js"></script>
 <script src="js/team.js"></script>
 <script src="js/whitelist.js"></script>
 <script src="js/tickets.js"></script>

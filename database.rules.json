@@ -1,0 +1,37 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "whitelist": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['email', 'name']) && newData.child('email').isString() && newData.child('name').isString() && (!newData.child('role').exists() || newData.child('role').isString())"
+      }
+    },
+    "tickets": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "sprintProjects": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "automationTeams": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "automationSubteams": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "team": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "activity": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

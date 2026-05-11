@@ -109,6 +109,7 @@ function updateWho(){
   av.textContent=initials(App.currentUser);
   var da=document.getElementById('d-my-avatar');
   if(da) da.innerHTML=avatarHtml(App.currentUser,22);
+  if(typeof refreshAccessUi === 'function') refreshAccessUi();
 }
 
 App.auth.onAuthStateChanged(function(user){

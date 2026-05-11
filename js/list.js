@@ -166,6 +166,7 @@ function renderContribPills(){
 }
 
 window.openNewModal = function(){
+  if(!requireContentEditAccess('create projects')) return;
   App.ntSelectedContribs=[];
   App.ntSelectedSupportTeams=[];
   updateAppShell();

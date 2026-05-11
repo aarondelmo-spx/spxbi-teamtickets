@@ -474,6 +474,7 @@ function setSupportTeamsForMode(mode, teams){
     renderSupportTeamPicker('new');
     return;
   }
+  if(!requireContentEditAccess('update supporting teams')) return;
   if(!App.selectedTicketId) return;
   var t = App.allTickets[App.selectedTicketId] || {};
   t.supportingTeams = teams.length ? teams : null;
@@ -505,11 +506,12 @@ function renderSupportTeamPicker(mode){
   var teams = selectedSupportTeamsForMode(mode);
   var inputId = supportTeamInputId(mode);
   var suggestId = supportTeamSuggestId(mode);
+  var editable = mode === 'new' ? canEditContent() : canEditContent();
   el.innerHTML = teams.map(function(team){
     return '<span class="support-chip">'+safeText(team)
-      +'<button class="support-chip-remove" onclick="removeSupportTeamFromMode(\''+mode+'\',\''+safeText(jsArg(team))+'\')" type="button" title="Remove">x</button></span>';
+      +'<button class="support-chip-remove" onclick="removeSupportTeamFromMode(\''+mode+'\',\''+safeText(jsArg(team))+'\')" type="button" title="Remove"'+(editable?'':' disabled')+'>x</button></span>';
   }).join('')
-  +'<input class="support-team-input" id="'+inputId+'" placeholder="Add team..." autocomplete="off"'
+  +'<input class="support-team-input" id="'+inputId+'" placeholder="Add team..." autocomplete="off"'+(editable?'':' disabled')
     +' oninput="renderSupportTeamSuggestions(\''+mode+'\')"'
     +' onfocus="renderSupportTeamSuggestions(\''+mode+'\')"'
     +' onblur="setTimeout(function(){hideSupportTeamSuggestions(\''+mode+'\')},120)"'
@@ -643,12 +645,14 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
 }
 
 function editableTeamHeadingHtml(teamName){
+  if(!canEditContent()) return '<div class="team-heading">'+safeText(teamName)+'</div>';
   return '<button class="team-heading edit-heading" onclick="openHierarchyEditModal(\'team\',\''+jsArg(teamName)+'\')" type="button">'
     +'<span>'+safeText(teamName)+'</span><span class="edit-hint">Edit</span>'
     +'</button>';
 }
 
 function editableSubteamHeadingHtml(teamName, subteamName){
+  if(!canEditContent()) return '<div class="subteam-heading">'+safeText(subteamName)+'</div>';
   return '<button class="subteam-heading edit-heading" onclick="openHierarchyEditModal(\'subteam\',\''+jsArg(teamName)+'\',\''+jsArg(subteamName)+'\')" type="button">'
     +'<span>'+safeText(subteamName)+'</span><span class="edit-hint">Edit</span>'
     +'</button>';
@@ -744,7 +748,7 @@ function taskOwnerSelectHtml(item){
   var options = '<option value="">Unassigned</option>' + ownerNameList(selected).map(function(name){
     return '<option value="'+safeText(name)+'"'+(selected===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
-  return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)">'+options+'</select>';
+  return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)"'+(canEditContent()?'':' disabled')+'>'+options+'</select>';
 }
 
 function taskRowControlTarget(target){
@@ -772,10 +776,10 @@ function taskRowHtml(item, mode){
   var _grp  = item.workstreamName;
   var _bc   = [_team, _sub, _init, _grp].filter(Boolean).join(' / ');
   return '<div class="vibe-task-row vibe-task-row-clickable'+(checked?' done-task':'')+'" onclick="openVibeTaskRow(event,\''+ticketArg+'\')" onkeydown="openVibeTaskRow(event,\''+ticketArg+'\')" role="button" tabindex="0">'
-    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="event.stopPropagation();toggleVibeTaskFromList(\''+ticketArg+'\',\''+taskArg+'\','+checked+')"></div>'
+    +'<div class="subtask-check'+(checked?' checked':'')+'"'+(canEditContent()?' onclick="event.stopPropagation();toggleVibeTaskFromList(\''+ticketArg+'\',\''+taskArg+'\','+checked+')"':'')+'></div>'
     +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(_bc)+'</div></div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+ticketArg+'\',\''+taskArg+'\',\'deadline\',this.value)" />'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+ticketArg+'\',\''+taskArg+'\',\'deadline\',this.value)"'+(canEditContent()?'':' disabled')+' />'
     +'<div style="display:flex;gap:5px;justify-content:flex-end">'+action+'</div>'
     +'</div>';
 }
@@ -903,22 +907,23 @@ function workstreamTaskRowHtml(ticketId, taskId, task, workstreamName){
   var checked = !!task.done;
   var item = {ticketId:ticketId, taskId:taskId, task:task, initiative:App.allTickets[ticketId] || {}, workstreamName:workstreamName};
   return '<div class="task-row'+(checked?' done-task':'')+'">'
-    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\','+checked+')"></div>'
+    +'<div class="subtask-check'+(checked?' checked':'')+'"'+(canEditContent()?' onclick="toggleVibeTaskFromList(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\','+checked+')"':'')+'></div>'
     +'<div class="task-text">'+safeText(task.text || 'Untitled task')+'</div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)" />'
-    +'<button class="btn-icon" onclick="deleteSubtask(\''+jsArg(taskId)+'\')" title="Remove task" type="button">x</button>'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)"'+(canEditContent()?'':' disabled')+' />'
+    +'<button class="btn-icon" onclick="deleteSubtask(\''+jsArg(taskId)+'\')" title="Remove task" type="button"'+(canEditContent()?'':' disabled')+'>x</button>'
     +'</div>';
 }
 
 function taskComposerHtml(workstreamId){
   var id = domId(workstreamId);
   var owner = initiativeOwner(App.allTickets[App.selectedTicketId] || {});
+  var disabled = canEditContent() ? '' : ' disabled';
   return '<div class="task-add-row">'
-    +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')" />'
-    +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions(owner)+'</select>'
-    +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date" />'
-    +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button">Add</button>'
+    +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')"'+disabled+' />'
+    +'<select id="task-owner-'+id+'"'+disabled+'>'+addTaskOwnerOptions(owner)+'</select>'
+    +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date"'+disabled+' />'
+    +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button"'+disabled+'>Add</button>'
     +'</div>';
 }
 
@@ -945,7 +950,7 @@ function renderWorkstreamsAndTasks(ticketId){
     var activeCount = wsTasks.filter(function(item){return !item.task.done;}).length;
     return '<div class="workstream-card">'
       +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'Group')+'</div><div class="microcopy">Optional task group for a separate track of work.</div></div>'
-      +'<div class="workstream-actions"><div class="workstream-count">'+activeCount+' active</div><button class="btn-icon workstream-delete" onclick="deleteWorkstream(\''+jsArg(ticketId)+'\',\''+jsArg(ws.id)+'\')" title="Delete task group" type="button">x</button></div></div>'
+      +'<div class="workstream-actions"><div class="workstream-count">'+activeCount+' active</div><button class="btn-icon workstream-delete" onclick="deleteWorkstream(\''+jsArg(ticketId)+'\',\''+jsArg(ws.id)+'\')" title="Delete task group" type="button"'+(canEditContent()?'':' disabled')+'>x</button></div></div>'
       +'<div class="task-list">'+(wsTasks.length ? wsTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, ws.name || 'Group'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
       +taskComposerHtml(ws.id)
       +'</div>';
@@ -956,6 +961,7 @@ function renderWorkstreamsAndTasks(ticketId){
 
 window.addWorkstream = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add task groups')) return;
   var name = prompt('Group name');
   name = name ? name.trim() : '';
   if(!name) return;
@@ -972,6 +978,7 @@ window.addWorkstream = function(){
 
 window.deleteWorkstream = function(ticketId, workstreamId){
   if(!ticketId || !workstreamId || workstreamId === VIBE_GENERAL_WORKSTREAM_ID) return;
+  if(!requireContentEditAccess('delete task groups')) return;
   var t = App.allTickets[ticketId];
   if(!t || !t.workstreams || !t.workstreams[workstreamId]) return;
   var groupName = t.workstreams[workstreamId].name || 'this group';
@@ -1003,6 +1010,7 @@ window.deleteWorkstream = function(ticketId, workstreamId){
 
 window.addVibeTask = function(workstreamId){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add tasks')) return;
   var id = domId(workstreamId);
   var textEl = document.getElementById('task-text-'+id);
   var ownerEl = document.getElementById('task-owner-'+id);
@@ -1049,6 +1057,7 @@ function refreshVibeAfterTaskUpdate(ticketId, taskId, upd){
 }
 
 window.updateVibeTaskField = function(ticketId, taskId, field, value){
+  if(!requireContentEditAccess('update tasks')) return;
   var upd = {};
   if(field === 'owner') upd.contributors = value ? [value] : null;
   else upd[field] = value === '' ? null : value;
@@ -1057,6 +1066,7 @@ window.updateVibeTaskField = function(ticketId, taskId, field, value){
 };
 
 window.toggleVibeTaskFromList = function(ticketId, taskId, current){
+  if(!requireContentEditAccess('update tasks')) return;
   var upd = {done:!current};
   App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
@@ -1092,13 +1102,14 @@ function renderSupportContactsField(ticketId){
       +'<div class="support-contact-main"><div class="support-contact-name">'+safeText(contact.name || contact.email || 'Unnamed contact')+'</div>'
       +(meta?'<div class="support-contact-meta">'+safeText(meta)+'</div>':'')+'</div>'
       +(contact.email?'<a class="support-contact-email" href="mailto:'+safeText(contact.email)+'">'+safeText(contact.email)+'</a>':'<span class="support-contact-email muted">No email</span>')
-      +'<button class="btn-icon" onclick="removeSupportContact(\''+jsArg(contact.id)+'\')" title="Remove">x</button>'
+      +'<button class="btn-icon" onclick="removeSupportContact(\''+jsArg(contact.id)+'\')" title="Remove"'+(canEditContent()?'':' disabled')+'>x</button>'
       +'</div>';
   }).join('');
 }
 
 window.addSupportContact = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add support contacts')) return;
   var nameEl = document.getElementById('support-contact-name');
   var roleEl = document.getElementById('support-contact-role');
   var emailEl = document.getElementById('support-contact-email');
@@ -1125,6 +1136,7 @@ window.addSupportContact = function(){
 
 window.removeSupportContact = function(contactId){
   if(!App.selectedTicketId || !contactId) return;
+  if(!requireContentEditAccess('remove support contacts')) return;
   activeTicketRef(App.selectedTicketId).child('supportContacts/'+contactId).remove();
   var ticket = App.allTickets[App.selectedTicketId];
   if(ticket && ticket.supportContacts) delete ticket.supportContacts[contactId];

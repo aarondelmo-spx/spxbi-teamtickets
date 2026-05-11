@@ -1,4 +1,5 @@
 window.createTicket = function(){
+  if(!requireContentEditAccess('create projects')) return;
   var title=document.getElementById('nt-title').value.trim(); if(!title){document.getElementById('nt-title').focus();return;}
   if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('new');
   var dl=document.getElementById('nt-deadline').value;
@@ -53,6 +54,7 @@ function refreshAfterTicketUpdate(id, upd, options){
 
 window.updateTicketField = function(field,value){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('edit projects')) return;
   var id = App.selectedTicketId;
   var before = App.allTickets[id] || {};
   var upd={};
@@ -72,6 +74,7 @@ window.updateTicketField = function(field,value){
 
 window.updateTicketOwner = function(value){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('change owners')) return;
   var id = App.selectedTicketId;
   var owner = value || 'Unassigned';
   var before = App.allTickets[id] || {};
@@ -83,6 +86,7 @@ window.updateTicketOwner = function(value){
 };
 
 window.clearDeadline = function(){
+  if(!requireContentEditAccess('clear deadlines')) return;
   document.getElementById('d-deadline-inp').value='';
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('cleareddeadline',t.title,'',App.selectedTicketId);
@@ -92,6 +96,7 @@ window.clearDeadline = function(){
 
 window.deleteTicket = function(){
   if(!App.selectedTicketId)return;
+  if(!requireContentEditAccess('delete projects')) return;
   if(!confirm('Delete this '+(isSprintView()?'initiative':'project')+'? This cannot be undone.'))return;
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('deleted',t.title,'',App.selectedTicketId);

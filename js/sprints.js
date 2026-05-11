@@ -667,6 +667,17 @@ window.openHierarchyModal = function(){
   renderAutomationHierarchyLists();
   var modal = document.getElementById('hierarchy-modal');
   if(modal) modal.style.display = 'flex';
+  ['automation-team-name','automation-subteam-name','automation-subteam-size'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.disabled = !canEditContent();
+  });
+  [
+    '#hierarchy-modal button[onclick="addAutomationTeam()"]',
+    '#hierarchy-modal button[onclick="addAutomationSubteam()"]'
+  ].forEach(function(selector){
+    var btn = document.querySelector(selector);
+    if(btn) btn.disabled = !canEditContent();
+  });
 };
 
 window.closeHierarchyModal = function(){
@@ -701,6 +712,7 @@ function updateLocalTeamOrder(team, sortOrder){
 }
 
 window.moveAutomationTeam = function(id, name, direction){
+  if(!requireContentEditAccess('reorder teams')) return;
   var teams = automationTeamList();
   var movableTeams = teams.filter(function(team){ return !isOtherName(team.name); });
   var idx = movableTeams.findIndex(function(team){
@@ -733,6 +745,7 @@ function renderAutomationHierarchyLists(){
   if(App.hierarchySelectedTeam && !teams.some(function(team){ return team.name === App.hierarchySelectedTeam; })){
     App.hierarchySelectedTeam = teams.length ? teams[0].name : '';
   }
+  var editable = canEditContent();
   teamEl.innerHTML = teams.map(function(team){
     var active = team.name === App.hierarchySelectedTeam;
     var size = teamSizeFieldValue(team.name);
@@ -745,10 +758,10 @@ function renderAutomationHierarchyLists(){
       +'<button class="hierarchy-name-btn" onclick="selectAutomationTeam(\''+safeText(jsDataArg(team.name))+'\')" type="button">'+safeText(team.name)+'</button>'
       +'<span class="hierarchy-meta" title="Sum of subteam sizes">'+safeText(fmtCapacity(size))+'</span>'
       +'<div class="hierarchy-reorder">'
-        +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',-1)" title="Move team up" type="button"'+(moveUpDisabled?' disabled':'')+'>&uarr;</button>'
-        +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',1)" title="Move team down" type="button"'+(moveDownDisabled?' disabled':'')+'>&darr;</button>'
+        +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',-1)" title="Move team up" type="button"'+(moveUpDisabled || !editable?' disabled':'')+'>&uarr;</button>'
+        +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',1)" title="Move team down" type="button"'+(moveDownDisabled || !editable?' disabled':'')+'>&darr;</button>'
       +'</div>'
-      +(isOtherName(team.name) ? '' : '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\')" title="Delete team" type="button">x</button>')
+      +(isOtherName(team.name) ? '' : '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\')" title="Delete team" type="button"'+(editable?'':' disabled')+'>x</button>')
       +'</div>';
   }).join('');
   var subteams = automationSubteamList(App.hierarchySelectedTeam || '');
@@ -761,9 +774,9 @@ function renderAutomationHierarchyLists(){
     var reviewed = subteamReviewed(subteam);
     return '<div class="hierarchy-row static hierarchy-edit-row">'
       +'<span class="hierarchy-name-text">'+safeText(subteam.name)+'</span>'
-      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Size" onchange="updateAutomationSubteamSize(\''+safeText(jsDataArg(subteam.id))+'\',this.value)" />'
-      +'<label class="hierarchy-review"><input type="checkbox" onchange="updateAutomationSubteamReviewed(\''+safeText(jsDataArg(subteam.id))+'\',\''+safeText(jsDataArg(subteam.teamName || App.hierarchySelectedTeam || ''))+'\',\''+safeText(jsDataArg(subteam.name))+'\',this.checked)"'+(reviewed?' checked':'')+' />Reviewed</label>'
-      +(subteam.id && !isOtherName(subteam.name) ? '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationSubteam(\''+safeText(jsDataArg(subteam.id))+'\',\''+safeText(jsDataArg(subteam.name))+'\',\''+safeText(jsDataArg(subteam.teamName || App.hierarchySelectedTeam || ''))+'\')" title="Delete subteam" type="button">x</button>' : '')
+      +'<input class="hierarchy-size-input" type="number" min="0" step="0.1" value="'+(size != null ? safeText(fmtCapacity(size)) : '')+'" placeholder="Size" onchange="updateAutomationSubteamSize(\''+safeText(jsDataArg(subteam.id))+'\',this.value)"'+(editable?'':' disabled')+' />'
+      +'<label class="hierarchy-review"><input type="checkbox" onchange="updateAutomationSubteamReviewed(\''+safeText(jsDataArg(subteam.id))+'\',\''+safeText(jsDataArg(subteam.teamName || App.hierarchySelectedTeam || ''))+'\',\''+safeText(jsDataArg(subteam.name))+'\',this.checked)"'+(reviewed?' checked':'')+(editable?'':' disabled')+' />Reviewed</label>'
+      +(subteam.id && !isOtherName(subteam.name) ? '<button class="btn-icon hierarchy-delete" onclick="deleteAutomationSubteam(\''+safeText(jsDataArg(subteam.id))+'\',\''+safeText(jsDataArg(subteam.name))+'\',\''+safeText(jsDataArg(subteam.teamName || App.hierarchySelectedTeam || ''))+'\')" title="Delete subteam" type="button"'+(editable?'':' disabled')+'>x</button>' : '')
       +'</div>';
   }).join('');
 }
@@ -797,6 +810,7 @@ function setHierarchyEditLabels(mode){
 
 window.openHierarchyEditModal = function(mode, teamName, subteamName){
   if(!isSprintView()) return;
+  if(!requireContentEditAccess('edit hierarchy')) return;
   var target = null;
   if(mode === 'team'){
     var team = automationTeamByName(teamName) || {id: hierarchyRecordId('team', teamName), name: teamName, sortOrder: Date.now()};
@@ -890,6 +904,7 @@ function updateLocalHierarchyFromEdit(target, newName, size){
 window.saveHierarchyEdit = function(){
   var target = App.hierarchyEditTarget;
   if(!target) return;
+  if(!requireContentEditAccess('save hierarchy changes')) return;
   var newName = cleanHierarchyName(document.getElementById('hierarchy-edit-name').value);
   if(!newName){
     document.getElementById('hierarchy-edit-name').focus();
@@ -943,6 +958,7 @@ window.saveHierarchyEdit = function(){
 
 window.updateAutomationTeamSize = function(id, value){
   if(!id || !App.automationTeamsRef) return;
+  if(!requireContentEditAccess('update team size')) return;
   var team = automationTeamList().find(function(item){ return item.id === id; }) || {};
   var size = cleanHierarchyCapacity(value);
   var upd = {
@@ -958,6 +974,7 @@ window.updateAutomationTeamSize = function(id, value){
 
 window.updateAutomationSubteamSize = function(id, value){
   if(!id || !App.automationSubteamsRef) return;
+  if(!requireContentEditAccess('update subteam size')) return;
   var teamName = App.hierarchySelectedTeam || '';
   var subteam = automationSubteamList(teamName).find(function(item){ return item.id === id; }) || {};
   var size = cleanHierarchyCapacity(value);
@@ -974,6 +991,7 @@ window.updateAutomationSubteamSize = function(id, value){
 
 window.updateAutomationSubteamReviewed = function(id, teamName, name, checked){
   if(!id || !App.automationSubteamsRef) return;
+  if(!requireContentEditAccess('mark reviewed coverage')) return;
   teamName = normalizeTeamName(teamName);
   name = normalizeSubteamName(name);
   var subteam = automationSubteamList(teamName).find(function(item){
@@ -1000,6 +1018,7 @@ window.updateAutomationSubteamReviewed = function(id, teamName, name, checked){
 };
 
 window.addAutomationTeam = function(){
+  if(!requireContentEditAccess('add teams')) return;
   var input = document.getElementById('automation-team-name');
   var name = input ? input.value.trim() : '';
   if(!name) return;
@@ -1011,6 +1030,7 @@ window.addAutomationTeam = function(){
 };
 
 window.addAutomationSubteam = function(){
+  if(!requireContentEditAccess('add subteams')) return;
   var input = document.getElementById('automation-subteam-name');
   var sizeInput = document.getElementById('automation-subteam-size');
   var name = input ? input.value.trim() : '';
@@ -1072,6 +1092,7 @@ function moveSubteamToOtherTeam(updates, subteam){
 }
 
 window.deleteAutomationTeam = function(id, name){
+  if(!requireContentEditAccess('delete teams')) return;
   var teamName = normalizeTeamName(name);
   if(isOtherName(teamName)) return;
   var impacted = Object.entries(App.sprintTickets || {}).filter(function(entry){
@@ -1106,6 +1127,7 @@ window.deleteAutomationTeam = function(id, name){
 
 window.deleteAutomationSubteam = function(id, name, teamName){
   if(!id || !name || isOtherName(name)) return;
+  if(!requireContentEditAccess('delete subteams')) return;
   teamName = normalizeTeamName(teamName);
   name = normalizeSubteamName(name);
   var impacted = Object.entries(App.sprintTickets || {}).filter(function(entry){

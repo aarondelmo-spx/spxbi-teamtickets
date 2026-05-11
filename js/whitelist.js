@@ -1,5 +1,5 @@
 window.addWhitelist = function(){
-  if(!isAccessAdmin()) return;
+  if(!requireAdminAccess('manage users')) return;
   var emailInput = document.getElementById('wl-email-input');
   var nameInput = document.getElementById('wl-name-input');
   var email = emailInput.value.trim().toLowerCase();
@@ -11,7 +11,7 @@ window.addWhitelist = function(){
 };
 
 window.removeWhitelist = function(id){
-  if(!isAccessAdmin()) return;
+  if(!requireAdminAccess('manage users')) return;
   var user = (App.users || []).find(function(entry){ return entry.id === id; });
   if(!user) return;
   if(isSelfUser(user) && userIsEffectiveAdmin(user)) return;

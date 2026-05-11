@@ -42,11 +42,11 @@ function startApp(){
       App.currentUserRole = me.role;
       updateWho();
     }
-    promoteAllWhitelistUsersToAdmin();
     rebuildTeamMembers();
     renderWhitelistPanel();
     refreshTeamMemberUi();
     renderManagerTeamAccessView();
+    if(typeof refreshAccessUi === 'function') refreshAccessUi();
   });
   App.teamRef.on('value', function(snap){
     var data = snap.val()||{};

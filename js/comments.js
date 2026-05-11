@@ -1,5 +1,6 @@
 window.postComment = function(){
   if(!App.selectedTicketId) return;
+  if(!canComment()) return;
   var input=document.getElementById('d-comment-input');
   var text=input.value.trim(); if(!text) return;
   var ct=App.allTickets[App.selectedTicketId];
@@ -9,6 +10,7 @@ window.postComment = function(){
 };
 
 window.postReply = function(cid){
+  if(!canComment()) return;
   var input=document.getElementById('reply-input-'+cid); if(!input)return;
   var text=input.value.trim(); if(!text)return;
   var t=App.allTickets[App.selectedTicketId];

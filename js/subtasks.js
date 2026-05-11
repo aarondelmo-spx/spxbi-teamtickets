@@ -1,5 +1,6 @@
 window.addSubtask = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add subtasks')) return;
   var input=document.getElementById('subtask-input');
   var dlInput=document.getElementById('subtask-deadline');
   var text=input.value.trim(); if(!text) return;
@@ -15,6 +16,7 @@ window.addSubtask = function(){
 
 window.toggleSubtask = function(sid,cur){
   if(!App.selectedTicketId)return;
+  if(!requireContentEditAccess('update tasks')) return;
   activeTicketRef(App.selectedTicketId).child('subtasks/'+sid).update({done:!cur});
   if(!cur){
     var tt=App.allTickets[App.selectedTicketId];
@@ -25,6 +27,7 @@ window.toggleSubtask = function(sid,cur){
 
 window.deleteSubtask = function(sid){
   if(!App.selectedTicketId)return;
+  if(!requireContentEditAccess('remove tasks')) return;
   var t=App.allTickets[App.selectedTicketId];
   var sub=t&&t.subtasks&&t.subtasks[sid];
   if(t&&sub) logActivity('deletedsubtask',t.title,sub.text,App.selectedTicketId);
@@ -32,6 +35,7 @@ window.deleteSubtask = function(sid){
 };
 
 window.editSubtask = function(sid){
+  if(!requireContentEditAccess('edit tasks')) return;
   var span=document.getElementById('sttext-'+sid); if(!span) return;
   var current=span.textContent;
   var input=document.createElement('input');
@@ -66,26 +70,27 @@ function renderSubtasks(ticketId){
   if(stats.total>0){ var pct=Math.round(stats.done/stats.total*100); progressEl.textContent=stats.done+'/'+stats.total+' ('+pct+'%)'; openSection('subtasks'); }
   else { progressEl.textContent=''; closeSection('subtasks'); }
   if(!subtasks.length){listEl.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">No subtasks yet.</div>';return;}
+  var editable = canEditContent();
   listEl.innerHTML=subtasks.map(function(entry){
     var sid=entry[0],s=entry[1];
     var dlTag='';
     if(s.deadline&&!s.done){
       var diff=deadlineDiff(s.deadline);
       if(diff!==null){
-        if(diff<0) dlTag='<span class="deadline-tag dl-overdue">⏰ overdue '+Math.abs(diff)+'d</span>';
-        else if(diff===0) dlTag='<span class="deadline-tag dl-soon">⏰ today</span>';
-        else if(diff<=3) dlTag='<span class="deadline-tag dl-soon">⏰ in '+diff+'d</span>';
-        else dlTag='<span class="deadline-tag dl-ok">📅 '+s.deadline+'</span>';
+        if(diff<0) dlTag='<span class="deadline-tag dl-overdue">overdue '+Math.abs(diff)+'d</span>';
+        else if(diff===0) dlTag='<span class="deadline-tag dl-soon">today</span>';
+        else if(diff<=3) dlTag='<span class="deadline-tag dl-soon">in '+diff+'d</span>';
+        else dlTag='<span class="deadline-tag dl-ok">'+s.deadline+'</span>';
       }
     }
     var contribHtml=s.contributors&&s.contributors.length?avatarStackHtml(s.contributors,18):'';
     return '<div class="subtask-item'+(s.done?' done-task':'')+'">'
-      +'<div class="subtask-check'+(s.done?' checked':'')+'" onclick="toggleSubtask(\''+sid+'\','+s.done+')"></div>'
-      +'<span class="subtask-text" id="sttext-'+sid+'" ondblclick="editSubtask(\''+sid+'\')" title="Double-click to edit">'+s.text+'</span>'
+      +'<div class="subtask-check'+(s.done?' checked':'')+'"'+(editable?' onclick="toggleSubtask(\''+sid+'\','+s.done+')"':'')+'></div>'
+      +'<span class="subtask-text" id="sttext-'+sid+'"'+(editable?' ondblclick="editSubtask(\''+sid+'\')" title="Double-click to edit"':'')+'>'+s.text+'</span>'
       +'<div class="subtask-meta">'
       +(dlTag?dlTag:'')
       +(contribHtml?contribHtml:'')
-      +'<button class="btn-icon" onclick="deleteSubtask(\''+sid+'\')" title="Remove">✕</button>'
+      +'<button class="btn-icon" onclick="deleteSubtask(\''+sid+'\')" title="Remove"'+(editable?'':' disabled')+'>x</button>'
       +'</div></div>';
   }).join('');
 }

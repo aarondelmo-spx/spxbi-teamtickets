@@ -1,4 +1,5 @@
 function openManagerView(){
+  if(!requireAdminAccess('manage users')) return;
   window.location.href = window.location.pathname + '?view=manager';
 }
 
@@ -7,7 +8,7 @@ function exitManagerView(){
 }
 
 function isAccessAdmin(){
-  return isCurrentUserAdmin();
+  return canManageUsers();
 }
 
 function showManagerView(){
@@ -27,13 +28,13 @@ function showManagerView(){
     + '</div>'
     + '<div class="manager-grid manager-grid-users">'
     +   '<section class="manager-panel">'
-    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Whitelist users</div><p id="manager-access-note">Every whitelisted email signs in as admin and is assignable.</p></div></div>'
+    +     '<div class="manager-panel-head"><div><div class="manager-section-title">Whitelist users</div><p id="manager-access-note">Viewer = read-only with comments. Editor = can edit projects. Admin = editor + user management.</p></div></div>'
     +     '<div class="manager-error" id="manager-error" style="display:none"></div>'
     +     '<div id="manager-user-list"><div class="loading">Loading...</div></div>'
     +     '<div class="manager-add-row manager-user-add-row" id="manager-user-add-row">'
     +       '<input id="manager-user-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
     +       '<input id="manager-user-email-input" placeholder="approved-user@company.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
-    +       '<select id="manager-user-role-input" aria-label="Role" disabled><option value="admin" selected>Admin</option></select>'
+    +       '<select id="manager-user-role-input" aria-label="Role">'+managerRoleOptions('admin')+'</select>'
     +       '<button class="btn btn-primary btn-sm" onclick="addManagerUser()" type="button">Add</button>'
     +     '</div>'
     +   '</section>'
@@ -61,6 +62,8 @@ function managerFieldId(field, id){
 
 function managerRoleOptions(role){
   var roles = [
+    {value:'viewer', label:'Viewer'},
+    {value:'editor', label:'Editor'},
     {value:'admin', label:'Admin'}
   ];
   return roles.map(function(option){
@@ -91,8 +94,9 @@ function duplicateWhitelistName(name, excludeId){
 }
 
 function managerRoleBadge(user){
-  if(userIsAssignable(user)) return '<span class="manager-role-badge assignable">Assignable</span>';
-  return '<span class="manager-role-badge assignable">Assignable</span>';
+  var role = normalizeUserRole(user && user.role);
+  var cls = userRoleBadgeClass(role);
+  return '<span class="manager-role-badge '+cls+'">'+safeText(RoleHelpers.roleLabel(role))+'</span>';
 }
 
 function renderManagerTeamAccessView(){
@@ -107,10 +111,12 @@ function renderManagerTeamAccessView(){
   var tsEl = document.getElementById('manager-ts');
 
   if(userCount) userCount.textContent = users.length;
-  if(adminCount) adminCount.textContent = users.length;
+  if(adminCount) adminCount.textContent = users.filter(userIsEffectiveAdmin).length;
   if(assignableCount) assignableCount.textContent = users.filter(userIsAssignable).length;
   if(currentUser) currentUser.textContent = (App.currentUser || 'Unknown') + ' / ' + (App.currentUserEmail || 'no email');
-  if(accessNote) accessNote.textContent = isAccessAdmin() ? 'Every whitelisted email signs in as admin and is assignable.' : 'Every whitelisted email signs in as admin.';
+  if(accessNote) accessNote.textContent = isAccessAdmin()
+    ? 'Viewer = read-only with comments. Editor = can edit projects. Admin = editor + user management.'
+    : 'Your current role cannot manage users.';
   if(addRow) addRow.style.display = isAccessAdmin() ? 'grid' : 'none';
   if(tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
 
@@ -138,7 +144,7 @@ function renderManagerUsersList(users){
       + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+safeText(initials(user.name || user.email))+'</div>'
       + '<input id="'+nameId+'" value="'+safeText(user.name)+'" maxlength="30" aria-label="Name"'+disabled+' />'
       + '<input id="'+emailId+'" value="'+safeText(user.email)+'" type="email" aria-label="Email"'+(self ? ' disabled' : disabled)+' />'
-      + '<select id="'+roleId+'" aria-label="Role" disabled>'+managerRoleOptions(user.role)+'</select>'
+      + '<select id="'+roleId+'" aria-label="Role"'+disabled+'>'+managerRoleOptions(user.role)+'</select>'
       + managerRoleBadge(user)
       + (self ? '<span class="manager-self-tag">You</span>' : '')
       + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
@@ -166,7 +172,7 @@ function renderManagerLegacyList(legacyMembers){
 }
 
 window.addManagerUser = function(){
-  if(!isAccessAdmin()) return;
+  if(!requireAdminAccess('manage users')) return;
   var nameInput = document.getElementById('manager-user-name-input');
   var emailInput = document.getElementById('manager-user-email-input');
   var roleInput = document.getElementById('manager-user-role-input');
@@ -185,7 +191,7 @@ window.addManagerUser = function(){
 };
 
 window.saveManagerUser = function(id){
-  if(!isAccessAdmin() || !id) return;
+  if(!requireAdminAccess('manage users') || !id) return;
   var user = (App.users || []).find(function(entry){ return entry.id === id; });
   if(!user) return;
   var nameEl = document.getElementById(managerFieldId('name', id));
@@ -207,7 +213,7 @@ window.saveManagerUser = function(id){
 };
 
 window.removeManagerUser = function(id){
-  if(!isAccessAdmin() || !id) return;
+  if(!requireAdminAccess('manage users') || !id) return;
   var user = (App.users || []).find(function(entry){ return entry.id === id; });
   if(!user) return;
   setManagerMessage('');
