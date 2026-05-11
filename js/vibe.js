@@ -320,9 +320,10 @@ function updateVibeStats(initiatives, extra){
 
 function initiativeMatchesFilter(entry){
   var t = entry[1];
+  var status = normalizeStatusValue(t && t.status);
   if(App.currentFilter === 'all') return true;
-  if(App.currentFilter === 'active') return t.status !== 'done';
-  return t.status === App.currentFilter;
+  if(App.currentFilter === 'active') return status !== 'done';
+  return status === App.currentFilter;
 }
 
 function initiativeSubteamRecord(t){
@@ -339,7 +340,7 @@ function initiativeMatchesVibeMetric(t){
   if(filter === 'teamSize') return subteamSizeHc(team, subteam) > 0;
   if(filter === 'reviewed') return subteamReviewed(initiativeSubteamRecord(t));
   if(filter === 'scoped') return automationScopedHc(t) > 0;
-  if(filter === 'inProgress') return String(t && t.status || '').toLowerCase() === 'in progress';
+  if(filter === 'inProgress') return normalizeStatusValue(t && t.status) === 'in progress';
   return true;
 }
 
