@@ -37,6 +37,24 @@ function run() {
     { email: 'juan.sanjuan@shopee.com', name: 'Kai' }
   );
 
+  const duplicateWhitelist = {
+    a1: { email: 'juan.sanjuan@shopee.com', name: 'Kai', role: 'editor' },
+    b2: { email: 'juan.sanjuan@shopee.com', name: 'Kai', role: 'viewer' }
+  };
+
+  assert.deepEqual(
+    AuthHelpers.findWhitelistedUsers(duplicateWhitelist, 'juan.sanjuan@shopee.com'),
+    [
+      { email: 'juan.sanjuan@shopee.com', name: 'Kai', role: 'editor' },
+      { email: 'juan.sanjuan@shopee.com', name: 'Kai', role: 'viewer' }
+    ]
+  );
+
+  assert.deepEqual(
+    AuthHelpers.findWhitelistedUser(duplicateWhitelist, 'juan.sanjuan@shopee.com'),
+    { email: 'juan.sanjuan@shopee.com', name: 'Kai', role: 'viewer' }
+  );
+
   assert.equal(
     AuthHelpers.getWhitelistReadErrorMessage({ code: 'PERMISSION_DENIED' }),
     'Sign in succeeded, but app access data could not be read. Check Firebase Database rules for /whitelist.'

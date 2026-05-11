@@ -39,16 +39,16 @@
     return 'Sign in with your approved Google account to continue.';
   }
 
-  function findWhitelistedUser(source, email){
+  function findWhitelistedUsers(source, email){
     var normalizedEmail = String(email || '').trim().toLowerCase();
-    var match = null;
-    normalizeEntries(source).forEach(function(entry){
-      if(match) return;
-      if(String(entry && entry.email || '').trim().toLowerCase() === normalizedEmail){
-        match = entry;
-      }
+    return normalizeEntries(source).filter(function(entry){
+      return String(entry && entry.email || '').trim().toLowerCase() === normalizedEmail;
     });
-    return match;
+  }
+
+  function findWhitelistedUser(source, email){
+    var matches = findWhitelistedUsers(source, email);
+    return matches.length ? matches[matches.length - 1] : null;
   }
 
   function withTimeout(promise, timeoutMs, message){
@@ -90,6 +90,7 @@
     extractEmailDomain: extractEmailDomain,
     getLoginHostedDomain: getLoginHostedDomain,
     getLoginSubtext: getLoginSubtext,
+    findWhitelistedUsers: findWhitelistedUsers,
     findWhitelistedUser: findWhitelistedUser,
     withTimeout: withTimeout,
     getWhitelistReadErrorMessage: getWhitelistReadErrorMessage

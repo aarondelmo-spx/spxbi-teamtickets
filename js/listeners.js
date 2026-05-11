@@ -30,6 +30,15 @@ function startApp(){
     }).filter(function(user){ return !!user.email; }).sort(function(a,b){
       return (a.name || a.email).localeCompare(b.name || b.email);
     });
+    var duplicatesByEmail = {};
+    App.users.forEach(function(user){
+      duplicatesByEmail[user.email] = (duplicatesByEmail[user.email] || 0) + 1;
+    });
+    Object.keys(duplicatesByEmail).forEach(function(email){
+      if(duplicatesByEmail[email] > 1){
+        console.warn('[whitelist] duplicate email records detected', { email: email, count: duplicatesByEmail[email] });
+      }
+    });
     App.managerWhitelistEntries = App.users.slice();
     App.users.forEach(function(user){ App.whitelist[user.email]=user.name; });
     if(App.currentUserEmail){

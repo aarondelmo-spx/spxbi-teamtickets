@@ -108,6 +108,15 @@ function duplicateWhitelistName(name, excludeId){
   });
 }
 
+function whitelistUserIdsForEmail(email){
+  email = String(email || '').trim().toLowerCase();
+  return (App.users || []).filter(function(user){
+    return user.email === email;
+  }).map(function(user){
+    return user.id;
+  });
+}
+
 function managerRoleBadge(user){
   var role = normalizeUserRole(user && user.role);
   var cls = userRoleBadgeClass(role);
@@ -260,16 +269,27 @@ window.saveManagerUser = function(id){
     if(duplicateWhitelistName(name, id)) return failManagerAction('That display name is already used by another whitelist user.', {id: id, name: name});
     if(isSelfUser(user) && userIsEffectiveAdmin(user) && user.role !== role && role !== 'admin') return failManagerAction('You cannot demote yourself.', {id: id, email: user.email});
     if(userIsEffectiveAdmin(user) && !userIsEffectiveAdmin(next) && managerAdminCount() <= 1) return failManagerAction('At least one admin must remain.', {id: id, email: user.email});
-    console.log('[manager] saving user to Firebase', {id: id, email: email, name: name, role: role});
+    var targetIds = whitelistUserIdsForEmail(user.email);
+    if(targetIds.indexOf(id) === -1) targetIds.push(id);
+    if(!targetIds.length) targetIds = [id];
+    var updates = {};
+    targetIds.forEach(function(targetId){
+      updates['whitelist/' + targetId + '/email'] = email;
+      updates['whitelist/' + targetId + '/name'] = name;
+      updates['whitelist/' + targetId + '/role'] = role;
+    });
+    console.log('[manager] saving user to Firebase', {id: id, email: email, name: name, role: role, targetIds: targetIds});
     setManagerMessage('Saving user...');
-    App.whitelistRef.child(id).update({email:email, name:name, role:role}, function(err){
+    App.db.ref().update(updates, function(err){
       if(err){
         console.error('[manager] save user failed', err);
         setManagerMessage('Could not save user: ' + err.message);
         return;
       }
-      console.log('[manager] save user succeeded', {id: id, email: email, role: role});
-      setManagerMessage('User saved.');
+      console.log('[manager] save user succeeded', {id: id, email: email, role: role, targetIds: targetIds});
+      setManagerMessage(targetIds.length > 1
+        ? 'User saved. Synced ' + targetIds.length + ' whitelist records for that email.'
+        : 'User saved.');
     });
   } catch (err) {
     console.error('[manager] save user crashed', err);
