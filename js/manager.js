@@ -56,6 +56,13 @@ function setManagerMessage(message){
   el.style.display = message ? 'block' : 'none';
 }
 
+function failManagerAction(message, meta){
+  if(meta) console.warn('[manager]', message, meta);
+  else console.warn('[manager]', message);
+  setManagerMessage(message);
+  return false;
+}
+
 function isManagerViewOpen(){
   return !!document.getElementById('manager-view');
 }
@@ -208,11 +215,15 @@ window.addManagerUser = function(){
   if(duplicateWhitelistEmail(email)){ setManagerMessage('That email is already whitelisted.'); return; }
   if(duplicateWhitelistName(name)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
   var newRef = App.whitelistRef.push();
+  console.log('[manager] add user attempt', {email: email, name: name, role: role});
+  setManagerMessage('Adding user...');
   newRef.set({email:email, name:name, role:role}, function(err){
     if(err){
+      console.error('[manager] add user failed', err);
       setManagerMessage('Could not add user: ' + err.message);
       return;
     }
+    console.log('[manager] add user succeeded', {email: email, role: role});
     setManagerMessage('User added.');
     if(nameInput) nameInput.value = '';
     if(emailInput) emailInput.value = '';
@@ -221,32 +232,49 @@ window.addManagerUser = function(){
 };
 
 window.saveManagerUser = function(id){
-  if(!requireAdminAccess('manage users') || !id) return;
-  var user = (App.users || []).find(function(entry){ return entry.id === id; });
-  if(!user) return;
-  var nameEl = document.getElementById(managerFieldId('name', id));
-  var emailEl = document.getElementById(managerFieldId('email', id));
-  var roleEl = document.getElementById(managerFieldId('role', id));
-  var name = nameEl ? nameEl.value.trim() : '';
-  var email = emailEl ? emailEl.value.trim().toLowerCase() : user.email;
-  var role = normalizeUserRole(roleEl && roleEl.value);
-  var next = {id:id, name:name, email:email, role:role};
-  setManagerMessage('');
-  if(!name || !email){ setManagerMessage('Name and email are required.'); return; }
-  if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
-  if(isFixedAdminUser(user) && role !== 'admin'){ setManagerMessage('This account is the fixed admin account and must remain admin.'); return; }
-  if(isSelfUser(user) && email !== user.email){ setManagerMessage('You cannot change your own sign-in email.'); return; }
-  if(duplicateWhitelistEmail(email, id)){ setManagerMessage('That email is already whitelisted.'); return; }
-  if(duplicateWhitelistName(name, id)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
-  if(isSelfUser(user) && userIsEffectiveAdmin(user) && user.role !== role && role !== 'admin'){ setManagerMessage('You cannot demote yourself.'); return; }
-  if(userIsEffectiveAdmin(user) && !userIsEffectiveAdmin(next) && managerAdminCount() <= 1){ setManagerMessage('At least one admin must remain.'); return; }
-  App.whitelistRef.child(id).update({email:email, name:name, role:role}, function(err){
-    if(err){
-      setManagerMessage('Could not save user: ' + err.message);
-      return;
-    }
-    setManagerMessage('User saved.');
-  });
+  try {
+    if(!requireAdminAccess('manage users') || !id) return;
+    var user = (App.users || []).find(function(entry){ return entry.id === id; });
+    if(!user) return failManagerAction('Could not find that user.', {id: id});
+    var nameEl = document.getElementById(managerFieldId('name', id));
+    var emailEl = document.getElementById(managerFieldId('email', id));
+    var roleEl = document.getElementById(managerFieldId('role', id));
+    var name = nameEl ? nameEl.value.trim() : '';
+    var email = emailEl ? emailEl.value.trim().toLowerCase() : user.email;
+    var role = normalizeUserRole(roleEl && roleEl.value);
+    var next = {id:id, name:name, email:email, role:role};
+    setManagerMessage('');
+    console.log('[manager] save user attempt', {
+      id: id,
+      current: {email: user.email, name: user.name, role: user.role},
+      next: {email: email, name: name, role: role},
+      isSelf: isSelfUser(user),
+      isFixedAdmin: isFixedAdminUser(user),
+      adminCount: managerAdminCount()
+    });
+    if(!name || !email) return failManagerAction('Name and email are required.', {id: id});
+    if(email.indexOf('@') === -1) return failManagerAction('Enter a valid email address.', {id: id, email: email});
+    if(isFixedAdminUser(user) && role !== 'admin') return failManagerAction('This account is the fixed admin account and must remain admin.', {id: id, email: user.email});
+    if(isSelfUser(user) && email !== user.email) return failManagerAction('You cannot change your own sign-in email.', {id: id, email: email});
+    if(duplicateWhitelistEmail(email, id)) return failManagerAction('That email is already whitelisted.', {id: id, email: email});
+    if(duplicateWhitelistName(name, id)) return failManagerAction('That display name is already used by another whitelist user.', {id: id, name: name});
+    if(isSelfUser(user) && userIsEffectiveAdmin(user) && user.role !== role && role !== 'admin') return failManagerAction('You cannot demote yourself.', {id: id, email: user.email});
+    if(userIsEffectiveAdmin(user) && !userIsEffectiveAdmin(next) && managerAdminCount() <= 1) return failManagerAction('At least one admin must remain.', {id: id, email: user.email});
+    console.log('[manager] saving user to Firebase', {id: id, email: email, name: name, role: role});
+    setManagerMessage('Saving user...');
+    App.whitelistRef.child(id).update({email:email, name:name, role:role}, function(err){
+      if(err){
+        console.error('[manager] save user failed', err);
+        setManagerMessage('Could not save user: ' + err.message);
+        return;
+      }
+      console.log('[manager] save user succeeded', {id: id, email: email, role: role});
+      setManagerMessage('User saved.');
+    });
+  } catch (err) {
+    console.error('[manager] save user crashed', err);
+    setManagerMessage('Could not save user: ' + err.message);
+  }
 };
 
 window.removeManagerUser = function(id){
