@@ -56,6 +56,10 @@ function setManagerMessage(message){
   el.style.display = message ? 'block' : 'none';
 }
 
+function isManagerViewOpen(){
+  return !!document.getElementById('manager-view');
+}
+
 function managerFieldId(field, id){
   return 'mgr-user-' + field + '-' + domId(id);
 }
@@ -73,6 +77,10 @@ function managerRoleOptions(role){
 
 function managerAdminCount(){
   return (App.users || []).filter(userIsEffectiveAdmin).length;
+}
+
+function isFixedAdminUser(user){
+  return !!user && !!user.email && user.email === String(App.ADMIN_EMAIL || '').toLowerCase();
 }
 
 function isSelfUser(user){
@@ -99,9 +107,8 @@ function managerRoleBadge(user){
   return '<span class="manager-role-badge '+cls+'">'+safeText(RoleHelpers.roleLabel(role))+'</span>';
 }
 
-function renderManagerTeamAccessView(){
+function updateManagerStats(){
   var users = App.users || [];
-  var legacyMembers = (App.teamMembers || []).filter(function(member){ return member.legacy; });
   var userCount = document.getElementById('mgr-user-count');
   var adminCount = document.getElementById('mgr-admin-count');
   var assignableCount = document.getElementById('mgr-assignable-count');
@@ -119,9 +126,23 @@ function renderManagerTeamAccessView(){
     : 'Your current role cannot manage users.';
   if(addRow) addRow.style.display = isAccessAdmin() ? 'grid' : 'none';
   if(tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+}
 
-  renderManagerUsersList(users);
+function refreshManagerUsersView(){
+  if(!isManagerViewOpen()) return;
+  renderManagerUsersList(App.users || []);
+}
+
+function refreshManagerLegacyView(){
+  if(!isManagerViewOpen()) return;
+  var legacyMembers = (App.teamMembers || []).filter(function(member){ return member.legacy; });
   renderManagerLegacyList(legacyMembers);
+}
+
+function renderManagerTeamAccessView(){
+  updateManagerStats();
+  refreshManagerUsersView();
+  refreshManagerLegacyView();
 }
 
 function renderManagerUsersList(users){
@@ -134,6 +155,7 @@ function renderManagerUsersList(users){
   var canManage = isAccessAdmin();
   el.innerHTML = users.map(function(user){
     var self = isSelfUser(user);
+    var fixedAdmin = isFixedAdminUser(user);
     var c = colorFor(user.name || user.email);
     var nameId = managerFieldId('name', user.id);
     var emailId = managerFieldId('email', user.id);
@@ -144,9 +166,10 @@ function renderManagerUsersList(users){
       + '<div class="manager-person-avatar" style="background:'+c+'22;color:'+c+'">'+safeText(initials(user.name || user.email))+'</div>'
       + '<input id="'+nameId+'" value="'+safeText(user.name)+'" maxlength="30" aria-label="Name"'+disabled+' />'
       + '<input id="'+emailId+'" value="'+safeText(user.email)+'" type="email" aria-label="Email"'+(self ? ' disabled' : disabled)+' />'
-      + '<select id="'+roleId+'" aria-label="Role"'+disabled+'>'+managerRoleOptions(user.role)+'</select>'
+      + '<select id="'+roleId+'" aria-label="Role"'+((fixedAdmin || !canManage) ? ' disabled' : '')+'>'+managerRoleOptions(user.role)+'</select>'
       + managerRoleBadge(user)
       + (self ? '<span class="manager-self-tag">You</span>' : '')
+      + (fixedAdmin ? '<span class="manager-self-tag">Fixed admin</span>' : '')
       + (canManage ? '<button class="btn btn-sm" onclick="saveManagerUser(\''+jsArg(user.id)+'\')" type="button">Save</button>' : '')
       + (canManage ? '<button class="btn-icon" onclick="removeManagerUser(\''+jsArg(user.id)+'\')" title="Remove user"'+removeDisabled+'>x</button>' : '')
       + '</div>';
@@ -184,10 +207,17 @@ window.addManagerUser = function(){
   if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
   if(duplicateWhitelistEmail(email)){ setManagerMessage('That email is already whitelisted.'); return; }
   if(duplicateWhitelistName(name)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
-  App.whitelistRef.push({email:email, name:name, role:role});
-  if(nameInput) nameInput.value = '';
-  if(emailInput) emailInput.value = '';
-  if(roleInput) roleInput.value = 'admin';
+  var newRef = App.whitelistRef.push();
+  newRef.set({email:email, name:name, role:role}, function(err){
+    if(err){
+      setManagerMessage('Could not add user: ' + err.message);
+      return;
+    }
+    setManagerMessage('User added.');
+    if(nameInput) nameInput.value = '';
+    if(emailInput) emailInput.value = '';
+    if(roleInput) roleInput.value = 'admin';
+  });
 };
 
 window.saveManagerUser = function(id){
@@ -204,12 +234,19 @@ window.saveManagerUser = function(id){
   setManagerMessage('');
   if(!name || !email){ setManagerMessage('Name and email are required.'); return; }
   if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
+  if(isFixedAdminUser(user) && role !== 'admin'){ setManagerMessage('This account is the fixed admin account and must remain admin.'); return; }
   if(isSelfUser(user) && email !== user.email){ setManagerMessage('You cannot change your own sign-in email.'); return; }
   if(duplicateWhitelistEmail(email, id)){ setManagerMessage('That email is already whitelisted.'); return; }
   if(duplicateWhitelistName(name, id)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
   if(isSelfUser(user) && userIsEffectiveAdmin(user) && user.role !== role && role !== 'admin'){ setManagerMessage('You cannot demote yourself.'); return; }
   if(userIsEffectiveAdmin(user) && !userIsEffectiveAdmin(next) && managerAdminCount() <= 1){ setManagerMessage('At least one admin must remain.'); return; }
-  App.whitelistRef.child(id).update({email:email, name:name, role:role});
+  App.whitelistRef.child(id).update({email:email, name:name, role:role}, function(err){
+    if(err){
+      setManagerMessage('Could not save user: ' + err.message);
+      return;
+    }
+    setManagerMessage('User saved.');
+  });
 };
 
 window.removeManagerUser = function(id){
@@ -220,5 +257,11 @@ window.removeManagerUser = function(id){
   if(isSelfUser(user) && userIsEffectiveAdmin(user)){ setManagerMessage('You cannot remove your own admin access.'); return; }
   if(userIsEffectiveAdmin(user) && managerAdminCount() <= 1){ setManagerMessage('At least one admin must remain.'); return; }
   if(!confirm('Remove sign-in access for '+(user.name || user.email)+'? Existing ticket assignments will keep the display name.')) return;
-  App.whitelistRef.child(id).remove();
+  App.whitelistRef.child(id).remove(function(err){
+    if(err){
+      setManagerMessage('Could not remove user: ' + err.message);
+      return;
+    }
+    setManagerMessage('User removed.');
+  });
 };

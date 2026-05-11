@@ -55,7 +55,8 @@ function startApp(){
       .sort(function(a,b){ return a.name.localeCompare(b.name); });
     rebuildTeamMembers();
     refreshTeamMemberUi();
-    renderManagerTeamAccessView();
+    if(typeof refreshManagerLegacyView === 'function') refreshManagerLegacyView();
+    if(typeof updateManagerStats === 'function') updateManagerStats();
   });
   if(!managerMode){
     App.automationTeamsRef.on('value', function(snap){
@@ -70,7 +71,10 @@ function startApp(){
   App.mainTicketsRef.on('value', function(snap){
     App.mainTickets = snap.val()||{};
     rebuildTeamMembers();
-    if(managerMode) renderManagerTeamAccessView();
+    if(managerMode){
+      if(typeof refreshManagerLegacyView === 'function') refreshManagerLegacyView();
+      if(typeof updateManagerStats === 'function') updateManagerStats();
+    }
     else {
       if(!isSprintView()) refreshActiveTickets();
       else updateProjectViewCounts();
@@ -82,7 +86,10 @@ function startApp(){
   App.sprintTicketsRef.on('value', function(snap){
     App.sprintTickets = snap.val()||{};
     rebuildTeamMembers();
-    if(managerMode) renderManagerTeamAccessView();
+    if(managerMode){
+      if(typeof refreshManagerLegacyView === 'function') refreshManagerLegacyView();
+      if(typeof updateManagerStats === 'function') updateManagerStats();
+    }
     else {
       if(isSprintView()) refreshActiveTickets();
       else updateProjectViewCounts();
