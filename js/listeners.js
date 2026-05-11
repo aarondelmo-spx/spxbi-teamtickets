@@ -24,6 +24,7 @@ function startApp(){
   App.whitelistRef.on('value', function(snap){
     App.whitelist = {};
     var data = snap.val()||{};
+    if(typeof syncLoginAccessMessaging === 'function') syncLoginAccessMessaging(data);
     App.users = Object.entries(data).map(function(entry){
       return normalizeWhitelistUserRecord(entry[0], entry[1]);
     }).filter(function(user){ return !!user.email; }).sort(function(a,b){

@@ -1,6 +1,39 @@
+function syncLoginAccessMessaging(source){
+  App.allowedLoginDomains = AuthHelpers.collectAllowedLoginDomains(source);
+  var sub = document.querySelector('.login-sub');
+  if(sub) sub.textContent = AuthHelpers.getLoginSubtext(App.allowedLoginDomains);
+}
+
+function buildGoogleProvider(){
+  var provider = new firebase.auth.GoogleAuthProvider();
+  var hostedDomain = AuthHelpers.getLoginHostedDomain(App.allowedLoginDomains || []);
+  var params = {prompt: 'select_account'};
+  if(hostedDomain) params.hd = hostedDomain;
+  provider.setCustomParameters(params);
+  return provider;
+}
+
+function shouldUseRedirectFallback(err){
+  var code = err && err.code;
+  return code === 'auth/popup-blocked' ||
+    code === 'auth/operation-not-supported-in-this-environment' ||
+    code === 'auth/web-storage-unsupported';
+}
+
+function showLoginError(message){
+  var error = document.getElementById('login-error');
+  if(error){
+    error.textContent = message;
+    error.style.display = 'block';
+  }
+}
+
 function seedWhitelistIfEmpty(){
   App.whitelistRef.once('value', function(snap){
-    if(snap.val()) return;
+    if(snap.val()){
+      syncLoginAccessMessaging(snap.val());
+      return;
+    }
     var initialList = [
       {email:'karl.kue@spxexpress.com', name:'Karl', role:'admin'},
       {email:'aaron.delmo@spxexpress.com', name:'Will', role:'admin'},
@@ -9,23 +42,32 @@ function seedWhitelistIfEmpty(){
       {email:'ryandrei.garcia@spxexpress.com', name:'RD', role:'admin'}
     ];
     initialList.forEach(function(entry){ App.whitelistRef.push(entry); });
+    syncLoginAccessMessaging(initialList);
   });
 }
 seedWhitelistIfEmpty();
+window.syncLoginAccessMessaging = syncLoginAccessMessaging;
 
 window.signInWithGoogle = function(){
   var btn = document.querySelector('.google-btn');
   var loading = document.getElementById('login-loading');
-  var error = document.getElementById('login-error');
   if(btn) btn.style.display = 'none';
   if(loading) loading.style.display = 'block';
+  var error = document.getElementById('login-error');
   if(error) error.style.display = 'none';
-  var provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({hd: 'spxexpress.com'});
+  var provider = buildGoogleProvider();
   App.auth.signInWithPopup(provider).catch(function(err){
+    if(shouldUseRedirectFallback(err)){
+      showLoginError('Popup sign-in was blocked. Redirecting to Google...');
+      return App.auth.signInWithRedirect(provider).catch(function(redirectErr){
+        if(btn) btn.style.display = 'flex';
+        if(loading) loading.style.display = 'none';
+        showLoginError('Sign in failed: ' + redirectErr.message);
+      });
+    }
     if(btn) btn.style.display = 'flex';
     if(loading) loading.style.display = 'none';
-    if(error){ error.textContent = 'Sign in failed: ' + err.message; error.style.display = 'block'; }
+    showLoginError('Sign in failed: ' + err.message);
   });
 };
 
@@ -54,10 +96,16 @@ App.auth.onAuthStateChanged(function(user){
     if(loading) loading.style.display = 'none';
     return;
   }
+  if(!user.email){
+    App.auth.signOut();
+    showLoginError('Sign in failed: your Google account did not provide an email address.');
+    return;
+  }
   var email = user.email.toLowerCase();
   App.currentUserEmail = email;
   App.whitelistRef.once('value', function(snap){
     var wl = snap.val()||{};
+    syncLoginAccessMessaging(wl);
     var mappedUser = null;
     Object.entries(wl).forEach(function(entry){
       var normalized = normalizeWhitelistUserRecord(entry[0], entry[1]);
@@ -65,9 +113,8 @@ App.auth.onAuthStateChanged(function(user){
     });
     if(!mappedUser){
       App.auth.signOut();
-      var error = document.getElementById('login-error');
       var btn = document.querySelector('.google-btn');
-      if(error){ error.textContent = 'Access denied. Your email (' + email + ') is not authorized. Contact your admin.'; error.style.display = 'block'; }
+      showLoginError('Access denied. Your email (' + email + ') is not authorized. Contact your admin.');
       if(btn) btn.style.display = 'flex';
       document.getElementById('login-loading').style.display = 'none';
       return;

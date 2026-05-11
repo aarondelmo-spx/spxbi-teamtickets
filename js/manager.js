@@ -32,7 +32,7 @@ function showManagerView(){
     +     '<div id="manager-user-list"><div class="loading">Loading...</div></div>'
     +     '<div class="manager-add-row manager-user-add-row" id="manager-user-add-row">'
     +       '<input id="manager-user-name-input" placeholder="Display name" maxlength="30" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
-    +       '<input id="manager-user-email-input" placeholder="email@spxexpress.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
+    +       '<input id="manager-user-email-input" placeholder="approved-user@company.com" type="email" onkeydown="if(event.key===\'Enter\')addManagerUser()" />'
     +       '<select id="manager-user-role-input" aria-label="Role" disabled><option value="admin" selected>Admin</option></select>'
     +       '<button class="btn btn-primary btn-sm" onclick="addManagerUser()" type="button">Add</button>'
     +     '</div>'
