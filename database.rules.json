@@ -4,10 +4,7 @@
     ".write": false,
     "whitelist": {
       ".read": "auth != null",
-      "$id": {
-        ".write": "auth != null",
-        ".validate": "newData.hasChildren(['email', 'name']) && newData.child('email').isString() && newData.child('name').isString() && (!newData.child('role').exists() || newData.child('role').isString())"
-      }
+      ".write": "auth != null"
     },
     "sessionControl": {
       ".read": "auth != null",

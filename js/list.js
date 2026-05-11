@@ -16,7 +16,10 @@ window.renderList = function(){
       if(App.currentContrib==='all') return true;
       var t=e[1];
       var contribs=t.contributors&&t.contributors.length?t.contributors:(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
-      return contribs.indexOf(App.currentContrib)>-1;
+      if(contribs.indexOf(App.currentContrib)>-1) return true;
+      return Object.values(t.subtasks || {}).some(function(subtask){
+        return (subtask && subtask.contributors || []).indexOf(App.currentContrib)>-1;
+      });
     })
     .filter(function(e){
       if(!search) return true;
@@ -153,7 +156,18 @@ window.setContribFilter = function(name){
 
 function renderContribPills(){
   var el=document.getElementById('contrib-pills'); if(!el) return;
-  el.innerHTML=App.teamMembers.map(function(m){
+  var members = typeof mainProjectTeamMembers === 'function' ? mainProjectTeamMembers() : App.teamMembers;
+  if(App.currentContrib !== 'all' && !members.some(function(m){ return m.name === App.currentContrib; })){
+    App.currentContrib = 'all';
+    if(!isSprintView()) renderList();
+  }
+  var allBtn = document.getElementById('cpill-all');
+  if(allBtn) allBtn.classList.toggle('active', App.currentContrib === 'all');
+  if(!members.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3)">No users with main projects yet.</div>';
+    return;
+  }
+  el.innerHTML=members.map(function(m){
     var c=colorFor(m.name);
     var isActive=App.currentContrib===m.name;
     return '<button class="filter-pill cpill-member'+(isActive?' active':'')+'" data-name="'+safeText(m.name)+'" style="display:flex;align-items:center;gap:5px">'

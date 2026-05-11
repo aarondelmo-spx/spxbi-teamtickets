@@ -27,6 +27,8 @@ function normalizeWhitelistUserRecord(id, raw){
     roleWriteByName: String(raw.roleWriteByName || '').trim(),
     roleWriteSource: String(raw.roleWriteSource || '').trim(),
     roleWriteNonce: String(raw.roleWriteNonce || '').trim(),
+    roleWriteBuild: String(raw.roleWriteBuild || '').trim(),
+    roleWriteClientId: String(raw.roleWriteClientId || '').trim(),
     legacy: false,
     source: 'whitelist'
   };
@@ -134,7 +136,9 @@ function assignmentNameKey(name){
   return String(name || '').trim().toLowerCase();
 }
 
-function collectAssignedNamesFromTickets(tickets){
+function collectAssignedNamesFromTickets(tickets, options){
+  options = options || {};
+  var includeSubtasks = options.includeSubtasks !== false;
   var names = {};
   function add(name){
     name = String(name || '').trim();
@@ -144,11 +148,27 @@ function collectAssignedNamesFromTickets(tickets){
   Object.values(tickets || {}).forEach(function(ticket){
     add(ticket && ticket.assignee);
     (ticket && ticket.contributors || []).forEach(add);
+    if(!includeSubtasks) return;
     Object.values((ticket && ticket.subtasks) || {}).forEach(function(subtask){
       (subtask && subtask.contributors || []).forEach(add);
     });
   });
   return Object.values(names);
+}
+
+function mainProjectMemberNameSet(){
+  var names = {};
+  collectAssignedNamesFromTickets(App.mainTickets).forEach(function(name){
+    names[assignmentNameKey(name)] = true;
+  });
+  return names;
+}
+
+function mainProjectTeamMembers(){
+  var names = mainProjectMemberNameSet();
+  return (App.teamMembers || []).filter(function(member){
+    return !!names[assignmentNameKey(member.name)];
+  });
 }
 
 function rebuildTeamMembers(){

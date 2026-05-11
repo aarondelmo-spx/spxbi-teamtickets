@@ -85,6 +85,13 @@ function managerRoleOptions(role){
   }).join('');
 }
 
+function parseManagerRoleValue(roleEl){
+  var raw = roleEl && typeof roleEl.value === 'string'
+    ? roleEl.value.trim().toLowerCase()
+    : '';
+  return raw === 'viewer' || raw === 'editor' || raw === 'admin' ? raw : '';
+}
+
 function managerAdminCount(){
   return (App.users || []).filter(userIsEffectiveAdmin).length;
 }
@@ -130,8 +137,9 @@ function managerRoleAuditText(user){
   var when = user && user.roleWriteAt ? String(user.roleWriteAt) : '';
   var who = user && (user.roleWriteByName || user.roleWriteByEmail) ? (user.roleWriteByName || user.roleWriteByEmail) : '';
   var source = user && user.roleWriteSource ? user.roleWriteSource : '';
-  if(!when && !who && !source) return 'No role write marker yet.';
-  return [when, who, source].filter(Boolean).join(' | ');
+  var build = user && user.roleWriteBuild ? user.roleWriteBuild : '';
+  if(!when && !who && !source && !build) return 'No role write marker yet.';
+  return [when, who, [source, build].filter(Boolean).join('@')].filter(Boolean).join(' | ');
 }
 
 function buildRoleWriteMetadata(role){
@@ -141,7 +149,9 @@ function buildRoleWriteMetadata(role){
     roleWriteByEmail: String(App.currentUserEmail || '').toLowerCase(),
     roleWriteByName: App.currentUser || '',
     roleWriteSource: 'manager-ui',
-    roleWriteNonce: 'mgr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)
+    roleWriteNonce: 'mgr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    roleWriteBuild: '2026-05-11-role-debug-2',
+    roleWriteClientId: App.clientSessionId || ''
   };
 }
 
@@ -239,10 +249,11 @@ window.addManagerUser = function(){
   var roleInput = document.getElementById('manager-user-role-input');
   var name = nameInput ? nameInput.value.trim() : '';
   var email = emailInput ? emailInput.value.trim().toLowerCase() : '';
-  var role = normalizeUserRole(roleInput && roleInput.value);
+  var role = parseManagerRoleValue(roleInput);
   setManagerMessage('');
   if(!name || !email){ setManagerMessage('Name and email are required.'); return; }
   if(email.indexOf('@') === -1){ setManagerMessage('Enter a valid email address.'); return; }
+  if(!role){ setManagerMessage('Choose a valid role.'); return; }
   if(duplicateWhitelistEmail(email)){ setManagerMessage('That email is already whitelisted.'); return; }
   if(duplicateWhitelistName(name)){ setManagerMessage('That display name is already used by another whitelist user.'); return; }
   var newRef = App.whitelistRef.push();
@@ -277,7 +288,7 @@ window.saveManagerUser = function(id){
     var roleEl = document.getElementById(managerFieldId('role', id));
     var name = nameEl ? nameEl.value.trim() : '';
     var email = emailEl ? emailEl.value.trim().toLowerCase() : user.email;
-    var role = normalizeUserRole(roleEl && roleEl.value);
+    var role = parseManagerRoleValue(roleEl);
     var next = {id:id, name:name, email:email, role:role};
     var roleMeta = buildRoleWriteMetadata(role);
     setManagerMessage('');
@@ -285,12 +296,16 @@ window.saveManagerUser = function(id){
       id: id,
       current: {email: user.email, name: user.name, role: user.role},
       next: {email: email, name: name, role: role},
+      roleElementFound: !!roleEl,
+      rawRoleValue: roleEl && roleEl.value,
       isSelf: isSelfUser(user),
       isFixedAdmin: isFixedAdminUser(user),
-      adminCount: managerAdminCount()
+      adminCount: managerAdminCount(),
+      clientSessionId: App.clientSessionId
     });
     if(!name || !email) return failManagerAction('Name and email are required.', {id: id});
     if(email.indexOf('@') === -1) return failManagerAction('Enter a valid email address.', {id: id, email: email});
+    if(!role) return failManagerAction('Could not read a valid role from the page. Hard refresh and try again.', {id: id, rawRoleValue: roleEl && roleEl.value, roleElementFound: !!roleEl});
     if(isSelfUser(user) && email !== user.email) return failManagerAction('You cannot change your own sign-in email.', {id: id, email: email});
     if(duplicateWhitelistEmail(email, id)) return failManagerAction('That email is already whitelisted.', {id: id, email: email});
     if(duplicateWhitelistName(name, id)) return failManagerAction('That display name is already used by another whitelist user.', {id: id, name: name});

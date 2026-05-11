@@ -39,6 +39,7 @@ var App = {
   selectedTicketId: null,
   currentUser: '',
   currentUserEmail: '',
+  clientSessionId: 'client-' + Math.random().toString(36).slice(2, 10),
   sessionStartedAt: 0,
   forceLogoutSeen: 0,
   sessionControl: null,
