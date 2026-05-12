@@ -35,8 +35,8 @@ window.renderList = function(){
     })
     .sort(function(a,b){
       if(isSprintView()){
-        var teamA = typeof normalizeTeamName === 'function' ? normalizeTeamName(a[1].teamArea) : (a[1].teamArea || 'Other');
-        var teamB = typeof normalizeTeamName === 'function' ? normalizeTeamName(b[1].teamArea) : (b[1].teamArea || 'Other');
+        var teamA = typeof normalizeTeamName === 'function' ? normalizeTeamName(a[1].teamArea) : (a[1].teamArea || '');
+        var teamB = typeof normalizeTeamName === 'function' ? normalizeTeamName(b[1].teamArea) : (b[1].teamArea || '');
         var subteamA = typeof normalizeSubteamName === 'function' ? normalizeSubteamName(a[1].subteam) : (a[1].subteam || 'Other');
         var subteamB = typeof normalizeSubteamName === 'function' ? normalizeSubteamName(b[1].subteam) : (b[1].subteam || 'Other');
         return compareTeams(teamA, teamB)

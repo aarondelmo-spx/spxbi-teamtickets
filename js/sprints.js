@@ -89,7 +89,9 @@ function excessCapacityHc(t){
 var REQUIRED_OTHER_NAME = 'Other';
 
 function normalizeTeamName(teamName){
-  return cleanHierarchyName(teamName) || REQUIRED_OTHER_NAME;
+  var cleaned = cleanHierarchyName(teamName);
+  if(!cleaned) return '';
+  return isOtherName(cleaned) ? '' : cleaned;
 }
 
 function normalizeSubteamName(subteamName){
@@ -112,6 +114,8 @@ function subteamReviewed(subteam){
 }
 
 function teamSizeFieldValue(teamName){
+  teamName = normalizeTeamName(teamName);
+  if(!teamName) return 0;
   return automationSubteamList(normalizeTeamName(teamName)).reduce(function(sum, subteam){
     return sum + subteamRecordSize(subteam);
   }, 0);
@@ -122,6 +126,8 @@ function teamSizeHc(teamName){
 }
 
 function subteamSizeFieldValue(teamName, subteamName){
+  teamName = normalizeTeamName(teamName);
+  if(!teamName) return null;
   var subteam = automationSubteamList(normalizeTeamName(teamName)).find(function(item){ return item.name === normalizeSubteamName(subteamName); });
   if(!subteam) return null;
   return subteamRecordSize(subteam);
@@ -136,6 +142,8 @@ function hierarchySizeHc(teamName, subteamName){
 }
 
 function subteamReviewedCoverage(teamName, subteamName){
+  teamName = normalizeTeamName(teamName);
+  if(!teamName) return 0;
   var subteam = automationSubteamList(normalizeTeamName(teamName)).find(function(item){
     return item.name === normalizeSubteamName(subteamName);
   });
@@ -143,6 +151,8 @@ function subteamReviewedCoverage(teamName, subteamName){
 }
 
 function teamReviewedCoverage(teamName){
+  teamName = normalizeTeamName(teamName);
+  if(!teamName) return 0;
   return automationSubteamList(normalizeTeamName(teamName)).reduce(function(sum, subteam){
     return sum + (subteamReviewed(subteam) ? subteamRecordSize(subteam) : 0);
   }, 0);
@@ -153,6 +163,7 @@ function reviewedCoverageForInitiatives(items){
   return items.reduce(function(sum, t){
     var team = normalizeTeamName(t && t.teamArea);
     var subteam = normalizeSubteamName(t && t.subteam);
+    if(!team) return sum;
     var key = hierarchyKey(team)+'|'+hierarchyKey(subteam);
     if(seen[key]) return sum;
     seen[key] = true;
@@ -176,6 +187,7 @@ function automationTeamSizeTotal(items){
   var teams = {};
   items.forEach(function(t){
     var teamName = normalizeTeamName(t.teamArea);
+    if(!teamName) return;
     teams[teamName] = teamSizeHc(teamName);
   });
   return Object.values(teams).reduce(function(sum, n){ return sum + numVal(n); }, 0);
@@ -352,7 +364,7 @@ function sprintStageClass(stage){
 
 function teamSortValue(team){
   var name = normalizeTeamName(team);
-  if(isOtherName(name)) return Number.MAX_SAFE_INTEGER;
+  if(!name) return Number.MAX_SAFE_INTEGER;
   var sortOrder = null;
   defaultAutomationTeams().forEach(function(item){
     if(hierarchyKey(item.name) === hierarchyKey(name)) sortOrder = item.sortOrder;
@@ -382,8 +394,7 @@ function defaultAutomationTeams(){
     {id:'default-finops', name:'FinOps', currentHc:104, sortOrder:1},
     {id:'default-expansions', name:'Expansions', currentHc:92, sortOrder:2},
     {id:'default-claims', name:'Claims', currentHc:48, sortOrder:3},
-    {id:'default-fleet', name:'Fleet', currentHc:164, sortOrder:4},
-    {id:'default-other', name:'Other', currentHc:null, sortOrder:99}
+    {id:'default-fleet', name:'Fleet', currentHc:164, sortOrder:4}
   ];
 }
 
@@ -414,6 +425,7 @@ function hierarchySlug(value){
 
 function requiredOtherSubteam(teamName){
   var name = normalizeTeamName(teamName);
+  if(!name) return null;
   return {id:'required-other-'+hierarchySlug(name), teamName:name, name:REQUIRED_OTHER_NAME, sortOrder:999, required:true};
 }
 
@@ -427,8 +439,9 @@ function automationTeamList(){
   Object.entries(App.automationTeams || {}).forEach(function(entry){
     var team = Object.assign({id: entry[0]}, entry[1]);
     if(team.deleted) return;
-    var key = hierarchyKey(team.name);
+    var key = hierarchyKey(normalizeTeamName(team.name));
     if(!key) return;
+    team.name = normalizeTeamName(team.name);
     byName[key] = Object.assign({}, byName[key] || {}, team);
   });
   return Object.values(byName).sort(function(a,b){
@@ -438,6 +451,7 @@ function automationTeamList(){
 
 function automationSubteamList(teamName){
   teamName = normalizeTeamName(teamName);
+  if(!teamName) return [];
   var byName = {};
   var requiredOther = requiredOtherSubteam(teamName);
   defaultAutomationSubteams().filter(function(sub){ return sub.teamName === teamName; }).forEach(function(sub){
@@ -453,7 +467,7 @@ function automationSubteamList(teamName){
     if(!key) return;
     byName[key] = Object.assign({}, byName[key] || {}, sub);
   });
-  byName[hierarchyKey(REQUIRED_OTHER_NAME)] = Object.assign({}, requiredOther, byName[hierarchyKey(REQUIRED_OTHER_NAME)] || {}, {required:true});
+  if(requiredOther) byName[hierarchyKey(REQUIRED_OTHER_NAME)] = Object.assign({}, requiredOther, byName[hierarchyKey(REQUIRED_OTHER_NAME)] || {}, {required:true});
   return Object.values(byName).sort(function(a,b){ return compareSubteams(a.name, b.name); });
 }
 
@@ -469,7 +483,7 @@ function renderTeamSelect(prefix, selected){
   var el = document.getElementById(prefix+'-team-area');
   if(!el) return;
   var teams = automationTeamList();
-  var current = selected || el.value || 'FinOps';
+  var current = normalizeTeamName(selected || el.value || '') || 'FinOps';
   if(current && !teams.some(function(team){ return team.name === current; })){
     teams.push({id:'current-'+current,name:current,currentHc:null,sortOrder:999});
   }
@@ -485,6 +499,10 @@ function renderSubteamSelect(prefix, selected){
   var subEl = document.getElementById(prefix+'-subteam');
   if(!teamEl || !subEl) return;
   var subteams = automationSubteamList(teamEl.value);
+  if(!subteams.length){
+    subEl.innerHTML = '';
+    return;
+  }
   var current = normalizeSubteamName(selected || subEl.value);
   if(current && !subteams.some(function(subteam){ return subteam.name === current; })){
     subteams.push({id:'current-'+current,teamName:teamEl.value,name:current});
@@ -494,7 +512,7 @@ function renderSubteamSelect(prefix, selected){
     return '<option value="'+safeText(subteam.name)+'">'+safeText(subteam.name)+'</option>';
   }).join('');
   if(subteams.some(function(subteam){ return subteam.name === current; })) subEl.value = current;
-  else subEl.value = REQUIRED_OTHER_NAME;
+  else subEl.value = subteams[subteams.length - 1].name;
 }
 
 function refreshSprintHierarchyUi(){
@@ -536,14 +554,14 @@ function populateSprintDetail(t){
   if(!wrap) return;
   wrap.style.display = isSprintView() ? 'block' : 'none';
   if(!isSprintView()) return;
-  renderTeamSelect('d', t.teamArea || 'FinOps');
+  renderTeamSelect('d', normalizeTeamName(t.teamArea) || 'FinOps');
   renderSubteamSelect('d', normalizeSubteamName(t.subteam));
   document.getElementById('d-sprint-cycle').value = t.sprintCycle || '';
   document.getElementById('d-timeline-start').value = t.timelineStart || '';
   document.getElementById('d-timeline-end').value = t.timelineEnd || '';
   document.getElementById('d-stage').value = t.stage || 'scoping';
   document.getElementById('d-confidence').value = t.confidence || 'medium';
-  document.getElementById('d-team-size-hc').value = fmtCapacity(hierarchySizeHc(t.teamArea || REQUIRED_OTHER_NAME, t.subteam));
+  document.getElementById('d-team-size-hc').value = fmtCapacity(hierarchySizeHc(t.teamArea, t.subteam));
   document.getElementById('d-automation-scoped-hc').value = t.automationScopedHc == null ? (t.scopedHc == null ? '' : t.scopedHc) : t.automationScopedHc;
   document.getElementById('d-actual-hc-savings').value = t.actualHcSavings == null ? ((t.fteRepurpose == null && t.bpoNfteReduction == null) ? '' : actualHcSavings(t)) : t.actualHcSavings;
   document.getElementById('d-excess-capacity-hc').value = t.excessCapacityHc == null ? (t.fteBuffer == null ? '' : t.fteBuffer) : t.excessCapacityHc;
@@ -588,6 +606,7 @@ function groupSprintInitiatives(entries){
     var t = entry.t;
     var team = normalizeTeamName(t.teamArea);
     var subteam = normalizeSubteamName(t.subteam);
+    if(!team) return;
     if(!grouped[team]) grouped[team] = {items:[], subteams:{}};
     if(!grouped[team].subteams[subteam]) grouped[team].subteams[subteam] = {items:[]};
     grouped[team].items.push(t);
@@ -1094,24 +1113,17 @@ function moveSubteamToOtherTeam(updates, subteam){
 window.deleteAutomationTeam = function(id, name){
   if(!requireContentEditAccess('delete teams')) return;
   var teamName = normalizeTeamName(name);
-  if(isOtherName(teamName)) return;
+  if(!teamName) return;
   var impacted = Object.entries(App.sprintTickets || {}).filter(function(entry){
     return normalizeTeamName(entry[1].teamArea) === teamName;
   });
-  var subteams = automationSubteamList(teamName);
-  var message = 'Delete team "'+teamName+'"? Its initiatives and subteams will move under team "Other".';
-  if(impacted.length){
-    message += '\n\nThis will move '+impacted.length+' initiative'+(impacted.length!==1?'s':'')+' to team Other.';
+  var subteams = automationSubteamList(teamName).filter(function(subteam){ return !subteam.required; });
+  if(impacted.length || subteams.length){
+    alert('Cannot delete team "'+teamName+'" while it still has initiatives or subteams. Reassign or delete those first.');
+    return;
   }
-  if(!confirm(message)) return;
+  if(!confirm('Delete team "'+teamName+'"?')) return;
   var updates = {};
-  impacted.forEach(function(entry){
-    updates['sprintProjects/'+entry[0]+'/teamArea'] = REQUIRED_OTHER_NAME;
-    updates['sprintProjects/'+entry[0]+'/subteam'] = normalizeSubteamName(entry[1].subteam);
-  });
-  subteams.forEach(function(subteam){
-    moveSubteamToOtherTeam(updates, subteam);
-  });
   var defaultTeam = defaultTeamByName(teamName);
   if(defaultTeam){
     updates['automationTeams/'+defaultTeam.id+'/name'] = defaultTeam.name;
@@ -1122,7 +1134,7 @@ window.deleteAutomationTeam = function(id, name){
     updates['automationTeams/'+id] = null;
   }
   App.db.ref().update(updates);
-  App.hierarchySelectedTeam = REQUIRED_OTHER_NAME;
+  App.hierarchySelectedTeam = (automationTeamList().filter(function(team){ return team.id !== id; })[0] || {}).name || '';
 };
 
 window.deleteAutomationSubteam = function(id, name, teamName){

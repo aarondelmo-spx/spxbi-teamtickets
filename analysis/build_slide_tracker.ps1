@@ -57,6 +57,20 @@ function Get-GoLiveMonth($TargetDate) {
   return (Get-Date $TargetDate).ToString("MMM ''yy")
 }
 
+function Normalize-Name($Value, [string]$Default = "Other") {
+  $text = [string]$Value
+  if ([string]::IsNullOrWhiteSpace($text)) { return $Default }
+  return $text.Trim()
+}
+
+function Normalize-TeamName($Value) {
+  $text = [string]$Value
+  if ([string]::IsNullOrWhiteSpace($text)) { return "" }
+  $trimmed = $text.Trim()
+  if ($trimmed.ToLowerInvariant() -eq "other") { return "" }
+  return $trimmed
+}
+
 function Get-SupportingTeams($Ticket) {
   $teams = @()
   $supportingTeams = Get-Field $Ticket "supportingTeams" @()
@@ -75,6 +89,81 @@ if (-not (Test-Path $InputPath)) {
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 $root = Get-Content $InputPath -Raw | ConvertFrom-Json
+
+$subteamSizes = @{}
+$teamFallbackSizes = @{}
+$teamHasExplicitSize = @{}
+$teamReviewedCoverage = @{}
+$allTeams = New-Object System.Collections.Generic.HashSet[string]
+$allSubteamKeys = New-Object System.Collections.Generic.HashSet[string]
+$subteamDisplayNames = @{}
+
+function Get-SubteamKey($Team, $Subteam) {
+  return ((Normalize-TeamName $Team).ToLowerInvariant() + "|" + (Normalize-Name $Subteam "Other").ToLowerInvariant())
+}
+
+if ($null -ne $root.automationSubteams) {
+  @($root.automationSubteams.PSObject.Properties) | ForEach-Object {
+    $sub = $_.Value
+    if ([bool](Get-Field $sub "deleted" $false)) { return }
+    $teamName = Normalize-TeamName (Get-Field $sub "teamName" "")
+    $subteamName = Normalize-Name (Get-Field $sub "name" "") "Other"
+    if ([string]::IsNullOrWhiteSpace($teamName)) { return }
+    $key = Get-SubteamKey $teamName $subteamName
+    $size = Get-Field $sub "subteamSizeHc" $null
+    if ($null -eq $size -or $size -eq "") { $size = Get-Field $sub "currentHc" 0 }
+    $sizeNum = Num $size
+    $subteamSizes[$key] = $sizeNum
+    $subteamDisplayNames[$key] = [pscustomobject]@{ Team = $teamName; Subteam = $subteamName }
+    [void]$allTeams.Add($teamName)
+    [void]$allSubteamKeys.Add($key)
+    if (-not $teamReviewedCoverage.ContainsKey($teamName)) { $teamReviewedCoverage[$teamName] = 0.0 }
+    if ([bool](Get-Field $sub "automationReviewed" $false)) {
+      $teamReviewedCoverage[$teamName] = [double]$teamReviewedCoverage[$teamName] + $sizeNum
+    }
+  }
+}
+
+if ($null -ne $root.automationTeams) {
+  @($root.automationTeams.PSObject.Properties) | ForEach-Object {
+    $team = $_.Value
+    if ([bool](Get-Field $team "deleted" $false)) { return }
+    $name = Normalize-TeamName (Get-Field $team "name" "")
+    if ([string]::IsNullOrWhiteSpace($name)) { return }
+    $size = Get-Field $team "teamSizeHc" $null
+    if ($null -eq $size -or $size -eq "") { $size = Get-Field $team "currentHc" $null }
+    $hasExplicitSize = -not ($null -eq $size -or $size -eq "")
+    $teamFallbackSizes[$name] = $(if ($hasExplicitSize) { Num $size } else { 0.0 })
+    $teamHasExplicitSize[$name] = $hasExplicitSize
+    [void]$allTeams.Add($name)
+  }
+}
+
+function Get-SubteamCurrentHc($Team, $Subteam) {
+  $teamName = Normalize-TeamName $Team
+  $subteamName = Normalize-Name $Subteam "Other"
+  if ([string]::IsNullOrWhiteSpace($teamName)) { return 0.0 }
+  $key = Get-SubteamKey $teamName $subteamName
+  if ($subteamSizes.ContainsKey($key)) { return [double]$subteamSizes[$key] }
+  return 0.0
+}
+
+function Get-TeamCurrentHc($Team) {
+  $teamName = Normalize-TeamName $Team
+  if ([string]::IsNullOrWhiteSpace($teamName)) { return "" }
+  if ($teamHasExplicitSize.ContainsKey($teamName) -and [bool]$teamHasExplicitSize[$teamName]) {
+    return [double]$teamFallbackSizes[$teamName]
+  }
+  $sum = 0.0
+  foreach ($key in $subteamSizes.Keys) {
+    if ($key.StartsWith($teamName.ToLowerInvariant() + "|")) {
+      $sum += [double]$subteamSizes[$key]
+    }
+  }
+  if ($sum -eq 0 -and $teamFallbackSizes.ContainsKey($teamName)) { return [double]$teamFallbackSizes[$teamName] }
+  return $sum
+}
+
 $sprintEntries = @()
 if ($null -ne $root.sprintProjects) {
   $sprintEntries = @($root.sprintProjects.PSObject.Properties | ForEach-Object {
@@ -88,8 +177,8 @@ if ($null -ne $root.sprintProjects) {
     [pscustomobject]@{
       Id = $_.Name
       Title = [string](Get-Field $ticket "title" "")
-      Team = [string](Get-Field $ticket "teamArea" "")
-      Subteam = [string](Get-Field $ticket "subteam" "")
+      Team = Normalize-TeamName (Get-Field $ticket "teamArea" "")
+      Subteam = Normalize-Name (Get-Field $ticket "subteam" "") "Other"
       Owner = [string](Get-Field $ticket "assignee" "")
       Status = $status
       Stage = [string](Get-Field $ticket "stage" "")
@@ -107,7 +196,12 @@ if ($null -ne $root.sprintProjects) {
   })
 }
 
-$hcEntries = @($sprintEntries | Where-Object {
+$allInitiativeEntries = @($sprintEntries)
+foreach ($entry in $allInitiativeEntries) {
+  if (-not [string]::IsNullOrWhiteSpace($entry.Team)) { [void]$allTeams.Add($entry.Team) }
+}
+
+$hcEntries = @($allInitiativeEntries | Where-Object {
   $_.ScopedHC -gt 0 -or $_.ActualizedHC -gt 0 -or $_.ExcessHC -gt 0
 })
 
@@ -132,11 +226,11 @@ $summaryRows = @(
   [pscustomobject]@{ Metric = "HC-backed initiatives"; Value = $hcEntries.Count }
   [pscustomobject]@{ Metric = "Active HC-backed initiatives"; Value = $activeHcEntries.Count }
   [pscustomobject]@{ Metric = "Completed HC-backed initiatives"; Value = $doneHcEntries.Count }
-  [pscustomobject]@{ Metric = "Total aligned HC (scoped)"; Value = (Sum-Prop $hcEntries "ScopedHC") }
+  [pscustomobject]@{ Metric = "Total scoped for automation HC"; Value = (Sum-Prop $hcEntries "ScopedHC") }
   [pscustomobject]@{ Metric = "Total actualized HC"; Value = (Sum-Prop $hcEntries "ActualizedHC") }
   [pscustomobject]@{ Metric = "Total excess HC kept"; Value = (Sum-Prop $hcEntries "ExcessHC") }
   [pscustomobject]@{ Metric = "Total completion outcome HC"; Value = (Sum-Prop $hcEntries "CompletionOutcomeHC") }
-  [pscustomobject]@{ Metric = "In-progress scoped HC"; Value = $inProgressScoped }
+  [pscustomobject]@{ Metric = "In-progress scoped for automation HC"; Value = $inProgressScoped }
   [pscustomobject]@{ Metric = "HC-backed initiatives with target date"; Value = $withTargetDate.Count }
   [pscustomobject]@{ Metric = "HC-backed initiatives without target date"; Value = $withoutTargetDate.Count }
 )
@@ -145,7 +239,7 @@ $versionHistoryRows = @(
   [pscustomobject]@{
     VersionLabel = "Current Firebase Snapshot"
     SnapshotDate = (Get-Date).ToString("yyyyMMdd")
-    TotalAlignedHC = (Sum-Prop $hcEntries "ScopedHC")
+    TotalScopedForAutomationHC = (Sum-Prop $hcEntries "ScopedHC")
     TotalActualizedHC = (Sum-Prop $hcEntries "ActualizedHC")
     TotalExcessHC = (Sum-Prop $hcEntries "ExcessHC")
     TotalCompletionOutcomeHC = (Sum-Prop $hcEntries "CompletionOutcomeHC")
@@ -175,10 +269,11 @@ $teamRows = @($hcEntries | Group-Object Team | Sort-Object Name | ForEach-Object
   $items = @($_.Group)
   [pscustomobject]@{
     Team = $_.Name
+    TeamCurrentHC = (Get-TeamCurrentHc $_.Name)
     HCInitiatives = $items.Count
     ActiveInitiatives = @($items | Where-Object { $_.Status -ne "done" }).Count
     DoneInitiatives = @($items | Where-Object { $_.Status -eq "done" }).Count
-    TotalAlignedHC = (Sum-Prop $items "ScopedHC")
+    TotalScopedForAutomationHC = (Sum-Prop $items "ScopedHC")
     InProgressScopedHC = (Sum-Prop @($items | Where-Object { $_.Status -eq "in progress" }) "ScopedHC")
     ActualizedHC = (Sum-Prop $items "ActualizedHC")
     ExcessHC = (Sum-Prop $items "ExcessHC")
@@ -187,7 +282,7 @@ $teamRows = @($hcEntries | Group-Object Team | Sort-Object Name | ForEach-Object
   }
 })
 
-$initiativeRows = @($hcEntries |
+$initiativeRows = @($allInitiativeEntries |
   Sort-Object @{ Expression = { if ($_.TargetDate) { [datetime]::Parse($_.TargetDate) } else { [datetime]::MaxValue } } },
               @{ Expression = { -1 * $_.ScopedHC } },
               @{ Expression = { $_.Title } } |
@@ -196,13 +291,60 @@ $initiativeRows = @($hcEntries |
                 TargetDate, GoLiveMonth, NextAction, SupportingTeams)
 
 $snapshotDate = (Get-Date).ToString("yyyy-MM-dd")
-$rawRows = @($hcEntries |
+$rawRows = @()
+
+$sortedSubteamKeys = @($allSubteamKeys |
+  Sort-Object {
+    $display = $subteamDisplayNames[[string]$_]
+    "{0}|{1}" -f $display.Team, $display.Subteam
+  })
+
+$lastBaselineTeam = $null
+$rawRows += @($sortedSubteamKeys | ForEach-Object {
+  $display = $subteamDisplayNames[[string]$_]
+  $teamName = if ($null -ne $display -and -not [string]::IsNullOrWhiteSpace($display.Team)) { $display.Team } else { "Other" }
+  $subteamName = if ($null -ne $display -and -not [string]::IsNullOrWhiteSpace($display.Subteam)) { $display.Subteam } else { "Other" }
+  $teamCurrentHcValue = if ($teamName -ne $lastBaselineTeam) { Get-TeamCurrentHc $teamName } else { "" }
+  $lastBaselineTeam = $teamName
+  [pscustomobject]@{
+    SnapshotDate = $snapshotDate
+    RowType = "SUBTEAM"
+    InitiativeId = ""
+    Title = ""
+    Team = $teamName
+    Subteam = $subteamName
+    Owner = ""
+    Status = ""
+    Stage = ""
+    Confidence = ""
+    Priority = ""
+    TeamCurrentHC = $teamCurrentHcValue
+    SubteamCurrentHC = (Get-SubteamCurrentHc $teamName $subteamName)
+    ScopedForAutomationHC = 0
+    ActualizedHC = 0
+    ExcessCapacityKeptHC = 0
+    CompletionOutcomeHC = 0
+    TargetDate = ""
+    TargetMonth = ""
+    TargetMonthSort = ""
+    IsActive = 0
+    IsDone = 0
+    IsInProgress = 0
+    HasTargetDate = 0
+    IsUnassigned = 0
+    NextAction = ""
+    SupportingTeams = ""
+  }
+})
+
+$rawRows += @($allInitiativeEntries |
   Sort-Object @{ Expression = { if ($_.TargetDate) { [datetime]::Parse($_.TargetDate) } else { [datetime]::MaxValue } } },
               @{ Expression = { -1 * $_.ScopedHC } },
               @{ Expression = { $_.Title } } |
   ForEach-Object {
     [pscustomobject]@{
       SnapshotDate = $snapshotDate
+      RowType = "INITIATIVE"
       InitiativeId = $_.Id
       Title = $_.Title
       Team = $_.Team
@@ -212,9 +354,11 @@ $rawRows = @($hcEntries |
       Stage = $_.Stage
       Confidence = $_.Confidence
       Priority = $_.Priority
-      AlignedHC = $_.ScopedHC
+      TeamCurrentHC = ""
+      SubteamCurrentHC = ""
+      ScopedForAutomationHC = $_.ScopedHC
       ActualizedHC = $_.ActualizedHC
-      ExcessHC = $_.ExcessHC
+      ExcessCapacityKeptHC = $_.ExcessHC
       CompletionOutcomeHC = $_.CompletionOutcomeHC
       TargetDate = $_.TargetDate
       TargetMonth = $_.GoLiveMonth
@@ -230,20 +374,14 @@ $rawRows = @($hcEntries |
   })
 
 $assumptionRows = @(
-  [pscustomobject]@{ Assumption = "Aligned HC"; Detail = "Mapped from sprintProjects.automationScopedHc." }
+  [pscustomobject]@{ Assumption = "Scoped for automation HC"; Detail = "Mapped from sprintProjects.automationScopedHc." }
   [pscustomobject]@{ Assumption = "Actualized HC"; Detail = "Mapped from sprintProjects.actualHcSavings." }
   [pscustomobject]@{ Assumption = "Excess HC kept"; Detail = "Mapped from sprintProjects.excessCapacityHc." }
   [pscustomobject]@{ Assumption = "Go-live month"; Detail = "Mapped from timelineEnd first, then deadline when timelineEnd is blank." }
-  [pscustomobject]@{ Assumption = "Included initiatives"; Detail = "Only initiatives with scoped, actualized, or excess HC greater than zero are included in the slide tracker outputs." }
+  [pscustomobject]@{ Assumption = "Included initiatives"; Detail = "Raw output includes all sprint initiatives and adds one SUBTEAM baseline row per team/subteam pair, even when HC fields are zero." }
   [pscustomobject]@{ Assumption = "Historical V1/V2/V3 rows"; Detail = "Not reconstructed from Firebase because the export only contains current-state data, not historical snapshots." }
 )
 
-$summaryRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_exec_summary.csv")
-$versionHistoryRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_version_history_template.csv")
-$monthRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_go_live_by_month.csv")
-$teamRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_team_rollup.csv")
-$initiativeRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_initiatives.csv")
 $rawRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_raw.csv")
-$assumptionRows | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $OutputDir "slide_tracker_assumptions.csv")
 
-Write-Host "Wrote tracker CSVs to $OutputDir" -ForegroundColor Green
+Write-Host "Wrote tracker raw CSV to $OutputDir" -ForegroundColor Green
