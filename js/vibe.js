@@ -154,10 +154,11 @@ function setDisplay(el, display){
 }
 
 function validVibeMetricFilter(filter){
-  return filter === 'teamSize' || filter === 'reviewed' || filter === 'scoped' || filter === 'inProgress';
+  return filter === 'teamSize' || filter === 'scoped' || filter === 'inProgress';
 }
 
 function syncVibeMetricCards(){
+  if(!validVibeMetricFilter(App.vibeMetricFilter)) App.vibeMetricFilter = 'all';
   var row = document.getElementById('stats-row');
   if(row) row.classList.toggle('vibe-metric-mode', isSprintView());
   document.querySelectorAll('[data-vibe-metric]').forEach(function(card){
@@ -296,15 +297,14 @@ window.shiftWeeklyPlanWeek = function(delta){
 function updateVibeStats(initiatives, extra){
   var totals = automationTotals(initiatives);
   var teamSize = automationTeamSizeTotal(initiatives);
+  var reviewedCard = document.getElementById('s-open-wrap');
   document.getElementById('s-total-label').textContent='Team size';
-  document.getElementById('s-open-label').textContent='Reviewed';
   document.getElementById('s-prog-label').textContent='Scoped';
   document.getElementById('s-done-label').textContent='In progress';
-  document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
+  if(reviewedCard) reviewedCard.style.display='none';
   document.getElementById('s-total').textContent=fmtCapacity(teamSize);
-  document.getElementById('s-open').textContent=fmtCapacity(totals.reviewed);
   document.getElementById('s-prog').textContent=fmtCapacity(totals.scoped);
   document.getElementById('s-done').textContent=fmtCapacity(totals.progress);
   document.getElementById('s-extra-label').textContent='HC savings (excess / actualized)';
@@ -326,19 +326,12 @@ function initiativeMatchesFilter(entry){
   return status === App.currentFilter;
 }
 
-function initiativeSubteamRecord(t){
-  var team = normalizeTeamName(t && t.teamArea);
-  var subteam = normalizeSubteamName(t && t.subteam);
-  return automationSubteamList(team).find(function(item){ return item.name === subteam; }) || null;
-}
-
 function initiativeMatchesVibeMetric(t){
   var filter = App.vibeMetricFilter || 'all';
   if(filter === 'all') return true;
   var team = normalizeTeamName(t && t.teamArea);
   var subteam = normalizeSubteamName(t && t.subteam);
   if(filter === 'teamSize') return subteamSizeHc(team, subteam) > 0;
-  if(filter === 'reviewed') return subteamReviewed(initiativeSubteamRecord(t));
   if(filter === 'scoped') return automationScopedHc(t) > 0;
   if(filter === 'inProgress') return normalizeStatusValue(t && t.status) === 'in progress';
   return true;
@@ -603,6 +596,9 @@ function initiativeCardHtml(id, t){
   var pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
   var due = nearestDueTask(t);
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
+  var deadlineText = t.deadline
+    ? '<span class="initiative-deadline">Deadline '+safeText(t.deadline)+'</span>'
+    : '<span class="initiative-deadline initiative-deadline-missing"><span class="initiative-deadline-dot"></span>No deadline</span>';
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
   var supportContacts = supportContactEntries(t);
@@ -617,6 +613,7 @@ function initiativeCardHtml(id, t){
     +(weeklyDue?'<span>'+weeklyDue+' due this week</span>':'')
     +(groupCount?'<span>'+groupCount+' group'+(groupCount!==1?'s':'')+'</span>':'')
     +(supportContacts.length?'<span>'+supportContacts.length+' support contact'+(supportContacts.length!==1?'s':'')+'</span>':'')
+    +deadlineText
     +'<span>'+hcText+'</span>'
     +'<span>'+dueText+'</span>'
     +'</div>'
@@ -634,11 +631,9 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   teamName = teamName ? normalizeTeamName(teamName) : '';
   subteamName = subteamName ? normalizeSubteamName(subteamName) : '';
   var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
-  var reviewed = subteamName ? subteamReviewedCoverage(teamName, subteamName) : (teamName ? teamReviewedCoverage(teamName) : totals.reviewed);
   var sizeLabel = subteamName ? 'Subteam size' : 'Team size';
   return '<div class="team-hc-strip">'
     +((showTeamSize || subteamName) ? '<div class="team-size-badge'+(subteamName ? ' subteam-size-badge' : '')+'"><span class="team-size-label">'+sizeLabel+'</span><span class="team-size-value">'+fmtCapacity(size)+'</span></div>' : '')
-    +'<span class="team-metric">Reviewed '+fmtCapacity(reviewed)+'</span>'
     +'<span class="team-metric">Scoped '+fmtCapacity(totals.scoped)+'</span>'
     +'<span class="team-metric">In progress '+fmtCapacity(totals.progress)+'</span>'
     +'<span class="team-metric">Savings '+fmtCapacity(totals.excess)+' excess / '+fmtCapacity(totals.actual)+' actualized</span>'

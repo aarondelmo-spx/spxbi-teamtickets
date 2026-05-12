@@ -73,6 +73,7 @@ window.renderList = function(){
 function updateStats(){
   var t=Object.values(App.allTickets);
   var extra=document.getElementById('s-extra-wrap');
+  var reviewedCard=document.getElementById('s-open-wrap');
   if(isSprintView()){
     if(typeof updateVibeStats === 'function'){
       updateVibeStats(t, extra);
@@ -104,6 +105,7 @@ function updateStats(){
   document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
+  if(reviewedCard) reviewedCard.style.display='';
   if(extra) extra.style.display='none';
   document.getElementById('s-total').textContent=t.length;
   document.getElementById('s-open').textContent=t.filter(function(x){return effectiveStatusValue(x.status)==='open';}).length;
