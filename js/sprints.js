@@ -113,9 +113,19 @@ function subteamReviewed(subteam){
   return !!(subteam && subteam.automationReviewed === true);
 }
 
+function teamRecordSize(team){
+  if(!team) return null;
+  if(team.teamSizeHc != null) return numVal(team.teamSizeHc);
+  if(team.currentHc != null) return numVal(team.currentHc);
+  return null;
+}
+
 function teamSizeFieldValue(teamName){
   teamName = normalizeTeamName(teamName);
   if(!teamName) return 0;
+  var team = automationTeamByName(teamName);
+  var explicitSize = teamRecordSize(team);
+  if(explicitSize != null) return explicitSize;
   return automationSubteamList(normalizeTeamName(teamName)).reduce(function(sum, subteam){
     return sum + subteamRecordSize(subteam);
   }, 0);
