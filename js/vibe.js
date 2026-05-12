@@ -186,7 +186,7 @@ function updateVibeShell(){
     if(tab) tab.classList.toggle('active', App.currentVibeView === view);
   });
 
-  ['status-filter-label','nav-active','nav-all','nav-open','nav-done','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+  ['status-filter-label','nav-active','nav-all','nav-open','nav-archived','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
   ['pill-active','pill-all','pill-open'].forEach(function(id){
@@ -197,7 +197,7 @@ function updateVibeShell(){
     var isPriorityControl = id === 'toolbar-priority-sep' || id === 'pill-p0' || id === 'pill-p1' || id === 'pill-p2' || id === 'pill-p3';
     el.style.display = vibe && !isPriorityControl ? 'none' : (id === 'toolbar-priority-sep' ? 'inline-block' : '');
   });
-  setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
+  setDisplay(document.getElementById('pill-archived'), vibe ? 'none' : '');
   setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
   document.querySelectorAll('.shell-tool').forEach(function(el){
     el.style.display = vibe ? 'none' : '';
@@ -205,8 +205,8 @@ function updateVibeShell(){
 
   var filterBtn = document.getElementById('vibe-filter-toggle');
   setDisplay(filterBtn, vibe ? 'none' : '');
-  var donePill = document.getElementById('pill-done');
-  if(donePill) donePill.textContent = 'Done';
+  var donePill = document.getElementById('pill-archived');
+  if(donePill) donePill.textContent = 'Archived';
   var vibeDone = document.getElementById('vibe-done-toggle');
   if(vibeDone){
     vibeDone.textContent = App.currentFilter === 'done' ? 'Showing Done' : 'Done';

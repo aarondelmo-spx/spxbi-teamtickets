@@ -267,10 +267,14 @@
         </div>
         <div class="form-row">
           <div class="field"><label>Scoped for automation</label><input id="nt-automation-scoped-hc" type="number" min="0" step="0.1" /></div>
-          <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
         </div>
-        <div class="form-row">
-          <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
+        <div class="completion-hc-block">
+          <div class="completion-hc-title">For when the project is complete</div>
+          <div class="completion-hc-copy">Only fill these after the initiative is complete and the capacity outcome is confirmed.</div>
+          <div class="form-row">
+            <div class="field"><label>Actual HC savings</label><input id="nt-actual-hc-savings" type="number" min="0" step="0.1" /></div>
+            <div class="field"><label>Excess capacity kept</label><input id="nt-excess-capacity-hc" type="number" min="0" step="0.1" /></div>
+          </div>
         </div>
       </div>
       <div class="form-row">
@@ -398,9 +402,13 @@
           <div class="field"><label>Team/subteam size</label><input id="d-team-size-hc" readonly /></div>
           <div class="field"><label>Scoped for automation</label><input id="d-automation-scoped-hc" type="number" min="0" step="0.1" onchange="updateTicketField('automationScopedHc',this.value)" /></div>
         </div>
-        <div class="form-row">
-          <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
-          <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
+        <div class="completion-hc-block">
+          <div class="completion-hc-title">For when the project is complete</div>
+          <div class="completion-hc-copy">Only fill these after the initiative is complete and the capacity outcome is confirmed.</div>
+          <div class="form-row">
+            <div class="field"><label>Actual HC savings</label><input id="d-actual-hc-savings" type="number" min="0" step="0.1" onchange="updateTicketField('actualHcSavings',this.value)" /></div>
+            <div class="field"><label>Excess capacity kept</label><input id="d-excess-capacity-hc" type="number" min="0" step="0.1" onchange="updateTicketField('excessCapacityHc',this.value)" /></div>
+          </div>
         </div>
       </div>
       </div>

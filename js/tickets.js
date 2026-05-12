@@ -106,7 +106,8 @@ window.deleteTicket = function(){
 
 function renderDeadlineStatus(dl,status){
   var el=document.getElementById('d-deadline-status'); if(!el)return;
-  if(!dl||status==='done'){el.innerHTML='';return;}
+  var normalizedStatus = effectiveStatusValue(status);
+  if(!dl||normalizedStatus==='done'||normalizedStatus==='archived'){el.innerHTML='';return;}
   var diff=deadlineDiff(dl); if(diff===null){el.innerHTML='';return;}
   var cls,msg;
   if(diff<0){cls='over';msg='⚠ Overdue by '+Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'');}

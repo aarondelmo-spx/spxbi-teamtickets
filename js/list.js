@@ -7,7 +7,7 @@ window.renderList = function(){
   }
   var tickets=Object.entries(App.allTickets)
     .filter(function(e){
-      var status = normalizeStatusValue(e[1].status);
+      var status = effectiveStatusValue(e[1].status);
       if(App.currentFilter==='all') return true;
       if(App.currentFilter==='active') return status!=='done';
       return status===App.currentFilter;
@@ -59,14 +59,14 @@ window.renderList = function(){
     var sc=statusClass(t.status);
     var dlTag=deadlineTagHtml(t.deadline,t.status);
     var diff=t.deadline?deadlineDiff(t.deadline):null;
-    var normalizedStatus = normalizeStatusValue(t.status);
-    var tcls='ticket'+(diff!==null&&diff<0&&normalizedStatus!=='done'?' is-overdue':diff!==null&&diff<=3&&diff>=0&&normalizedStatus!=='done'?' is-soon':'');
+    var normalizedStatus = effectiveStatusValue(t.status);
+    var tcls='ticket'+(diff!==null&&diff<0&&normalizedStatus!=='done'&&normalizedStatus!=='archived'?' is-overdue':diff!==null&&diff<=3&&diff>=0&&normalizedStatus!=='done'&&normalizedStatus!=='archived'?' is-soon':'');
     var subtaskBar=st.total>0?'<div class="subtask-bar"><div class="subtask-bar-fill" style="width:'+Math.round(st.done/st.total*100)+'%"></div></div>':'';
     var contribs=t.contributors&&t.contributors.length?t.contributors:[t.assignee||'Unassigned'];
     var stackHtml=avatarStackHtml(contribs,20);
     var baseMeta=stackHtml+'<span>·</span><span>'+(t.created||'')+'</span>'+(cc?'<span>· 💬 '+cc+'</span>':'')+(st.total?'<span>· ☑ '+st.done+'/'+st.total+'</span>':'')+(lc?'<span>· 🔗 '+lc+'</span>':'')+(dlTag?'<span>'+dlTag+'</span>':'');
     var meta=isSprintView()?sprintMetaHtml(t):baseMeta;
-    return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+(t.priority||'p1')+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta">'+meta+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+t.status+'</span></div></div>';
+    return '<div class="'+tcls+'" onclick="openDetailModal(\''+id+'\')"><div class="ticket-left"><div class="priority-bar '+(t.priority||'p1')+'"></div></div><div class="ticket-body"><div class="ticket-id">#'+id.slice(-6).toUpperCase()+'</div><div class="ticket-title">'+t.title+'</div><div class="ticket-meta">'+meta+'</div>'+subtaskBar+'</div><div class="ticket-right"><span class="status-badge '+sc+'">'+statusDisplayLabel(t.status)+'</span></div></div>';
   }).join('');
 };
 
@@ -100,25 +100,25 @@ function updateStats(){
   document.getElementById('s-total-label').textContent='Total';
   document.getElementById('s-open-label').textContent='Open';
   document.getElementById('s-prog-label').textContent='In Progress';
-  document.getElementById('s-done-label').textContent='Done';
+  document.getElementById('s-done-label').textContent='Archived';
   document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
   if(extra) extra.style.display='none';
   document.getElementById('s-total').textContent=t.length;
-  document.getElementById('s-open').textContent=t.filter(function(x){return normalizeStatusValue(x.status)==='open';}).length;
-  document.getElementById('s-prog').textContent=t.filter(function(x){ var status = normalizeStatusValue(x.status); return status==='in progress'||status==='review'; }).length;
-  document.getElementById('s-done').textContent=t.filter(function(x){return normalizeStatusValue(x.status)==='done';}).length;
+  document.getElementById('s-open').textContent=t.filter(function(x){return effectiveStatusValue(x.status)==='open';}).length;
+  document.getElementById('s-prog').textContent=t.filter(function(x){ var status = effectiveStatusValue(x.status); return status==='in progress'||status==='review'; }).length;
+  document.getElementById('s-done').textContent=t.filter(function(x){return effectiveStatusValue(x.status)==='archived';}).length;
   document.getElementById('ticket-count-sub').textContent=t.length+' project'+(t.length!==1?'s':'')+' total';
 }
 
 function updateCounts(){
   var t=Object.values(App.allTickets);
   updateProjectViewCounts();
-  document.getElementById('cnt-active').textContent=t.filter(function(x){return normalizeStatusValue(x.status)!=='done';}).length;
+  document.getElementById('cnt-active').textContent=t.filter(function(x){ var status = effectiveStatusValue(x.status); return status!=='done'&&status!=='archived'; }).length;
   document.getElementById('cnt-all').textContent=t.length;
-  document.getElementById('cnt-open').textContent=t.filter(function(x){return normalizeStatusValue(x.status)==='open';}).length;
-  document.getElementById('cnt-done').textContent=t.filter(function(x){return normalizeStatusValue(x.status)==='done';}).length;
+  document.getElementById('cnt-open').textContent=t.filter(function(x){return effectiveStatusValue(x.status)==='open';}).length;
+  document.getElementById('cnt-archived').textContent=t.filter(function(x){return effectiveStatusValue(x.status)==='archived';}).length;
   document.getElementById('cnt-p0').textContent=t.filter(function(x){return (x.priority||'p1')==='p0';}).length;
   document.getElementById('cnt-p1').textContent=t.filter(function(x){return (x.priority||'p1')==='p1';}).length;
   document.getElementById('cnt-p2').textContent=t.filter(function(x){return (x.priority||'p1')==='p2';}).length;
