@@ -113,19 +113,9 @@ function subteamReviewed(subteam){
   return !!(subteam && subteam.automationReviewed === true);
 }
 
-function teamRecordSize(team){
-  if(!team) return null;
-  if(team.teamSizeHc != null) return numVal(team.teamSizeHc);
-  if(team.currentHc != null) return numVal(team.currentHc);
-  return null;
-}
-
 function teamSizeFieldValue(teamName){
   teamName = normalizeTeamName(teamName);
   if(!teamName) return 0;
-  var team = automationTeamByName(teamName);
-  var explicitSize = teamRecordSize(team);
-  if(explicitSize != null) return explicitSize;
   return automationSubteamList(normalizeTeamName(teamName)).reduce(function(sum, subteam){
     return sum + subteamRecordSize(subteam);
   }, 0);
@@ -777,7 +767,6 @@ function renderAutomationHierarchyLists(){
   var editable = canEditContent();
   teamEl.innerHTML = teams.map(function(team){
     var active = team.name === App.hierarchySelectedTeam;
-    var size = teamSizeFieldValue(team.name);
     var movableTeams = teams.filter(function(item){ return !isOtherName(item.name); });
     var moveIndex = movableTeams.findIndex(function(item){ return item.id === team.id; });
     var canMove = moveIndex > -1;
@@ -785,7 +774,6 @@ function renderAutomationHierarchyLists(){
     var moveDownDisabled = !canMove || moveIndex === movableTeams.length - 1;
     return '<div class="hierarchy-row hierarchy-edit-row'+(active?' active':'')+'">'
       +'<button class="hierarchy-name-btn" onclick="selectAutomationTeam(\''+safeText(jsDataArg(team.name))+'\')" type="button">'+safeText(team.name)+'</button>'
-      +'<span class="hierarchy-meta" title="Sum of subteam sizes">'+safeText(fmtCapacity(size))+'</span>'
       +'<div class="hierarchy-reorder">'
         +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',-1)" title="Move team up" type="button"'+(moveUpDisabled || !editable?' disabled':'')+'>&uarr;</button>'
         +'<button class="btn-icon hierarchy-move" onclick="moveAutomationTeam(\''+safeText(jsDataArg(team.id))+'\',\''+safeText(jsDataArg(team.name))+'\',1)" title="Move team down" type="button"'+(moveDownDisabled || !editable?' disabled':'')+'>&darr;</button>'
@@ -834,7 +822,9 @@ function setHierarchyEditLabels(mode){
   var teamMode = mode === 'team';
   document.getElementById('hierarchy-edit-title').textContent = teamMode ? 'Edit team' : 'Edit subteam';
   document.getElementById('hierarchy-edit-name-label').textContent = teamMode ? 'Team name' : 'Subteam name';
-  document.getElementById('hierarchy-edit-size-label').textContent = teamMode ? 'Calculated team size' : 'Subteam size';
+  document.getElementById('hierarchy-edit-size-label').textContent = 'Subteam size';
+  var sizeField = document.getElementById('hierarchy-edit-size-field');
+  if(sizeField) sizeField.style.display = teamMode ? 'none' : 'block';
 }
 
 window.openHierarchyEditModal = function(mode, teamName, subteamName){
@@ -848,7 +838,7 @@ window.openHierarchyEditModal = function(mode, teamName, subteamName){
     var sizeInput = document.getElementById('hierarchy-edit-size');
     nameInput.value = team.name || '';
     nameInput.readOnly = isOtherName(team.name);
-    sizeInput.value = hierarchyEditSizeValue(teamSizeFieldValue(team.name));
+    sizeInput.value = '';
     sizeInput.readOnly = true;
     document.getElementById('hierarchy-edit-context').style.display = 'none';
   } else {
@@ -878,8 +868,10 @@ window.closeHierarchyEditModal = function(){
   App.hierarchyEditTarget = null;
   var nameInput = document.getElementById('hierarchy-edit-name');
   var sizeInput = document.getElementById('hierarchy-edit-size');
+  var sizeField = document.getElementById('hierarchy-edit-size-field');
   if(nameInput) nameInput.readOnly = false;
   if(sizeInput) sizeInput.readOnly = false;
+  if(sizeField) sizeField.style.display = 'block';
   var modal = document.getElementById('hierarchy-edit-modal');
   if(modal) modal.style.display = 'none';
 };
