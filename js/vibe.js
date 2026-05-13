@@ -682,6 +682,12 @@ function renderVibeInitiatives(search, list){
     .filter(function(entry){ return App.currentPriorityFilter === 'all' || (entry[1].priority || 'p1') === App.currentPriorityFilter; })
     .filter(function(entry){ return initiativeMatchesSearch(entry[1], search); })
     .filter(function(entry){
+      if(App.currentContrib === 'all') return true;
+      var t = entry[1];
+      var contribs = t.contributors && t.contributors.length ? t.contributors : (t.assignee && t.assignee !== 'Unassigned' ? [t.assignee] : []);
+      return contribs.indexOf(App.currentContrib) > -1;
+    })
+    .filter(function(entry){
       var f = App.vibeSupportFilter || [];
       if(!f.length) return true;
       var teams = getSupportingTeams(entry[1]);
