@@ -223,8 +223,8 @@ function updateVibeShell(){
   var workload = document.getElementById('workload-panel');
   var activity = document.getElementById('activity-panel');
   var warnTitle = document.getElementById('warn-banner-title');
-  if(dashboard) dashboard.style.gridTemplateColumns = vibe ? '1fr 300px' : '1fr 1fr 300px';
-  setDisplay(workload, vibe ? 'none' : '');
+  if(dashboard) dashboard.style.gridTemplateColumns = '1fr 1fr 300px';
+  setDisplay(workload, '');
   setDisplay(activity, '');
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
   syncWeeklyPlanControls();
