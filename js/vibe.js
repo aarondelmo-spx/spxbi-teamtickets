@@ -861,6 +861,11 @@ window.updateVibeTaskField = function(ticketId, taskId, field, value){
 window.toggleVibeTaskFromList = function(ticketId, taskId, current){
   var upd = {done:!current};
   App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
+  if(!current){
+    var t = App.allTickets[ticketId];
+    var sub = t && t.subtasks && t.subtasks[taskId];
+    if(t && sub) logActivity('done', t.title, sub.text, ticketId);
+  }
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
 };
 
