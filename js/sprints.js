@@ -291,6 +291,7 @@ function refreshActiveTickets(){
   if(typeof updateWarnings === 'function') updateWarnings();
   if(typeof renderWorkload === 'function') renderWorkload();
   if(typeof renderContribPills === 'function') renderContribPills();
+  if(typeof renderVibeContribSidebar === 'function') renderVibeContribSidebar();
   if(typeof renderActivityList === 'function') renderActivityList();
   if(App.selectedTicketId && document.getElementById('detail-modal').style.display !== 'none'){
     var t = App.allTickets[App.selectedTicketId];

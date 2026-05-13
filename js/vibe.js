@@ -202,6 +202,12 @@ function updateVibeShell(){
   document.querySelectorAll('.shell-tool').forEach(function(el){
     el.style.display = vibe ? 'none' : '';
   });
+  ['vibe-contrib-label','vibe-cpill-all','vibe-contrib-list'].forEach(function(id){
+    setDisplay(document.getElementById(id), vibe ? '' : 'none');
+  });
+  var vcAll = document.getElementById('vibe-cpill-all');
+  if(vcAll) vcAll.classList.toggle('active', App.currentContrib === 'all');
+  if(vibe && typeof renderVibeContribSidebar === 'function') renderVibeContribSidebar();
 
   var filterBtn = document.getElementById('vibe-filter-toggle');
   setDisplay(filterBtn, vibe ? 'none' : '');
@@ -466,6 +472,19 @@ function renderSupportTeamFilterBar(allEntries){
     }).join('');
 }
 
+window.renderVibeContribSidebar = function(){
+  var el = document.getElementById('vibe-contrib-list');
+  if(!el) return;
+  el.innerHTML = (App.teamMembers || []).map(function(m){
+    var c = colorFor(m.name);
+    var isActive = App.currentContrib === m.name;
+    return '<button class="nav-item'+(isActive?' active':'')+'" data-name="'+safeText(m.name)+'" onclick="setContribFilter(\''+jsArg(m.name)+'\')">'
+      +'<span class="nav-dot" style="background:'+c+'"></span>'
+      +safeText(m.name)
+      +'</button>';
+  }).join('');
+};
+
 function renderVibeInitiatives(search, list){
   var allEntries = Object.entries(App.allTickets || {}).filter(initiativeMatchesFilter);
   renderSupportTeamFilterBar(allEntries);
@@ -477,7 +496,10 @@ function renderVibeInitiatives(search, list){
       if(App.currentContrib === 'all') return true;
       var t = entry[1];
       var contribs = t.contributors && t.contributors.length ? t.contributors : (t.assignee && t.assignee !== 'Unassigned' ? [t.assignee] : []);
-      return contribs.indexOf(App.currentContrib) > -1;
+      if(contribs.indexOf(App.currentContrib) > -1) return true;
+      return Object.values(t.subtasks || {}).some(function(sub){
+        return (sub.contributors || []).indexOf(App.currentContrib) > -1;
+      });
     })
     .filter(function(entry){
       var f = App.vibeSupportFilter || [];

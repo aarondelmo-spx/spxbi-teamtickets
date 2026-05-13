@@ -17,6 +17,7 @@ function startApp(){
     renderTeamList();
     renderWorkload();
     renderContribPills();
+    if(typeof renderVibeContribSidebar === 'function') renderVibeContribSidebar();
   });
   App.automationTeamsRef.on('value', function(snap){
     App.automationTeams = snap.val()||{};

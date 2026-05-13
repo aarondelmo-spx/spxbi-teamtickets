@@ -147,6 +147,11 @@ window.setContribFilter = function(name){
   document.querySelectorAll('.cpill-member').forEach(function(b){
     b.classList.toggle('active', b.dataset.name===name);
   });
+  var vcAll=document.getElementById('vibe-cpill-all');
+  if(vcAll) vcAll.classList.toggle('active',name==='all');
+  document.querySelectorAll('#vibe-contrib-list .nav-item').forEach(function(b){
+    b.classList.toggle('active', b.dataset.name===name);
+  });
   renderList();
 };
 
