@@ -40,3 +40,56 @@ function renderWhitelistPanel(){
 }
 
 window.saveName = function(name){ if(!name)return; App.currentUser=name; localStorage.setItem('spxbi_username',name); updateWho(); };
+
+window.openManageUsersModal = function(){
+  document.getElementById('manage-users-modal').style.display = 'flex';
+  renderManageUsersList();
+};
+
+window.closeManageUsersModal = function(){
+  document.getElementById('manage-users-modal').style.display = 'none';
+};
+
+function renderManageUsersList(){
+  var isAdmin = App.currentUserEmail === App.ADMIN_EMAIL;
+  var addRow = document.getElementById('manage-users-add-row');
+  var noAdmin = document.getElementById('manage-users-noadmin');
+  if(addRow) addRow.style.display = isAdmin ? 'flex' : 'none';
+  if(noAdmin) noAdmin.style.display = isAdmin ? 'none' : 'block';
+  App.whitelistRef.once('value', function(snap){
+    var data = snap.val()||{};
+    var entries = Object.entries(data);
+    var listEl = document.getElementById('manage-users-list');
+    if(!listEl) return;
+    if(!entries.length){
+      listEl.innerHTML = '<div style="font-size:12px;color:var(--text3);margin-bottom:.5rem">No users yet.</div>';
+      return;
+    }
+    listEl.innerHTML = entries.map(function(e){
+      var id=e[0], en=e[1];
+      return '<div class="whitelist-row">'
+        +'<span class="whitelist-name">'+en.name+'</span>'
+        +'<span class="whitelist-email">'+en.email+'</span>'
+        +(isAdmin?'<button class="btn-icon" onclick="removeManageUser(&quot;'+id+'&quot;)" title="Remove">✕</button>':'')
+        +'</div>';
+    }).join('');
+  });
+}
+
+window.addManageUser = function(){
+  if(App.currentUserEmail !== App.ADMIN_EMAIL) return;
+  var emailInput = document.getElementById('mu-email-input');
+  var nameInput = document.getElementById('mu-name-input');
+  var email = emailInput.value.trim().toLowerCase();
+  var name = nameInput.value.trim();
+  if(!email||!name) return;
+  App.whitelistRef.push({email:email, name:name});
+  emailInput.value=''; nameInput.value='';
+  setTimeout(renderManageUsersList, 300);
+};
+
+window.removeManageUser = function(id){
+  if(App.currentUserEmail !== App.ADMIN_EMAIL) return;
+  App.whitelistRef.child(id).remove();
+  setTimeout(renderManageUsersList, 300);
+};
