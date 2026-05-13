@@ -187,22 +187,34 @@ function updateVibeShell(){
     if(tab) tab.classList.toggle('active', App.currentVibeView === view);
   });
 
-  ['status-filter-label','nav-active','nav-all','nav-open','nav-archived','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+  ['status-filter-label','nav-active','nav-all','nav-open','nav-archived'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
+  });
+  ['priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+    setDisplay(document.getElementById(id), '');
   });
   ['pill-active','pill-all','pill-open'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
+  ['toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+    setDisplay(document.getElementById(id), '');
+  });
+  var priorityPillIds = ['pill-p0','pill-p1','pill-p2','pill-p3','toolbar-priority-sep'];
   document.querySelectorAll('.vibe-advanced-filter').forEach(function(el){
-    var id = el.id || '';
-    var isPriorityControl = id === 'toolbar-priority-sep' || id === 'pill-p0' || id === 'pill-p1' || id === 'pill-p2' || id === 'pill-p3';
-    el.style.display = vibe && !isPriorityControl ? 'none' : (id === 'toolbar-priority-sep' ? 'inline-block' : '');
+    if(priorityPillIds.indexOf(el.id) > -1) return;
+    el.style.display = vibe ? 'none' : '';
   });
   setDisplay(document.getElementById('pill-archived'), vibe ? 'none' : '');
   setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
   document.querySelectorAll('.shell-tool').forEach(function(el){
     el.style.display = vibe ? 'none' : '';
   });
+  ['vibe-contrib-label','vibe-cpill-all','vibe-contrib-list'].forEach(function(id){
+    setDisplay(document.getElementById(id), vibe ? '' : 'none');
+  });
+  var vcAll = document.getElementById('vibe-cpill-all');
+  if(vcAll) vcAll.classList.toggle('active', App.currentContrib === 'all');
+  if(vibe && typeof renderVibeContribSidebar === 'function') renderVibeContribSidebar();
 
   var filterBtn = document.getElementById('vibe-filter-toggle');
   setDisplay(filterBtn, vibe ? 'none' : '');
@@ -218,9 +230,9 @@ function updateVibeShell(){
   var workload = document.getElementById('workload-panel');
   var activity = document.getElementById('activity-panel');
   var warnTitle = document.getElementById('warn-banner-title');
-  if(dashboard) dashboard.style.gridTemplateColumns = vibe ? '1fr' : '1fr 1fr 300px';
-  setDisplay(workload, vibe ? 'none' : '');
-  setDisplay(activity, vibe ? 'none' : '');
+  if(dashboard) dashboard.style.gridTemplateColumns = '1fr 1fr 300px';
+  setDisplay(workload, '');
+  setDisplay(activity, '');
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
   syncWeeklyPlanControls();
   syncVibeMetricCards();
@@ -674,6 +686,19 @@ function renderSupportTeamFilterBar(allEntries){
     }).join('');
 }
 
+window.renderVibeContribSidebar = function(){
+  var el = document.getElementById('vibe-contrib-list');
+  if(!el) return;
+  el.innerHTML = (App.teamMembers || []).map(function(m){
+    var c = colorFor(m.name);
+    var isActive = App.currentContrib === m.name;
+    return '<button class="nav-item'+(isActive?' active':'')+'" data-name="'+safeText(m.name)+'" onclick="setContribFilter(\''+jsArg(m.name)+'\')">'
+      +'<span class="nav-dot" style="background:'+c+'"></span>'
+      +safeText(m.name)
+      +'</button>';
+  }).join('');
+};
+
 function renderVibeInitiatives(search, list){
   var allEntries = Object.entries(App.allTickets || {}).filter(initiativeMatchesFilter);
   renderSupportTeamFilterBar(allEntries);
@@ -685,7 +710,10 @@ function renderVibeInitiatives(search, list){
       if(App.currentContrib === 'all') return true;
       var t = entry[1];
       var contribs = t.contributors && t.contributors.length ? t.contributors : (t.assignee && t.assignee !== 'Unassigned' ? [t.assignee] : []);
-      return contribs.indexOf(App.currentContrib) > -1;
+      if(contribs.indexOf(App.currentContrib) > -1) return true;
+      return Object.values(t.subtasks || {}).some(function(sub){
+        return (sub.contributors || []).indexOf(App.currentContrib) > -1;
+      });
     })
     .filter(function(entry){
       var f = App.vibeSupportFilter || [];
@@ -1071,6 +1099,11 @@ window.toggleVibeTaskFromList = function(ticketId, taskId, current){
   if(!requireContentEditAccess('update tasks')) return;
   var upd = {done:!current};
   App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
+  if(!current){
+    var t = App.allTickets[ticketId];
+    var sub = t && t.subtasks && t.subtasks[taskId];
+    if(t && sub) logActivity('done', t.title, sub.text, ticketId);
+  }
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
 };
 

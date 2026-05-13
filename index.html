@@ -73,6 +73,9 @@
     <div class="sidebar-section">Workspace</div>
     <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
     <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Vibe Coding Projects<span class="nav-count" id="view-sprint-count">0</span></button>
+    <div class="sidebar-section" id="vibe-contrib-label" style="display:none;margin-top:.5rem">Contributor</div>
+    <button class="nav-item active" id="vibe-cpill-all" onclick="setContribFilter('all')" style="display:none"><span class="nav-dot" style="background:#8888a0"></span>All</button>
+    <div id="vibe-contrib-list" style="display:none"></div>
     <div class="sidebar-section" id="status-filter-label">Filter by status</div>
     <button class="nav-item active" id="nav-active" onclick="setFilter('active')"><span class="nav-dot" style="background:var(--open)"></span>Active<span class="nav-count" id="cnt-active">0</span></button>
     <button class="nav-item" id="nav-all" onclick="setFilter('all')"><span class="nav-dot" style="background:#8888a0"></span>All projects<span class="nav-count" id="cnt-all">0</span></button>

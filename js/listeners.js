@@ -154,6 +154,7 @@ function refreshTeamMemberUi(){
   renderTeamList();
   renderWorkload();
   renderContribPills();
+  if(typeof renderVibeContribSidebar === 'function') renderVibeContribSidebar();
   if(App.selectedTicketId && document.getElementById('detail-modal') && document.getElementById('detail-modal').style.display !== 'none'){
     var t = App.allTickets[App.selectedTicketId];
     if(t && typeof refreshDetailFields === 'function') refreshDetailFields(t);
