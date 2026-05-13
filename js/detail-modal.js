@@ -8,13 +8,12 @@ function openSection(s){ var b=document.getElementById(s+'-body'),c=document.get
 function closeSection(s){ var b=document.getElementById(s+'-body'),c=document.getElementById(s+'-chevron'); if(b)b.style.display='none'; if(c)c.style.transform='rotate(0deg)'; }
 
 function titleCaseStatus(status){
-  return String(status || 'open').replace(/\b\w/g,function(ch){ return ch.toUpperCase(); });
+  return statusDisplayLabel(status);
 }
 
 function ownerOptions(selected){
   var value = selected && selected !== 'Unassigned' ? selected : '';
-  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
-  if(value && names.indexOf(value) === -1) names.unshift(value);
+  var names = assignmentPickerNames(value);
   return '<option value="">Unassigned</option>' + names.map(function(name){
     return '<option value="'+safeText(name)+'"'+(value===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
@@ -30,8 +29,8 @@ window.setDetailStatusOptions = function(currentStatus){
   if(!el) return;
   var options = isSprintView()
     ? [{value:'open', label:'Open'}, {value:'in progress', label:'In progress'}, {value:'done', label:'Done'}]
-    : [{value:'open', label:'Open'}, {value:'done', label:'Done'}];
-  var value = currentStatus || 'open';
+    : [{value:'open', label:'Open'}, {value:'archived', label:'Archived'}];
+  var value = effectiveStatusValue(currentStatus || 'open');
   if(value && !options.some(function(opt){ return opt.value === value; })){
     options.splice(Math.max(options.length - 1, 1), 0, {value:value, label:titleCaseStatus(value)});
   }
@@ -45,9 +44,11 @@ function staticDetailTextEl(field, value){
   var el = document.createElement('div');
   el.id = 'd-'+field;
   el.className = field === 'title' ? 'detail-title' : 'detail-desc';
-  el.title = 'Double-click to edit';
-  el.style.cursor = 'text';
-  el.ondblclick = function(){ editDetailField(field); };
+  el.title = canEditContent() ? 'Double-click to edit' : '';
+  el.style.cursor = canEditContent() ? 'text' : 'default';
+  if(canEditContent()){
+    el.ondblclick = function(){ editDetailField(field); };
+  }
   el.textContent = value;
   return el;
 }
@@ -82,6 +83,52 @@ function setDetailSaveStatus(message){
   }
 }
 
+window.applyDetailAccessState = function(){
+  var editable = canEditContent();
+  var commentable = canComment();
+  [
+    'd-status-sel',
+    'd-priority-sel',
+    'd-owner-sel',
+    'd-deadline-inp',
+    'd-team-area',
+    'd-subteam',
+    'd-sprint-cycle',
+    'd-timeline-start',
+    'd-timeline-end',
+    'd-stage',
+    'd-confidence',
+    'd-automation-scoped-hc',
+    'd-actual-hc-savings',
+    'd-excess-capacity-hc',
+    'support-contact-name',
+    'support-contact-role',
+    'support-contact-email',
+    'support-contact-team',
+    'subtask-input',
+    'subtask-deadline',
+    'link-url-input',
+    'link-label-input'
+  ].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.disabled = !editable;
+  });
+  ['detail-delete-btn','detail-save-btn','detail-clear-deadline-btn','detail-add-subtask-btn','detail-add-link-btn','detail-add-workstream-btn','detail-add-support-contact-btn'].forEach(function(id){
+    var btn = document.getElementById(id);
+    if(btn) btn.disabled = !editable;
+  });
+  var commentInput = document.getElementById('d-comment-input');
+  if(commentInput) commentInput.disabled = !commentable;
+  var commentBtn = document.getElementById('detail-comment-post-btn');
+  if(commentBtn) commentBtn.disabled = !commentable;
+  ['title','desc'].forEach(function(field){
+    var el = document.getElementById('d-' + field);
+    if(!el) return;
+    el.style.cursor = editable ? 'text' : 'default';
+    el.title = editable ? 'Double-click to edit' : '';
+  });
+};
+
 window.refreshDetailFields = function(t, options){
   options = options || {};
   renderStaticDetailText('title', t.title, options.forceText);
@@ -89,7 +136,7 @@ window.refreshDetailFields = function(t, options){
   var priorityBadge = document.getElementById('d-priority-badge');
   if(priorityBadge){ priorityBadge.className='priority-badge '+pbClass(t.priority); priorityBadge.textContent=t.priority||'p1'; }
   var statusBadge = document.getElementById('d-status-badge');
-  if(statusBadge){ statusBadge.className='status-badge '+statusClass(t.status); statusBadge.textContent=t.status||'open'; }
+  if(statusBadge){ statusBadge.className='status-badge '+statusClass(t.status); statusBadge.textContent=statusDisplayLabel(t.status); }
   setDetailStatusOptions(t.status);
   var prioritySel = document.getElementById('d-priority-sel');
   if(prioritySel) prioritySel.value=t.priority||'p1';
@@ -103,9 +150,11 @@ window.refreshDetailFields = function(t, options){
   }
   renderDeadlineStatus(t.deadline,t.status);
   if(typeof populateSprintDetail === 'function') populateSprintDetail(t);
+  applyDetailAccessState();
 };
 
 window.editDetailField = function(field){
+  if(!requireContentEditAccess('edit projects')) return;
   var el=document.getElementById('d-'+field); if(!el) return;
   var ticket=App.allTickets[App.selectedTicketId] || {};
   var current=field==='title' ? (ticket.title || el.textContent) : (ticket.desc || '');
@@ -149,6 +198,8 @@ window.editDetailField = function(field){
 
 window.saveDetailChanges = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('save project changes')) return;
+  if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('detail');
   var id = App.selectedTicketId;
   var upd = {
     title: readDetailTextField('title') || 'Untitled',
@@ -182,7 +233,7 @@ window.openDetailModal = function(id){
   setDetailSaveStatus('');
   document.getElementById('d-id').textContent='#'+id.slice(-6).toUpperCase();
   refreshDetailFields(t, {forceText:true});
-  App.dSelectedContribs=t.contributors?t.contributors.slice():[];
+  App.dSelectedContribs=t.contributors?t.contributors.slice():(t.assignee&&t.assignee!=='Unassigned'?[t.assignee]:[]);
   App.stSelectedContribs=[];
   renderContribPicker('d-contributor-picker',App.dSelectedContribs,function(sel){App.dSelectedContribs=sel;saveContributors();});
   renderContributorsDisplay();
@@ -193,6 +244,7 @@ window.openDetailModal = function(id){
   renderLinks(id);
   renderComments(id);
   updateWho();
+  applyDetailAccessState();
   document.getElementById('detail-modal').style.display='flex';
   setTimeout(function(){var el=document.getElementById('d-comment-input');if(el)el.focus();},100);
 };

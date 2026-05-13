@@ -1,5 +1,6 @@
 window.addLink = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add links')) return;
   var urlInput=document.getElementById('link-url-input');
   var labelInput=document.getElementById('link-label-input');
   var url=urlInput.value.trim(); if(!url) return;
@@ -13,6 +14,7 @@ window.addLink = function(){
 
 window.deleteLink = function(lid){
   if(!App.selectedTicketId)return;
+  if(!requireContentEditAccess('remove links')) return;
   var t=App.allTickets[App.selectedTicketId];
   var lnk=t&&t.links&&t.links[lid];
   if(t&&lnk) logActivity('deletedlink',t.title,lnk.label||lnk.url,App.selectedTicketId);
@@ -27,8 +29,9 @@ function renderLinks(ticketId){
   if(countEl) countEl.textContent=links.length?links.length+' link'+(links.length>1?'s':''):'';
   if(links.length>0) openSection('links'); else closeSection('links');
   if(!links.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:4px">No links yet.</div>';return;}
+  var editable = canEditContent();
   el.innerHTML=links.map(function(entry){
     var lid=entry[0],l=entry[1];
-    return '<div class="link-item"><span class="link-icon">🔗</span><span class="link-label">'+l.label+'</span><a class="link-url" href="'+l.url+'" target="_blank" rel="noopener">'+l.url+'</a><button class="btn-icon" onclick="deleteLink(\''+lid+'\')" title="Remove">✕</button></div>';
+    return '<div class="link-item"><span class="link-icon">LINK</span><span class="link-label">'+l.label+'</span><a class="link-url" href="'+l.url+'" target="_blank" rel="noopener">'+l.url+'</a><button class="btn-icon" onclick="deleteLink(\''+lid+'\')" title="Remove"'+(editable?'':' disabled')+'>x</button></div>';
   }).join('');
 }

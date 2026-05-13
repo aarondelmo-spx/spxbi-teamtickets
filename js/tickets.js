@@ -1,5 +1,7 @@
 window.createTicket = function(){
+  if(!requireContentEditAccess('create projects')) return;
   var title=document.getElementById('nt-title').value.trim(); if(!title){document.getElementById('nt-title').focus();return;}
+  if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('new');
   var dl=document.getElementById('nt-deadline').value;
   var assignee=App.ntSelectedContribs[0]||'Unassigned';
   var payload={title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
@@ -52,6 +54,7 @@ function refreshAfterTicketUpdate(id, upd, options){
 
 window.updateTicketField = function(field,value){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('edit projects')) return;
   var id = App.selectedTicketId;
   var before = App.allTickets[id] || {};
   var upd={};
@@ -71,6 +74,7 @@ window.updateTicketField = function(field,value){
 
 window.updateTicketOwner = function(value){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('change owners')) return;
   var id = App.selectedTicketId;
   var owner = value || 'Unassigned';
   var before = App.allTickets[id] || {};
@@ -82,6 +86,7 @@ window.updateTicketOwner = function(value){
 };
 
 window.clearDeadline = function(){
+  if(!requireContentEditAccess('clear deadlines')) return;
   document.getElementById('d-deadline-inp').value='';
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('cleareddeadline',t.title,'',App.selectedTicketId);
@@ -91,6 +96,7 @@ window.clearDeadline = function(){
 
 window.deleteTicket = function(){
   if(!App.selectedTicketId)return;
+  if(!requireContentEditAccess('delete projects')) return;
   if(!confirm('Delete this '+(isSprintView()?'initiative':'project')+'? This cannot be undone.'))return;
   var t=App.allTickets[App.selectedTicketId];
   if(t) logActivity('deleted',t.title,'',App.selectedTicketId);
@@ -100,7 +106,8 @@ window.deleteTicket = function(){
 
 function renderDeadlineStatus(dl,status){
   var el=document.getElementById('d-deadline-status'); if(!el)return;
-  if(!dl||status==='done'){el.innerHTML='';return;}
+  var normalizedStatus = effectiveStatusValue(status);
+  if(!dl||normalizedStatus==='done'||normalizedStatus==='archived'){el.innerHTML='';return;}
   var diff=deadlineDiff(dl); if(diff===null){el.innerHTML='';return;}
   var cls,msg;
   if(diff<0){cls='over';msg='⚠ Overdue by '+Math.abs(diff)+' day'+(Math.abs(diff)>1?'s':'');}

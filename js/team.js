@@ -1,3 +1,255 @@
+function normalizeTeamMemberRecord(id, raw){
+  raw = raw || {};
+  return {
+    id: id,
+    name: (raw.name || '').trim(),
+    legacy: true,
+    source: 'team'
+  };
+}
+
+function normalizeUserRole(role){
+  return RoleHelpers.normalizeUserRole(role);
+}
+
+function normalizeWhitelistUserRecord(id, raw){
+  raw = raw || {};
+  var email = String(raw.email || '').trim().toLowerCase();
+  var role = RoleHelpers.resolveUserRole(raw.role, email, App.ADMIN_EMAIL);
+  return {
+    id: id,
+    email: email,
+    name: String(raw.name || '').trim(),
+    role: role,
+    storedRole: normalizeUserRole(raw.role),
+    roleWriteAt: raw.roleWriteAt || '',
+    roleWriteByEmail: String(raw.roleWriteByEmail || '').trim().toLowerCase(),
+    roleWriteByName: String(raw.roleWriteByName || '').trim(),
+    roleWriteSource: String(raw.roleWriteSource || '').trim(),
+    roleWriteNonce: String(raw.roleWriteNonce || '').trim(),
+    roleWriteBuild: String(raw.roleWriteBuild || '').trim(),
+    roleWriteClientId: String(raw.roleWriteClientId || '').trim(),
+    legacy: false,
+    source: 'whitelist'
+  };
+}
+
+function userIsAssignable(user){
+  return !!user && RoleHelpers.roleIsAssignable(user.role);
+}
+
+function userIsEffectiveAdmin(user){
+  if(!user) return false;
+  return RoleHelpers.roleCanManageUsers(user.role);
+}
+
+function currentUserRecord(){
+  var email = String(App.currentUserEmail || '').toLowerCase();
+  return (App.users || []).find(function(user){ return user.email === email; }) || null;
+}
+
+function currentUserRoleName(){
+  var user = currentUserRecord();
+  if(user) return RoleHelpers.resolveUserRole(user.role, user.email, App.ADMIN_EMAIL);
+  var email = String(App.currentUserEmail || '').toLowerCase();
+  if(!email) return 'viewer';
+  if(App.currentUserRole) return RoleHelpers.resolveUserRole(App.currentUserRole, email, App.ADMIN_EMAIL);
+  return 'viewer';
+}
+
+function isCurrentUserAdmin(){
+  return RoleHelpers.roleCanManageUsers(currentUserRoleName());
+}
+
+function canManageUsers(){
+  return RoleHelpers.roleCanManageUsers(currentUserRoleName());
+}
+
+function canEditContent(){
+  return RoleHelpers.roleCanEditContent(currentUserRoleName());
+}
+
+function canComment(){
+  return !!String(App.currentUserEmail || '').trim();
+}
+
+function accessDeniedMessage(action){
+  return action
+    ? 'Viewer access: you cannot ' + action + '.'
+    : 'Viewer access: you cannot edit this content.';
+}
+
+function requireContentEditAccess(action){
+  if(canEditContent()) return true;
+  alert(accessDeniedMessage(action));
+  return false;
+}
+
+function requireAdminAccess(action){
+  if(canManageUsers()) return true;
+  alert(action ? 'Admin access required to ' + action + '.' : 'Admin access required.');
+  return false;
+}
+
+function shouldDisableContributorPicker(containerId){
+  return containerId === 'nt-contributor-picker' ||
+    containerId === 'd-contributor-picker' ||
+    containerId === 'subtask-contributor-picker';
+}
+
+window.refreshAccessUi = function(){
+  var canEdit = canEditContent();
+  var canAdmin = canManageUsers();
+  var newBtn = document.getElementById('new-project-btn');
+  if(newBtn){
+    newBtn.disabled = !canEdit;
+    newBtn.title = canEdit ? '' : accessDeniedMessage('create projects');
+  }
+  var usersBtn = document.getElementById('users-btn');
+  if(usersBtn){
+    usersBtn.style.display = canAdmin ? '' : 'none';
+  }
+  var createBtn = document.getElementById('create-ticket-btn');
+  if(createBtn){
+    createBtn.disabled = !canEdit;
+    createBtn.title = canEdit ? '' : accessDeniedMessage('create projects');
+  }
+  if(typeof applyDetailAccessState === 'function') applyDetailAccessState();
+};
+
+window.canManageUsers = canManageUsers;
+window.canEditContent = canEditContent;
+window.canComment = canComment;
+window.requireContentEditAccess = requireContentEditAccess;
+window.requireAdminAccess = requireAdminAccess;
+window.currentUserRoleName = currentUserRoleName;
+window.accessDeniedMessage = accessDeniedMessage;
+
+function userRoleBadgeClass(role){
+  role = normalizeUserRole(role);
+  if(role === 'viewer') return 'viewer';
+  if(role === 'editor') return 'editor';
+  return 'admin';
+}
+
+function assignmentNameKey(name){
+  return String(name || '').trim().toLowerCase();
+}
+
+function collectAssignedNamesFromTickets(tickets, options){
+  options = options || {};
+  var includeSubtasks = options.includeSubtasks !== false;
+  var names = {};
+  function add(name){
+    name = String(name || '').trim();
+    if(!name || name === 'Unassigned') return;
+    names[assignmentNameKey(name)] = name;
+  }
+  Object.values(tickets || {}).forEach(function(ticket){
+    add(ticket && ticket.assignee);
+    (ticket && ticket.contributors || []).forEach(add);
+    if(!includeSubtasks) return;
+    Object.values((ticket && ticket.subtasks) || {}).forEach(function(subtask){
+      (subtask && subtask.contributors || []).forEach(add);
+    });
+  });
+  return Object.values(names);
+}
+
+function mainProjectMemberNameSet(){
+  var names = {};
+  collectAssignedNamesFromTickets(App.mainTickets).forEach(function(name){
+    names[assignmentNameKey(name)] = true;
+  });
+  return names;
+}
+
+function mainProjectTeamMembers(){
+  var names = mainProjectMemberNameSet();
+  return (App.teamMembers || []).filter(function(member){
+    return !!names[assignmentNameKey(member.name)];
+  });
+}
+
+function rebuildTeamMembers(){
+  var byName = {};
+  var whitelistNameKeys = {};
+  var active = [];
+  var legacy = [];
+
+  function add(member, target){
+    if(!member || !member.name) return;
+    var key = assignmentNameKey(member.name);
+    if(!key || byName[key]) return;
+    byName[key] = true;
+    target.push(member);
+  }
+
+  (App.users || []).forEach(function(user){
+    if(user.name) whitelistNameKeys[assignmentNameKey(user.name)] = true;
+    if(!userIsAssignable(user) || !user.name) return;
+    add({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      assignable: true,
+      legacy: false,
+      source: 'whitelist'
+    }, active);
+  });
+
+  (App.legacyTeamMembers || []).forEach(function(member){
+    if(whitelistNameKeys[assignmentNameKey(member.name)]) return;
+    add({
+      id: member.id,
+      name: member.name,
+      assignable: false,
+      legacy: true,
+      source: 'team'
+    }, legacy);
+  });
+
+  collectAssignedNamesFromTickets(App.mainTickets).concat(collectAssignedNamesFromTickets(App.sprintTickets)).forEach(function(name){
+    add({
+      id: 'assigned-' + assignmentNameKey(name).replace(/[^a-z0-9]+/g, '-'),
+      name: name,
+      assignable: false,
+      legacy: true,
+      source: 'assignment'
+    }, legacy);
+  });
+
+  active.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  legacy.sort(function(a,b){ return a.name.localeCompare(b.name); });
+  App.teamMembers = active.concat(legacy);
+}
+
+function pickerMembersForSelection(selected){
+  var selectedSet = {};
+  (selected || []).forEach(function(name){ selectedSet[assignmentNameKey(name)] = true; });
+  return (App.teamMembers || []).filter(function(member){
+    return !member.legacy || selectedSet[assignmentNameKey(member.name)];
+  });
+}
+
+function assignmentPickerNames(selected){
+  selected = selected ? (Array.isArray(selected) ? selected : [selected]) : [];
+  var seen = {};
+  var names = pickerMembersForSelection(selected).map(function(member){
+    seen[assignmentNameKey(member.name)] = true;
+    return member.name;
+  });
+  selected.forEach(function(name){
+    var key = assignmentNameKey(name);
+    if(name && !seen[key]){
+      seen[key] = true;
+      names.unshift(name);
+    }
+  });
+  return names;
+}
+
 function refreshAllPickers(){
   renderContribPicker('nt-contributor-picker', App.ntSelectedContribs, function(sel){ App.ntSelectedContribs=sel; });
   if(App.selectedTicketId) renderContribPicker('d-contributor-picker', App.dSelectedContribs, function(sel){ App.dSelectedContribs=sel; saveContributors(); });
@@ -6,20 +258,24 @@ function refreshAllPickers(){
 
 function renderContribPicker(containerId, selected, onChange){
   var el = document.getElementById(containerId); if(!el) return;
-  if(!App.teamMembers.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--text3)">No team members yet. Add them via "Manage team".</div>';
+  selected = selected || [];
+  var members = pickerMembersForSelection(selected);
+  if(!members.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text3)">No assignable users yet.</div>';
     return;
   }
-  el.innerHTML = App.teamMembers.map(function(m){
+  var disabled = shouldDisableContributorPicker(containerId) && !canEditContent();
+  el.innerHTML = members.map(function(m){
     var isSel = selected.indexOf(m.name)>-1;
     var c = colorFor(m.name);
-    return '<button class="contributor-chip'+(isSel?' selected':'')+'" onclick="toggleContrib(\''+containerId+'\',\''+m.name+'\')" type="button">'
-      +'<div class="chip-av" style="background:'+c+'22;color:'+c+'">'+initials(m.name)+'</div>'
-      +m.name+'</button>';
+    return '<button class="contributor-chip'+(isSel?' selected':'')+'" onclick="toggleContrib(\''+jsArg(containerId)+'\',\''+jsArg(m.name)+'\')" type="button"'+(disabled?' disabled title="'+safeText(accessDeniedMessage('change contributors'))+'"':'')+'>'
+      +'<div class="chip-av" style="background:'+c+'22;color:'+c+'">'+safeText(initials(m.name))+'</div>'
+      +safeText(m.name)+(m.legacy?' <span class="chip-note">legacy</span>':'')+'</button>';
   }).join('');
 }
 
 window.toggleContrib = function(containerId, name){
+  if(shouldDisableContributorPicker(containerId) && !requireContentEditAccess('change contributors')) return;
   var sel, onChange;
   if(containerId==='nt-contributor-picker'){ sel=App.ntSelectedContribs; onChange=function(s){App.ntSelectedContribs=s;}; }
   else if(containerId==='d-contributor-picker'){ sel=App.dSelectedContribs; onChange=function(s){App.dSelectedContribs=s;saveContributors();}; }
@@ -33,6 +289,7 @@ window.toggleContrib = function(containerId, name){
 
 function saveContributors(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('update contributors')) return;
   var upd = {
     contributors: App.dSelectedContribs.length ? App.dSelectedContribs : null
   };
@@ -48,21 +305,17 @@ function renderContributorsDisplay(){
   if(!App.dSelectedContribs.length){ el.innerHTML=''; return; }
   el.innerHTML=App.dSelectedContribs.map(function(n){
     var c=colorFor(n);
-    return '<div class="contrib-tag"><div style="width:14px;height:14px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:500">'+initials(n)+'</div><span style="font-size:12px;color:var(--text2)">'+n+'</span></div>';
+    return '<div class="contrib-tag"><div style="width:14px;height:14px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:500">'+safeText(initials(n))+'</div><span style="font-size:12px;color:var(--text2)">'+safeText(n)+'</span></div>';
   }).join('');
 }
 
-window.openTeamModal = function(){ document.getElementById('team-modal').style.display='flex'; setTimeout(function(){document.getElementById('team-add-input').focus();},100); };
-window.closeTeamModal = function(){ document.getElementById('team-modal').style.display='none'; };
+window.openTeamModal = function(){ openManagerView(); };
+window.closeTeamModal = function(){ var modal = document.getElementById('team-modal'); if(modal) modal.style.display='none'; };
 window.addTeamMember = function(){
-  var input=document.getElementById('team-add-input');
-  var name=input.value.trim(); if(!name) return;
-  if(App.teamMembers.some(function(m){return m.name.toLowerCase()===name.toLowerCase();})){input.value='';return;}
-  App.teamRef.push({name:name});
-  input.value='';
+  openManagerView();
 };
 window.removeTeamMember = function(id){
-  App.teamRef.child(id).remove();
+  openManagerView();
 };
 function renderTeamList(){
   var el=document.getElementById('team-member-list'); if(!el) return;
@@ -70,8 +323,8 @@ function renderTeamList(){
   el.innerHTML=App.teamMembers.map(function(m){
     var c=colorFor(m.name);
     return '<div class="team-member-row">'
-      +'<div style="width:24px;height:24px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">'+initials(m.name)+'</div>'
-      +'<span style="flex:1;font-size:13px">'+m.name+'</span>'
+      +'<div style="width:24px;height:24px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0">'+safeText(initials(m.name))+'</div>'
+      +'<span style="flex:1;font-size:13px">'+safeText(m.name)+'</span>'
       +'<button class="btn-icon" onclick="removeTeamMember(\''+m.id+'\')" title="Remove">✕</button>'
       +'</div>';
   }).join('');

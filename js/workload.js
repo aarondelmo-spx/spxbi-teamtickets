@@ -73,9 +73,10 @@ document.addEventListener('click', function(){ if(App.wlPopoverOpen) closeWlPopo
 
 function renderWorkload(){
   var el = document.getElementById('workload-list'); if(!el) return;
-  if(!App.teamMembers.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">Add team members to track workload.</div>'; return; }
+  var members = typeof mainProjectTeamMembers === 'function' ? mainProjectTeamMembers() : App.teamMembers;
+  if(!members.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No users with main projects yet.</div>'; return; }
   var stats = {};
-  App.teamMembers.forEach(function(m){ stats[m.name]={total:0,ontime:0,soon:0,overdue:0}; });
+  members.forEach(function(m){ stats[m.name]={total:0,ontime:0,soon:0,overdue:0}; });
   Object.entries(App.allTickets).forEach(function(e){
     var t=e[1];
     if(!t.subtasks) return;
@@ -91,7 +92,7 @@ function renderWorkload(){
       });
     });
   });
-  el.innerHTML = App.teamMembers.map(function(m){
+  el.innerHTML = members.map(function(m){
     var s = stats[m.name];
     var c = colorFor(m.name);
     if(!s||s.total===0){

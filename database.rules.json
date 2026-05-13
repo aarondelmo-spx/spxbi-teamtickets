@@ -1,0 +1,38 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "whitelist": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "sessionControl": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "tickets": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "sprintProjects": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "automationTeams": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "automationSubteams": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "team": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "activity": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

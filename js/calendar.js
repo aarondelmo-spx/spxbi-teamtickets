@@ -74,7 +74,10 @@ function renderCalendar(){
     var dateObj = new Date(cell.dateStr+'T00:00:00'); dateObj.setHours(0,0,0,0);
     var diffDays = Math.round((dateObj - today)/86400000);
     var isToday = cell.dateStr === todayStr;
-    var isOverdue = !cell.otherMonth && diffDays < 0 && items.some(function(x){return x.status!=='done';});
+    var isOverdue = !cell.otherMonth && diffDays < 0 && items.some(function(x){
+      var status = effectiveStatusValue(x.status);
+      return status!=='done' && status!=='archived';
+    });
     var isSelected = cell.dateStr === App.calSelectedDate;
     var cls = 'cal-cell';
     if(cell.otherMonth) cls += ' other-month';
@@ -84,7 +87,8 @@ function renderCalendar(){
     if(isSelected) cls += ' selected';
     var chips = items.slice(0,2).map(function(it){
       var chipCls = 'cal-chip ';
-      if(it.status==='done') chipCls+='ok';
+      var itemStatus = effectiveStatusValue(it.status);
+      if(itemStatus==='done' || itemStatus==='archived') chipCls+='ok';
       else if(diffDays<0) chipCls+='overdue';
       else if(diffDays<=3) chipCls+='soon';
       else chipCls += it.isSubtask ? 'sub' : 'ok';
@@ -125,10 +129,11 @@ function renderCalDetail(dateStr, items){
     return;
   }
   var html = items.map(function(it){
-    var statusCls = it.status==='done'?'s-done':it.status==='in progress'?'s-progress':it.status==='review'?'s-review':'s-open';
+    var statusCls = statusClass(it.status);
     var priCls = pbClass(it.priority);
     var urgencyLabel = '';
-    if(it.status!=='done'){
+    var normalizedStatus = effectiveStatusValue(it.status);
+    if(normalizedStatus!=='done' && normalizedStatus!=='archived'){
       if(diffDays<0) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,112,111,.15);color:var(--overdue)">overdue</span>';
       else if(diffDays===0) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,212,111,.15);color:var(--warn)">due today</span>';
       else if(diffDays<=3) urgencyLabel='<span class="cal-di-badge" style="background:rgba(247,212,111,.1);color:var(--warn)">in '+diffDays+'d</span>';

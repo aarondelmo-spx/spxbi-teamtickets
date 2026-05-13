@@ -18,3 +18,4 @@ App.ticketsRef = App.mainTicketsRef;
 App.teamRef = App.db.ref('team');
 App.activityRef = App.db.ref('activity');
 App.whitelistRef = App.db.ref('whitelist');
+App.sessionControlRef = App.db.ref('sessionControl');

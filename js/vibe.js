@@ -19,9 +19,7 @@ function initiativeOwner(ticket){
 }
 
 function ownerNameList(selected){
-  var names = (App.teamMembers || []).map(function(member){ return member.name; }).filter(Boolean);
-  if(selected && names.indexOf(selected) === -1) names.unshift(selected);
-  return names;
+  return assignmentPickerNames(selected);
 }
 
 function taskDueRank(task){
@@ -156,10 +154,11 @@ function setDisplay(el, display){
 }
 
 function validVibeMetricFilter(filter){
-  return filter === 'teamSize' || filter === 'reviewed' || filter === 'scoped' || filter === 'inProgress';
+  return filter === 'teamSize' || filter === 'scoped' || filter === 'inProgress';
 }
 
 function syncVibeMetricCards(){
+  if(!validVibeMetricFilter(App.vibeMetricFilter)) App.vibeMetricFilter = 'all';
   var row = document.getElementById('stats-row');
   if(row) row.classList.toggle('vibe-metric-mode', isSprintView());
   document.querySelectorAll('[data-vibe-metric]').forEach(function(card){
@@ -188,25 +187,27 @@ function updateVibeShell(){
     if(tab) tab.classList.toggle('active', App.currentVibeView === view);
   });
 
-  ['status-filter-label','nav-active','nav-all','nav-open','nav-done','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+  ['status-filter-label','nav-active','nav-all','nav-open','nav-archived','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
-  ['pill-active','pill-all','pill-open','toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+  ['pill-active','pill-all','pill-open'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
   document.querySelectorAll('.vibe-advanced-filter').forEach(function(el){
-    el.style.display = vibe ? 'none' : '';
+    var id = el.id || '';
+    var isPriorityControl = id === 'toolbar-priority-sep' || id === 'pill-p0' || id === 'pill-p1' || id === 'pill-p2' || id === 'pill-p3';
+    el.style.display = vibe && !isPriorityControl ? 'none' : (id === 'toolbar-priority-sep' ? 'inline-block' : '');
   });
-  setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
-  setDisplay(document.getElementById('contrib-filter-row'), 'flex');
+  setDisplay(document.getElementById('pill-archived'), vibe ? 'none' : '');
+  setDisplay(document.getElementById('contrib-filter-row'), vibe ? 'none' : 'flex');
   document.querySelectorAll('.shell-tool').forEach(function(el){
     el.style.display = vibe ? 'none' : '';
   });
 
   var filterBtn = document.getElementById('vibe-filter-toggle');
   setDisplay(filterBtn, vibe ? 'none' : '');
-  var donePill = document.getElementById('pill-done');
-  if(donePill) donePill.textContent = 'Done';
+  var donePill = document.getElementById('pill-archived');
+  if(donePill) donePill.textContent = 'Archived';
   var vibeDone = document.getElementById('vibe-done-toggle');
   if(vibeDone){
     vibeDone.textContent = App.currentFilter === 'done' ? 'Showing Done' : 'Done';
@@ -242,6 +243,7 @@ window.setVibeView = function(view){
   updateVibeShell();
   updateStats();
   renderList();
+  history.pushState(null, '', view === 'sprint' ? '?view=sprint&tab=sprint' : '?view=sprint');
 };
 
 window.setVibeMetricFilter = function(filter){
@@ -295,19 +297,18 @@ window.shiftWeeklyPlanWeek = function(delta){
 function updateVibeStats(initiatives, extra){
   var totals = automationTotals(initiatives);
   var teamSize = automationTeamSizeTotal(initiatives);
+  var reviewedCard = document.getElementById('s-open-wrap');
   document.getElementById('s-total-label').textContent='Team size';
-  document.getElementById('s-open-label').textContent='Reviewed';
   document.getElementById('s-prog-label').textContent='Scoped';
   document.getElementById('s-done-label').textContent='In progress';
-  document.getElementById('s-open').className='stat-num c-high';
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
+  if(reviewedCard) reviewedCard.style.display='none';
   document.getElementById('s-total').textContent=fmtCapacity(teamSize);
-  document.getElementById('s-open').textContent=fmtCapacity(totals.reviewed);
   document.getElementById('s-prog').textContent=fmtCapacity(totals.scoped);
   document.getElementById('s-done').textContent=fmtCapacity(totals.progress);
-  document.getElementById('s-extra-label').textContent='HC savings';
-  document.getElementById('s-extra').textContent=fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess);
+  document.getElementById('s-extra-label').textContent='HC savings (excess / actualized)';
+  document.getElementById('s-extra').textContent=fmtCapacity(totals.excess)+' / '+fmtCapacity(totals.actual);
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
     ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())+' onward'
@@ -319,15 +320,10 @@ function updateVibeStats(initiatives, extra){
 
 function initiativeMatchesFilter(entry){
   var t = entry[1];
+  var status = normalizeStatusValue(t && t.status);
   if(App.currentFilter === 'all') return true;
-  if(App.currentFilter === 'active') return t.status !== 'done';
-  return t.status === App.currentFilter;
-}
-
-function initiativeSubteamRecord(t){
-  var team = normalizeTeamName(t && t.teamArea);
-  var subteam = normalizeSubteamName(t && t.subteam);
-  return automationSubteamList(team).find(function(item){ return item.name === subteam; }) || null;
+  if(App.currentFilter === 'active') return status !== 'done';
+  return status === App.currentFilter;
 }
 
 function initiativeMatchesVibeMetric(t){
@@ -336,9 +332,8 @@ function initiativeMatchesVibeMetric(t){
   var team = normalizeTeamName(t && t.teamArea);
   var subteam = normalizeSubteamName(t && t.subteam);
   if(filter === 'teamSize') return subteamSizeHc(team, subteam) > 0;
-  if(filter === 'reviewed') return subteamReviewed(initiativeSubteamRecord(t));
   if(filter === 'scoped') return automationScopedHc(t) > 0;
-  if(filter === 'inProgress') return String(t && t.status || '').toLowerCase() === 'in progress';
+  if(filter === 'inProgress') return normalizeStatusValue(t && t.status) === 'in progress';
   return true;
 }
 
@@ -348,6 +343,7 @@ function initiativeMatchesSearch(t, search){
   if((t.desc||'').toLowerCase().includes(search)) return true;
   if((t.teamArea||'').toLowerCase().includes(search)) return true;
   if((t.subteam||'').toLowerCase().includes(search)) return true;
+  if(getSupportingTeams(t).some(function(team){ return (team || '').toLowerCase().includes(search); })) return true;
   return taskEntries('', t).some(function(item){
     return (item.task.text||'').toLowerCase().includes(search)
       || (item.workstreamName||'').toLowerCase().includes(search);
@@ -391,22 +387,233 @@ function supportChipsHtml(teams){
   return teams.map(function(team){ return '<span class="support-chip">'+safeText(team)+'</span>'; }).join('');
 }
 
+function supportContactEntries(t){
+  return Object.entries((t && t.supportContacts) || {}).map(function(entry){
+    var contact = entry[1] || {};
+    return {
+      id: entry[0],
+      name: contact.name || '',
+      role: contact.role || '',
+      email: contact.email || '',
+      team: contact.team || ''
+    };
+  });
+}
+
+function supportTeamKey(team){
+  return String(team || '').trim().toLowerCase();
+}
+
+function cleanSupportTeamName(team){
+  return String(team || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeSupportTeamList(teams){
+  var byKey = {};
+  (teams || []).forEach(function(team){
+    var name = cleanSupportTeamName(team);
+    var key = supportTeamKey(name);
+    if(key && !byKey[key]) byKey[key] = name;
+  });
+  return Object.values(byKey);
+}
+
+function allSupportingTeamOptions(extraTeams){
+  var byKey = {};
+  function add(team){
+    var name = cleanSupportTeamName(team);
+    var key = supportTeamKey(name);
+    if(key && !byKey[key]) byKey[key] = name;
+  }
+  Object.values(App.sprintTickets || {}).forEach(function(t){
+    getSupportingTeams(t).forEach(add);
+  });
+  Object.values(App.allTickets || {}).forEach(function(t){
+    getSupportingTeams(t).forEach(add);
+  });
+  (extraTeams || []).forEach(add);
+  return Object.values(byKey).sort(function(a,b){ return a.localeCompare(b); });
+}
+
+function supportTeamContainerId(mode){
+  return mode === 'new' ? 'nt-support-teams' : 'd-support-teams';
+}
+
+function supportTeamInputId(mode){
+  return mode === 'new' ? 'nt-support-team-input' : 'support-team-input';
+}
+
+function supportTeamSuggestId(mode){
+  return mode === 'new' ? 'nt-support-team-suggestions' : 'support-team-suggestions';
+}
+
+function selectedSupportTeamsForMode(mode){
+  if(mode === 'new') return App.ntSelectedSupportTeams || [];
+  var t = App.allTickets[App.selectedTicketId] || {};
+  return getSupportingTeams(t);
+}
+
+function canonicalSupportTeamName(team, selected){
+  var name = cleanSupportTeamName(team);
+  var key = supportTeamKey(name);
+  if(!key) return '';
+  var match = allSupportingTeamOptions(selected).find(function(option){ return supportTeamKey(option) === key; });
+  return match || name;
+}
+
+function setSupportTeamsForMode(mode, teams){
+  teams = normalizeSupportTeamList(teams);
+  if(mode === 'new'){
+    App.ntSelectedSupportTeams = teams;
+    renderSupportTeamPicker('new');
+    return;
+  }
+  if(!requireContentEditAccess('update supporting teams')) return;
+  if(!App.selectedTicketId) return;
+  var t = App.allTickets[App.selectedTicketId] || {};
+  t.supportingTeams = teams.length ? teams : null;
+  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
+  renderSupportTeamPicker('detail');
+  renderSupportContactsField(App.selectedTicketId);
+  renderList();
+}
+
+function matchingSupportTeamOptions(mode){
+  var input = document.getElementById(supportTeamInputId(mode));
+  var query = input ? cleanSupportTeamName(input.value) : '';
+  if(!query) return [];
+  var selected = selectedSupportTeamsForMode(mode);
+  var selectedKeys = {};
+  selected.forEach(function(team){ selectedKeys[supportTeamKey(team)] = true; });
+  var q = query.toLowerCase();
+  return allSupportingTeamOptions(selected)
+    .filter(function(option){
+      var key = supportTeamKey(option);
+      return key && !selectedKeys[key] && key.indexOf(q) > -1;
+    })
+    .slice(0, 6);
+}
+
+function renderSupportTeamPicker(mode){
+  var el = document.getElementById(supportTeamContainerId(mode));
+  if(!el) return;
+  var teams = selectedSupportTeamsForMode(mode);
+  var inputId = supportTeamInputId(mode);
+  var suggestId = supportTeamSuggestId(mode);
+  var editable = mode === 'new' ? canEditContent() : canEditContent();
+  el.innerHTML = teams.map(function(team){
+    return '<span class="support-chip">'+safeText(team)
+      +'<button class="support-chip-remove" onclick="removeSupportTeamFromMode(\''+mode+'\',\''+safeText(jsArg(team))+'\')" type="button" title="Remove"'+(editable?'':' disabled')+'>x</button></span>';
+  }).join('')
+  +'<input class="support-team-input" id="'+inputId+'" placeholder="Add team..." autocomplete="off"'+(editable?'':' disabled')
+    +' oninput="renderSupportTeamSuggestions(\''+mode+'\')"'
+    +' onfocus="renderSupportTeamSuggestions(\''+mode+'\')"'
+    +' onblur="setTimeout(function(){hideSupportTeamSuggestions(\''+mode+'\')},120)"'
+    +' onkeydown="handleSupportTeamInputKey(event,\''+mode+'\')" />'
+  +'<div class="support-suggest-list" id="'+suggestId+'"></div>';
+}
+
+window.renderSupportTeamSuggestions = function(mode){
+  var list = document.getElementById(supportTeamSuggestId(mode));
+  if(!list) return;
+  var matches = matchingSupportTeamOptions(mode);
+  if(!matches.length){
+    list.innerHTML = '';
+    list.classList.remove('open');
+    return;
+  }
+  list.innerHTML = matches.map(function(team){
+    return '<button type="button" class="support-suggest-item"'
+      +' onmousedown="event.preventDefault();chooseSupportTeamSuggestion(\''+mode+'\',\''+safeText(jsArg(team))+'\')">'+safeText(team)+'</button>';
+  }).join('');
+  list.classList.add('open');
+};
+
+window.hideSupportTeamSuggestions = function(mode){
+  var list = document.getElementById(supportTeamSuggestId(mode));
+  if(!list) return;
+  list.classList.remove('open');
+};
+
+window.handleSupportTeamInputKey = function(event, mode){
+  if(event.key === 'Enter' || event.key === ','){
+    event.preventDefault();
+    commitSupportTeamInput(mode);
+    return;
+  }
+  if(event.key === 'Tab'){
+    var matches = matchingSupportTeamOptions(mode);
+    if(matches.length){
+      event.preventDefault();
+      addSupportTeamToMode(mode, matches[0]);
+    }
+    return;
+  }
+  if(event.key === 'Escape') hideSupportTeamSuggestions(mode);
+};
+
+window.commitSupportTeamInput = function(mode){
+  var input = document.getElementById(supportTeamInputId(mode));
+  if(!input) return;
+  var raw = input.value || '';
+  var parts = raw.split(',').map(cleanSupportTeamName).filter(Boolean);
+  if(!parts.length) return;
+  parts.forEach(function(part){ addSupportTeamToMode(mode, part); });
+};
+
+window.chooseSupportTeamSuggestion = function(mode, team){
+  addSupportTeamToMode(mode, team);
+};
+
+window.addSupportTeamToMode = function(mode, team){
+  var selected = selectedSupportTeamsForMode(mode);
+  var name = canonicalSupportTeamName(team, selected);
+  if(!name) return;
+  var teams = selected.filter(function(existing){ return supportTeamKey(existing) !== supportTeamKey(name); });
+  teams.push(name);
+  setSupportTeamsForMode(mode, teams);
+  var input = document.getElementById(supportTeamInputId(mode));
+  if(input){
+    input.value = '';
+    input.focus();
+  }
+  hideSupportTeamSuggestions(mode);
+};
+
+window.removeSupportTeamFromMode = function(mode, team){
+  var teams = selectedSupportTeamsForMode(mode).filter(function(existing){
+    return supportTeamKey(existing) !== supportTeamKey(team);
+  });
+  setSupportTeamsForMode(mode, teams);
+};
+
+window.renderNewSupportingTeamsField = function(){
+  renderSupportTeamPicker('new');
+};
+
 function initiativeCardHtml(id, t){
   var stats = initiativeTaskStats(t);
   var pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
   var due = nearestDueTask(t);
   var dueText = due ? deadlineTagHtml(due.deadline, due.done ? 'done' : 'open') + ' ' + safeText(due.text || 'Task') : '<span>No due tasks</span>';
+  var deadlineText = t.deadline
+    ? '<span class="initiative-deadline">Deadline '+safeText(t.deadline)+'</span>'
+    : '<span class="initiative-deadline initiative-deadline-missing"><span class="initiative-deadline-dot"></span>No deadline</span>';
   var groupCount = customWorkstreamEntries(t).length;
   var weeklyDue = dueThisWeekCount(t);
-  var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(countedActualHcSavings(t))+' / '+fmtCapacity(excessCapacityHc(t))+' saved';
+  var supportContacts = supportContactEntries(t);
+  var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(excessCapacityHc(t))+' excess / '+fmtCapacity(countedActualHcSavings(t))+' actualized';
+  var priority = String(t.priority || 'p1').toLowerCase();
   return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
-    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
+    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +(getSupportingTeams(t).length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+supportChipsHtml(getSupportingTeams(t))+'</div>' : '')
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
     +(weeklyDue?'<span>'+weeklyDue+' due this week</span>':'')
     +(groupCount?'<span>'+groupCount+' group'+(groupCount!==1?'s':'')+'</span>':'')
+    +(supportContacts.length?'<span>'+supportContacts.length+' support contact'+(supportContacts.length!==1?'s':'')+'</span>':'')
+    +deadlineText
     +'<span>'+hcText+'</span>'
     +'<span>'+dueText+'</span>'
     +'</div>'
@@ -424,23 +631,24 @@ function hcSummaryHtml(items, teamName, showTeamSize, subteamName){
   teamName = teamName ? normalizeTeamName(teamName) : '';
   subteamName = subteamName ? normalizeSubteamName(subteamName) : '';
   var size = subteamName ? subteamSizeHc(teamName, subteamName) : (teamName ? teamSizeHc(teamName) : automationTeamSizeTotal(initiatives));
-  var reviewed = subteamName ? subteamReviewedCoverage(teamName, subteamName) : (teamName ? teamReviewedCoverage(teamName) : totals.reviewed);
+  var sizeLabel = subteamName ? 'Subteam size' : 'Team size';
   return '<div class="team-hc-strip">'
-    +((showTeamSize || subteamName) ? '<span>'+(subteamName ? 'Subteam size ' : 'Team size ')+fmtCapacity(size)+'</span>' : '')
-    +'<span>Reviewed '+fmtCapacity(reviewed)+'</span>'
-    +'<span>Scoped '+fmtCapacity(totals.scoped)+'</span>'
-    +'<span>In progress '+fmtCapacity(totals.progress)+'</span>'
-    +'<span>Savings '+fmtCapacity(totals.actual)+' / '+fmtCapacity(totals.excess)+'</span>'
+    +((showTeamSize || subteamName) ? '<div class="team-size-badge'+(subteamName ? ' subteam-size-badge' : '')+'"><span class="team-size-label">'+sizeLabel+'</span><span class="team-size-value">'+fmtCapacity(size)+'</span></div>' : '')
+    +'<span class="team-metric">Scoped '+fmtCapacity(totals.scoped)+'</span>'
+    +'<span class="team-metric">In progress '+fmtCapacity(totals.progress)+'</span>'
+    +'<span class="team-metric">Savings '+fmtCapacity(totals.excess)+' excess / '+fmtCapacity(totals.actual)+' actualized</span>'
     +'</div>';
 }
 
 function editableTeamHeadingHtml(teamName){
+  if(!canEditContent()) return '<div class="team-heading">'+safeText(teamName)+'</div>';
   return '<button class="team-heading edit-heading" onclick="openHierarchyEditModal(\'team\',\''+jsArg(teamName)+'\')" type="button">'
     +'<span>'+safeText(teamName)+'</span><span class="edit-hint">Edit</span>'
     +'</button>';
 }
 
 function editableSubteamHeadingHtml(teamName, subteamName){
+  if(!canEditContent()) return '<div class="subteam-heading">'+safeText(subteamName)+'</div>';
   return '<button class="subteam-heading edit-heading" onclick="openHierarchyEditModal(\'subteam\',\''+jsArg(teamName)+'\',\''+jsArg(subteamName)+'\')" type="button">'
     +'<span>'+safeText(subteamName)+'</span><span class="edit-hint">Edit</span>'
     +'</button>';
@@ -488,6 +696,7 @@ function renderVibeInitiatives(search, list){
     .sort(function(a,b){
       return compareTeams(normalizeTeamName(a[1].teamArea), normalizeTeamName(b[1].teamArea))
         || compareSubteams(normalizeSubteamName(a[1].subteam), normalizeSubteamName(b[1].subteam))
+        || pOrder(a[1].priority || 'p1') - pOrder(b[1].priority || 'p1')
         || (b[1].createdTs || 0) - (a[1].createdTs || 0);
     });
   if(!entries.length){
@@ -541,18 +750,38 @@ function taskOwnerSelectHtml(item){
   var options = '<option value="">Unassigned</option>' + ownerNameList(selected).map(function(name){
     return '<option value="'+safeText(name)+'"'+(selected===name?' selected':'')+'>'+safeText(name)+'</option>';
   }).join('');
-  return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)">'+options+'</select>';
+  return '<select class="task-inline-select" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'owner\',this.value)"'+(canEditContent()?'':' disabled')+'>'+options+'</select>';
 }
+
+function taskRowControlTarget(target){
+  return target && target.closest && target.closest('button,input,select,textarea,a,[contenteditable="true"],.subtask-check');
+}
+
+window.openVibeTaskRow = function(event, ticketId){
+  if(event && taskRowControlTarget(event.target)) return;
+  if(event && event.type === 'keydown'){
+    if(event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+  }
+  openDetailModal(ticketId);
+};
 
 function taskRowHtml(item, mode){
   var task = item.task;
   var checked = !!task.done;
-  var action = '<button class="btn btn-sm" onclick="openDetailModal(\''+jsArg(item.ticketId)+'\')" type="button">Open</button>';
-  return '<div class="vibe-task-row'+(checked?' done-task':'')+'">'
-    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\','+checked+')"></div>'
-    +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(item.initiative.title || 'Untitled initiative')+' / '+safeText(item.workstreamName)+'</div></div>'
+  var ticketArg = jsArg(item.ticketId);
+  var taskArg = jsArg(item.taskId);
+  var action = '<button class="btn btn-sm" onclick="event.stopPropagation();openDetailModal(\''+ticketArg+'\')" type="button">Open</button>';
+  var _team = normalizeTeamName(item.initiative.teamArea) || '';
+  var _sub  = normalizeSubteamName(item.initiative.subteam) || '';
+  var _init = item.initiative.title || 'Untitled initiative';
+  var _grp  = item.workstreamName;
+  var _bc   = [_team, _sub, _init, _grp].filter(Boolean).join(' / ');
+  return '<div class="vibe-task-row vibe-task-row-clickable'+(checked?' done-task':'')+'" onclick="openVibeTaskRow(event,\''+ticketArg+'\')" onkeydown="openVibeTaskRow(event,\''+ticketArg+'\')" role="button" tabindex="0">'
+    +'<div class="subtask-check'+(checked?' checked':'')+'"'+(canEditContent()?' onclick="event.stopPropagation();toggleVibeTaskFromList(\''+ticketArg+'\',\''+taskArg+'\','+checked+')"':'')+'></div>'
+    +'<div><div class="task-text">'+safeText(task.text || 'Untitled task')+'</div><div class="task-parent">'+safeText(_bc)+'</div></div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(item.ticketId)+'\',\''+jsArg(item.taskId)+'\',\'deadline\',this.value)" />'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+ticketArg+'\',\''+taskArg+'\',\'deadline\',this.value)"'+(canEditContent()?'':' disabled')+' />'
     +'<div style="display:flex;gap:5px;justify-content:flex-end">'+action+'</div>'
     +'</div>';
 }
@@ -641,7 +870,12 @@ function renderVibeWeeklyPlan(search, list){
     .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
     .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
-    .sort(function(a,b){ var da=a.task.deadline||'',db=b.task.deadline||''; return da<db?-1:da>db?1:0; });
+    .sort(function(a,b){
+      var da=a.task.deadline||'',db=b.task.deadline||'';
+      return (da<db?-1:da>db?1:0)
+        || pOrder(a.initiative.priority || 'p1') - pOrder(b.initiative.priority || 'p1')
+        || (a.task.ts || 0) - (b.task.ts || 0);
+    });
   renderWeeklyPlanGroups(items, list, start);
 }
 
@@ -675,22 +909,23 @@ function workstreamTaskRowHtml(ticketId, taskId, task, workstreamName){
   var checked = !!task.done;
   var item = {ticketId:ticketId, taskId:taskId, task:task, initiative:App.allTickets[ticketId] || {}, workstreamName:workstreamName};
   return '<div class="task-row'+(checked?' done-task':'')+'">'
-    +'<div class="subtask-check'+(checked?' checked':'')+'" onclick="toggleVibeTaskFromList(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\','+checked+')"></div>'
+    +'<div class="subtask-check'+(checked?' checked':'')+'"'+(canEditContent()?' onclick="toggleVibeTaskFromList(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\','+checked+')"':'')+'></div>'
     +'<div class="task-text">'+safeText(task.text || 'Untitled task')+'</div>'
     +taskOwnerSelectHtml(item)
-    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)" />'
-    +'<button class="btn-icon" onclick="deleteSubtask(\''+jsArg(taskId)+'\')" title="Remove task" type="button">x</button>'
+    +'<input class="task-inline-input" type="date" title="Due date" aria-label="Due date" value="'+safeText(task.deadline || '')+'" onchange="updateVibeTaskField(\''+jsArg(ticketId)+'\',\''+jsArg(taskId)+'\',\'deadline\',this.value)"'+(canEditContent()?'':' disabled')+' />'
+    +'<button class="btn-icon" onclick="deleteSubtask(\''+jsArg(taskId)+'\')" title="Remove task" type="button"'+(canEditContent()?'':' disabled')+'>x</button>'
     +'</div>';
 }
 
 function taskComposerHtml(workstreamId){
   var id = domId(workstreamId);
   var owner = initiativeOwner(App.allTickets[App.selectedTicketId] || {});
+  var disabled = canEditContent() ? '' : ' disabled';
   return '<div class="task-add-row">'
-    +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')" />'
-    +'<select id="task-owner-'+id+'">'+addTaskOwnerOptions(owner)+'</select>'
-    +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date" />'
-    +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button">Add</button>'
+    +'<input id="task-text-'+id+'" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addVibeTask(\''+jsArg(workstreamId)+'\')"'+disabled+' />'
+    +'<select id="task-owner-'+id+'"'+disabled+'>'+addTaskOwnerOptions(owner)+'</select>'
+    +'<input id="task-due-'+id+'" type="date" title="Due date" aria-label="Due date"'+disabled+' />'
+    +'<button class="btn btn-sm btn-primary" onclick="addVibeTask(\''+jsArg(workstreamId)+'\')" type="button"'+disabled+'>Add</button>'
     +'</div>';
 }
 
@@ -717,7 +952,7 @@ function renderWorkstreamsAndTasks(ticketId){
     var activeCount = wsTasks.filter(function(item){return !item.task.done;}).length;
     return '<div class="workstream-card">'
       +'<div class="workstream-head"><div><div class="workstream-title">'+safeText(ws.name || 'Group')+'</div><div class="microcopy">Optional task group for a separate track of work.</div></div>'
-      +'<div class="workstream-actions"><div class="workstream-count">'+activeCount+' active</div><button class="btn-icon workstream-delete" onclick="deleteWorkstream(\''+jsArg(ticketId)+'\',\''+jsArg(ws.id)+'\')" title="Delete task group" type="button">x</button></div></div>'
+      +'<div class="workstream-actions"><div class="workstream-count">'+activeCount+' active</div><button class="btn-icon workstream-delete" onclick="deleteWorkstream(\''+jsArg(ticketId)+'\',\''+jsArg(ws.id)+'\')" title="Delete task group" type="button"'+(canEditContent()?'':' disabled')+'>x</button></div></div>'
       +'<div class="task-list">'+(wsTasks.length ? wsTasks.map(function(item){ return workstreamTaskRowHtml(ticketId, item.taskId, item.task, ws.name || 'Group'); }).join('') : '<div class="empty-inline">No tasks yet.</div>')+'</div>'
       +taskComposerHtml(ws.id)
       +'</div>';
@@ -728,6 +963,7 @@ function renderWorkstreamsAndTasks(ticketId){
 
 window.addWorkstream = function(){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add task groups')) return;
   var name = prompt('Group name');
   name = name ? name.trim() : '';
   if(!name) return;
@@ -744,6 +980,7 @@ window.addWorkstream = function(){
 
 window.deleteWorkstream = function(ticketId, workstreamId){
   if(!ticketId || !workstreamId || workstreamId === VIBE_GENERAL_WORKSTREAM_ID) return;
+  if(!requireContentEditAccess('delete task groups')) return;
   var t = App.allTickets[ticketId];
   if(!t || !t.workstreams || !t.workstreams[workstreamId]) return;
   var groupName = t.workstreams[workstreamId].name || 'this group';
@@ -775,6 +1012,7 @@ window.deleteWorkstream = function(ticketId, workstreamId){
 
 window.addVibeTask = function(workstreamId){
   if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add tasks')) return;
   var id = domId(workstreamId);
   var textEl = document.getElementById('task-text-'+id);
   var ownerEl = document.getElementById('task-owner-'+id);
@@ -821,6 +1059,7 @@ function refreshVibeAfterTaskUpdate(ticketId, taskId, upd){
 }
 
 window.updateVibeTaskField = function(ticketId, taskId, field, value){
+  if(!requireContentEditAccess('update tasks')) return;
   var upd = {};
   if(field === 'owner') upd.contributors = value ? [value] : null;
   else upd[field] = value === '' ? null : value;
@@ -829,43 +1068,90 @@ window.updateVibeTaskField = function(ticketId, taskId, field, value){
 };
 
 window.toggleVibeTaskFromList = function(ticketId, taskId, current){
+  if(!requireContentEditAccess('update tasks')) return;
   var upd = {done:!current};
   App.sprintTicketsRef.child(ticketId).child('subtasks/'+taskId).update(upd);
   refreshVibeAfterTaskUpdate(ticketId, taskId, upd);
 };
 
 function renderSupportingTeamsField(ticketId){
-  var el = document.getElementById('d-support-teams');
-  if(!el) return;
-  var t = App.allTickets[ticketId] || {};
-  var teams = getSupportingTeams(t);
-  el.innerHTML = teams.map(function(team){
-    return '<span class="support-chip">'+safeText(team)
-      +'<button class="support-chip-remove" onclick="removeSupportingTeam(\''+jsArg(team)+'\')" type="button" title="Remove">✕</button></span>';
-  }).join('')
-  +'<input class="support-team-input" id="support-team-input" placeholder="Add team…"'
-  +' onkeydown="if(event.key===\'Enter\'||event.key===\',\'){event.preventDefault();var v=this.value.trim();if(v){addSupportingTeam(v);this.value=\'\';}}"/>';
+  renderSupportTeamPicker('detail');
+  renderSupportContactsField(ticketId);
 }
 
-window.addSupportingTeam = function(team){
-  if(!team || !App.selectedTicketId) return;
-  var t = App.allTickets[App.selectedTicketId] || {};
-  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
-  teams.push(team);
-  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams});
-  t.supportingTeams = teams;
-  renderSupportingTeamsField(App.selectedTicketId);
+function supportContactTeamOptions(ticket, selected){
+  var teams = getSupportingTeams(ticket);
+  if(selected && teams.indexOf(selected) === -1) teams = teams.concat([selected]);
+  return '<option value="">Team</option>' + teams.map(function(team){
+    return '<option value="'+safeText(team)+'"'+(selected===team?' selected':'')+'>'+safeText(team)+'</option>';
+  }).join('');
+}
+
+function renderSupportContactsField(ticketId){
+  var list = document.getElementById('d-support-contacts-list');
+  var teamSelect = document.getElementById('support-contact-team');
+  if(!list || !teamSelect) return;
+  var ticket = App.allTickets[ticketId] || {};
+  teamSelect.innerHTML = supportContactTeamOptions(ticket, '');
+  var contacts = supportContactEntries(ticket);
+  if(!contacts.length){
+    list.innerHTML = '<div class="support-contact-empty">No supporting contacts yet.</div>';
+    return;
+  }
+  list.innerHTML = contacts.map(function(contact){
+    var meta = [contact.role, contact.team].filter(Boolean).join(' / ');
+    return '<div class="support-contact-row">'
+      +'<div class="support-contact-main"><div class="support-contact-name">'+safeText(contact.name || contact.email || 'Unnamed contact')+'</div>'
+      +(meta?'<div class="support-contact-meta">'+safeText(meta)+'</div>':'')+'</div>'
+      +(contact.email?'<a class="support-contact-email" href="mailto:'+safeText(contact.email)+'">'+safeText(contact.email)+'</a>':'<span class="support-contact-email muted">No email</span>')
+      +'<button class="btn-icon" onclick="removeSupportContact(\''+jsArg(contact.id)+'\')" title="Remove"'+(canEditContent()?'':' disabled')+'>x</button>'
+      +'</div>';
+  }).join('');
+}
+
+window.addSupportContact = function(){
+  if(!App.selectedTicketId) return;
+  if(!requireContentEditAccess('add support contacts')) return;
+  var nameEl = document.getElementById('support-contact-name');
+  var roleEl = document.getElementById('support-contact-role');
+  var emailEl = document.getElementById('support-contact-email');
+  var teamEl = document.getElementById('support-contact-team');
+  var contact = {
+    name: cleanSupportTeamName(nameEl && nameEl.value),
+    role: cleanSupportTeamName(roleEl && roleEl.value),
+    email: String((emailEl && emailEl.value) || '').trim().toLowerCase(),
+    team: cleanSupportTeamName(teamEl && teamEl.value),
+    createdTs: Date.now()
+  };
+  if(!contact.name && !contact.role && !contact.email && !contact.team) return;
+  var newRef = activeTicketRef(App.selectedTicketId).child('supportContacts').push(contact);
+  var ticket = App.allTickets[App.selectedTicketId] || {};
+  if(!ticket.supportContacts) ticket.supportContacts = {};
+  ticket.supportContacts[newRef.key] = contact;
+  if(nameEl) nameEl.value = '';
+  if(roleEl) roleEl.value = '';
+  if(emailEl) emailEl.value = '';
+  if(teamEl) teamEl.value = '';
+  renderSupportContactsField(App.selectedTicketId);
   renderList();
 };
 
-window.removeSupportingTeam = function(team){
-  if(!App.selectedTicketId) return;
-  var t = App.allTickets[App.selectedTicketId] || {};
-  var teams = getSupportingTeams(t).filter(function(s){ return s !== team; });
-  activeTicketRef(App.selectedTicketId).update({supportingTeams: teams.length ? teams : null});
-  t.supportingTeams = teams.length ? teams : null;
-  renderSupportingTeamsField(App.selectedTicketId);
+window.removeSupportContact = function(contactId){
+  if(!App.selectedTicketId || !contactId) return;
+  if(!requireContentEditAccess('remove support contacts')) return;
+  activeTicketRef(App.selectedTicketId).child('supportContacts/'+contactId).remove();
+  var ticket = App.allTickets[App.selectedTicketId];
+  if(ticket && ticket.supportContacts) delete ticket.supportContacts[contactId];
+  renderSupportContactsField(App.selectedTicketId);
   renderList();
+};
+
+window.addSupportingTeam = function(team){
+  addSupportTeamToMode('detail', team);
+};
+
+window.removeSupportingTeam = function(team){
+  removeSupportTeamFromMode('detail', team);
 };
 
 function updateDetailLayoutForView(){
@@ -885,6 +1171,8 @@ function updateDetailLayoutForView(){
   setDisplay(linksSection, 'block');
   var supportField = document.getElementById('d-support-teams-field');
   setDisplay(supportField, vibe ? 'block' : 'none');
+  var supportContactsField = document.getElementById('d-support-contacts-field');
+  setDisplay(supportContactsField, vibe ? 'block' : 'none');
   if(vibe && App.selectedTicketId) renderSupportingTeamsField(App.selectedTicketId);
   var chevron = document.getElementById('detail-advanced-chevron');
   if(chevron) chevron.style.transform = 'rotate(0deg)';
