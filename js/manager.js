@@ -3,6 +3,10 @@ function openManagerView(){
   window.location.href = window.location.pathname + '?view=manager';
 }
 
+function openDashboardView(){
+  window.open('https://docs.google.com/spreadsheets/d/1PfPXntYN23aUC_xfMm3qe--MWNeN1pdLU1fnNVTuNy8/edit?gid=679121886#gid=679121886', '_blank', 'noopener');
+}
+
 function exitManagerView(){
   window.location.href = window.location.pathname;
 }

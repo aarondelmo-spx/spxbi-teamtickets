@@ -32,12 +32,17 @@ function Get-RevisionCount([string]$Range, [string]$errorMessage) {
   return [int]($countText | Select-Object -First 1)
 }
 
-function Assert-CleanWorktree() {
+function Get-WorktreeChanges() {
   $pendingChanges = @(Get-GitOutput @("status", "--porcelain=v1") "Deployment blocked: unable to read git status.")
-  if($pendingChanges.Count -gt 0){
-    Write-Host "Working tree is not clean:" -ForegroundColor Red
-    git status --short
-    Fail-Deploy "Deployment blocked: commit, stash, or discard local changes before deploying."
+  return $pendingChanges
+}
+
+function Assert-NoUnmergedChanges() {
+  $unmerged = @(Get-WorktreeChanges | Where-Object { $_ -match '^(AA|AU|DD|DU|UA|UD|UU) ' })
+  if($unmerged.Count -gt 0){
+    Write-Host "Unmerged changes detected:" -ForegroundColor Red
+    $unmerged | ForEach-Object { Write-Host $_ }
+    Fail-Deploy "Deployment blocked: resolve merge conflicts before deploying."
   }
 }
 
@@ -74,6 +79,26 @@ function Sync-MainWithOrigin() {
   }
 }
 
+function Commit-LocalChangesIfAny() {
+  $pendingChanges = @(Get-WorktreeChanges)
+  if($pendingChanges.Count -eq 0){
+    Write-Host "No local changes to commit." -ForegroundColor Yellow
+    return
+  }
+
+  Write-Host "`n=== Commit ===" -ForegroundColor Cyan
+  git status --short
+
+  Invoke-Git @("add", "-A") "Deployment blocked: git add -A failed."
+  $stagedChanges = @(Get-GitOutput @("diff", "--cached", "--name-only") "Deployment blocked: unable to inspect staged changes.")
+  if($stagedChanges.Count -eq 0){
+    Fail-Deploy "Deployment blocked: changes were detected but nothing was staged."
+  }
+
+  Write-Host "Committing $($stagedChanges.Count) file(s)..." -ForegroundColor Yellow
+  Invoke-Git @("commit", "-m", $msg) "Deployment blocked: git commit failed."
+}
+
 function Show-ReleaseSummary() {
   Write-Host "`n=== Release ===" -ForegroundColor Cyan
   Invoke-Git @("log", "--oneline", "--decorate", "-5") "Deployment blocked: unable to show recent commits."
@@ -101,19 +126,25 @@ function Run-PreflightTests() {
   }
 }
 
-function Assert-RemoteStillCurrent() {
-  Write-Host "`n=== Freshness Check ===" -ForegroundColor Cyan
+function Push-MainToOrigin() {
+  Write-Host "`n=== Push ===" -ForegroundColor Cyan
   Invoke-Git @("fetch", "origin", "main") "Deployment blocked: final git fetch origin main failed."
 
-  $aheadCount = Get-RevisionCount "origin/main..HEAD" "Deployment blocked: unable to compare HEAD to origin/main during final check."
-  $behindCount = Get-RevisionCount "HEAD..origin/main" "Deployment blocked: unable to compare origin/main to HEAD during final check."
+  $aheadCount = Get-RevisionCount "origin/main..HEAD" "Deployment blocked: unable to compare HEAD to origin/main before push."
+  $behindCount = Get-RevisionCount "HEAD..origin/main" "Deployment blocked: unable to compare origin/main to HEAD before push."
 
-  if($aheadCount -gt 0){
-    Fail-Deploy "Deployment blocked: local main gained unpushed commits during preflight. Push them before deploying."
+  if($aheadCount -gt 0 -and $behindCount -gt 0){
+    Fail-Deploy "Deployment blocked: main diverged from origin/main during preflight. Pull latest main and rerun deploy.ps1."
   }
   if($behindCount -gt 0){
     Fail-Deploy "Deployment blocked: origin/main changed during preflight. Pull latest main and rerun deploy.ps1."
   }
+  if($aheadCount -eq 0){
+    Write-Host "Main is already pushed to origin." -ForegroundColor Yellow
+    return
+  }
+
+  Invoke-Git @("push", "origin", "main") "Deployment blocked: git push origin main failed."
 }
 
 Write-Host "`n=== Git ===" -ForegroundColor Cyan
@@ -124,13 +155,12 @@ if(-not (Test-Path $firebase)){
 }
 
 Assert-OnMain
-Assert-CleanWorktree
+Assert-NoUnmergedChanges
 Sync-MainWithOrigin
-Assert-CleanWorktree
-Show-ReleaseSummary
 Run-PreflightTests
-Assert-CleanWorktree
-Assert-RemoteStillCurrent
+Commit-LocalChangesIfAny
+Show-ReleaseSummary
+Push-MainToOrigin
 
 Write-Host "`n=== Firebase ===" -ForegroundColor Cyan
 & $firebase deploy --only hosting,database
