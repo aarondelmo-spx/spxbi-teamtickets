@@ -53,26 +53,6 @@
   </div>
 </div>
 
-<!-- Manage Users (Whitelist) Modal -->
-<div class="modal-overlay" id="manage-users-modal" style="display:none" onclick="if(event.target===this)closeManageUsersModal()">
-  <div class="name-modal" style="max-width:460px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <h3 style="margin-bottom:0">Manage users</h3>
-      <button class="modal-close" onclick="closeManageUsersModal()">×</button>
-    </div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:.75rem">Controls who can sign in. Each email maps to a fixed display name.</p>
-    <div id="manage-users-list" style="margin-bottom:.75rem"></div>
-    <div id="manage-users-add-row" style="display:none;gap:6px;flex-direction:column">
-      <div style="display:flex;gap:6px">
-        <input id="mu-email-input" placeholder="email@spxexpress.com" type="email" style="flex:2;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none" onkeydown="if(event.key==='Enter')addManageUser()" />
-        <input id="mu-name-input" placeholder="Display name" maxlength="30" style="flex:1;padding:7px 10px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none" onkeydown="if(event.key==='Enter')addManageUser()" />
-        <button class="btn btn-primary btn-sm" onclick="addManageUser()">Add</button>
-      </div>
-    </div>
-    <div id="manage-users-noadmin" style="display:none;font-size:12px;color:var(--text3);padding:.5rem 0">🔒 Admin access required to add or remove users.</div>
-  </div>
-</div>
-
 <div class="app" style="display:none">
   <aside class="sidebar">
     <div class="logo">TICKETS<span>/spxbi</span></div>
@@ -84,12 +64,12 @@
       <span style="font-size:10px;color:var(--text3)">sign out</span>
     </div>
     <button class="new-btn" id="new-project-btn" onclick="openNewModal()">+ New Project</button>
-    <button class="team-btn" onclick="openManagerView()">📊 Manager view</button>
-    <button class="team-btn" onclick="openTeamModal()">👥 Manage team</button>
-    <button class="team-btn" id="theme-btn" onclick="toggleTheme()" style="margin-top:2px">🌙 Dark mode</button>
-    <button class="team-btn" onclick="openCalendar()" style="margin-top:2px">📅 Calendar view</button>
-    <div class="sidebar-section" style="margin-top:.75rem">Whitelist</div>
-    <button class="team-btn" onclick="openManageUsersModal()">🔒 Manage users</button>
+    <button class="team-btn" id="users-btn" onclick="openManagerView()">Users</button>
+    <details class="sidebar-settings">
+      <summary>Settings</summary>
+      <button class="team-btn shell-tool" id="theme-btn" onclick="toggleTheme()">🌙 Dark mode</button>
+      <button class="team-btn shell-tool" onclick="openCalendar()">📅 Calendar view</button>
+    </details>
     <div class="sidebar-section">Workspace</div>
     <button class="view-tab active" id="view-main" onclick="setProjectView('main')"><span class="nav-dot" style="background:var(--open)"></span>Main Projects<span class="nav-count" id="view-main-count">0</span></button>
     <button class="view-tab" id="view-sprint" onclick="setProjectView('sprint')"><span class="nav-dot" style="background:var(--accent)"></span>Vibe Coding Projects<span class="nav-count" id="view-sprint-count">0</span></button>
