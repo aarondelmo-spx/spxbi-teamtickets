@@ -188,13 +188,21 @@ function updateVibeShell(){
     if(tab) tab.classList.toggle('active', App.currentVibeView === view);
   });
 
-  ['status-filter-label','nav-active','nav-all','nav-open','nav-done','priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+  ['status-filter-label','nav-active','nav-all','nav-open','nav-done'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
-  ['pill-active','pill-all','pill-open','toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+  ['priority-filter-label','nav-p0','nav-p1','nav-p2','nav-p3'].forEach(function(id){
+    setDisplay(document.getElementById(id), '');
+  });
+  ['pill-active','pill-all','pill-open'].forEach(function(id){
     setDisplay(document.getElementById(id), vibe ? 'none' : '');
   });
+  ['toolbar-priority-sep','pill-p0','pill-p1','pill-p2','pill-p3'].forEach(function(id){
+    setDisplay(document.getElementById(id), '');
+  });
+  var priorityPillIds = ['pill-p0','pill-p1','pill-p2','pill-p3','toolbar-priority-sep'];
   document.querySelectorAll('.vibe-advanced-filter').forEach(function(el){
+    if(priorityPillIds.indexOf(el.id) > -1) return;
     el.style.display = vibe ? 'none' : '';
   });
   setDisplay(document.getElementById('pill-done'), vibe ? 'none' : '');
