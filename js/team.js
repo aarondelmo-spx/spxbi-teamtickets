@@ -171,6 +171,16 @@ function mainProjectTeamMembers(){
   });
 }
 
+function sprintProjectTeamMembers(){
+  var names = {};
+  collectAssignedNamesFromTickets(App.sprintTickets).forEach(function(name){
+    names[assignmentNameKey(name)] = true;
+  });
+  return (App.teamMembers || []).filter(function(member){
+    return !!names[assignmentNameKey(member.name)];
+  });
+}
+
 function rebuildTeamMembers(){
   var byName = {};
   var whitelistNameKeys = {};

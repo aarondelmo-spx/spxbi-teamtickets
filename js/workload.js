@@ -38,7 +38,9 @@ window.showWlPopover = function(memberName, bucket, btnEl){
   var color = bucket==='overdue'?'var(--overdue)':bucket==='soon'?'var(--warn)':bucket==='done'?'var(--done)':'var(--accent)';
   var bucketLabel = bucket==='overdue'?'Overdue':bucket==='soon'?'Due soon':bucket==='done'?'Done':'On time';
   var items = [];
-  Object.entries(App.allTickets).forEach(function(e){
+  var inSprint = typeof isSprintView === 'function' && isSprintView();
+  var popTicketSource = inSprint ? App.sprintTickets : App.mainTickets;
+  Object.entries(popTicketSource || {}).forEach(function(e){
     var tid=e[0],t=e[1];
     if(!t.subtasks) return;
     Object.entries(t.subtasks).forEach(function(se){
@@ -73,11 +75,16 @@ document.addEventListener('click', function(){ if(App.wlPopoverOpen) closeWlPopo
 
 function renderWorkload(){
   var el = document.getElementById('workload-list'); if(!el) return;
-  var members = typeof mainProjectTeamMembers === 'function' ? mainProjectTeamMembers() : App.teamMembers;
-  if(!members.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">No users with main projects yet.</div>'; return; }
+  var inSprint = typeof isSprintView === 'function' && isSprintView();
+  var members = inSprint
+    ? (typeof sprintProjectTeamMembers === 'function' ? sprintProjectTeamMembers() : App.teamMembers)
+    : (typeof mainProjectTeamMembers === 'function' ? mainProjectTeamMembers() : App.teamMembers);
+  var emptyMsg = inSprint ? 'No users with vibe projects yet.' : 'No users with main projects yet.';
+  if(!members.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">'+emptyMsg+'</div>'; return; }
   var stats = {};
   members.forEach(function(m){ stats[m.name]={total:0,ontime:0,soon:0,overdue:0}; });
-  Object.entries(App.allTickets).forEach(function(e){
+  var ticketSource = inSprint ? App.sprintTickets : App.mainTickets;
+  Object.entries(ticketSource || {}).forEach(function(e){
     var t=e[1];
     if(!t.subtasks) return;
     Object.entries(t.subtasks).forEach(function(se){
