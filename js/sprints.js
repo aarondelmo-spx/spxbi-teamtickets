@@ -207,8 +207,6 @@ function sprintTotals(items){
 function sprintPayloadFromNewModal(){
   var teamName = normalizeTeamName(document.getElementById('nt-team-area').value);
   var timelineStart = cleanTextField('nt-timeline-start');
-  var timelineEnd = cleanTextField('nt-timeline-end');
-  var deadline = cleanTextField('nt-deadline');
   return {
     projectType: 'sprint',
     teamArea: teamName,
@@ -216,7 +214,6 @@ function sprintPayloadFromNewModal(){
     supportingTeams: App.ntSelectedSupportTeams && App.ntSelectedSupportTeams.length ? App.ntSelectedSupportTeams.slice() : null,
     sprintCycle: cleanTextField('nt-sprint-cycle'),
     timelineStart: timelineStart || ymd(new Date()),
-    timelineEnd: timelineEnd || deadline,
     stage: document.getElementById('nt-stage').value || 'scoping',
     confidence: document.getElementById('nt-confidence').value || 'medium',
     automationScopedHc: cleanNumField('nt-automation-scoped-hc'),
@@ -229,7 +226,6 @@ function clearSprintNewFields(){
   [
     'nt-subteam',
     'nt-sprint-cycle',
-    'nt-timeline-end',
     'nt-automation-scoped-hc',
     'nt-actual-hc-savings',
     'nt-excess-capacity-hc'
@@ -533,7 +529,7 @@ function refreshSprintHierarchyUi(){
 
 function timelineLabel(t){
   var start = t.timelineStart || '';
-  var end = t.timelineEnd || t.deadline || '';
+  var end = t.deadline || t.timelineEnd || '';
   if(start && end) return start + ' to ' + end;
   if(end) return 'Target ' + end;
   if(start) return 'From ' + start;
@@ -564,7 +560,6 @@ function populateSprintDetail(t){
   renderSubteamSelect('d', normalizeSubteamName(t.subteam));
   document.getElementById('d-sprint-cycle').value = t.sprintCycle || '';
   document.getElementById('d-timeline-start').value = defaultTimelineStart;
-  document.getElementById('d-timeline-end').value = t.timelineEnd || '';
   document.getElementById('d-stage').value = t.stage || 'scoping';
   document.getElementById('d-confidence').value = t.confidence || 'medium';
   document.getElementById('d-team-size-hc').value = fmtCapacity(hierarchySizeHc(t.teamArea, t.subteam));

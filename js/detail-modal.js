@@ -95,7 +95,6 @@ window.applyDetailAccessState = function(){
     'd-subteam',
     'd-sprint-cycle',
     'd-timeline-start',
-    'd-timeline-end',
     'd-stage',
     'd-confidence',
     'd-automation-scoped-hc',
@@ -212,14 +211,10 @@ window.saveDetailChanges = function(){
   if(isSprintView()){
     var ticket = App.allTickets[id] || {};
     var defaultTimelineStart = ticket.timelineStart || (ticket.createdTs ? ymd(ticket.createdTs) : ymd(new Date()));
-    var deadlineValue = upd.deadline || ticket.deadline || null;
-    var currentTimelineEnd = document.getElementById('d-timeline-end').value || null;
-    var mirroredTimelineEnd = (ticket.timelineEnd || '') === (ticket.deadline || '');
     upd.teamArea = normalizeTeamName(document.getElementById('d-team-area').value);
     upd.subteam = normalizeSubteamName(document.getElementById('d-subteam').value);
     upd.sprintCycle = document.getElementById('d-sprint-cycle').value || null;
     upd.timelineStart = document.getElementById('d-timeline-start').value || defaultTimelineStart;
-    upd.timelineEnd = currentTimelineEnd || (mirroredTimelineEnd ? deadlineValue : null);
     upd.stage = document.getElementById('d-stage').value || null;
     upd.confidence = document.getElementById('d-confidence').value || null;
     upd.automationScopedHc = normalizeTicketFieldValue('automationScopedHc', document.getElementById('d-automation-scoped-hc').value);

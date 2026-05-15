@@ -60,14 +60,6 @@ window.updateTicketField = function(field,value){
   var before = App.allTickets[id] || {};
   var upd={};
   upd[field]=normalizeTicketFieldValue(field,value);
-  if(field==='deadline' && isSprintView()){
-    var sameAsDeadline = (before.timelineEnd || '') === (before.deadline || '');
-    if(sameAsDeadline){
-      upd.timelineEnd = upd.deadline || null;
-      var timelineEndInp = document.getElementById('d-timeline-end');
-      if(timelineEndInp) timelineEndInp.value = upd.timelineEnd || '';
-    }
-  }
   activeTicketRef(id).update(upd);
   if(field==='status'){
     if(before) logActivity('status',before.title,value);
