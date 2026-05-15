@@ -4,10 +4,11 @@ window.createTicket = function(){
   if(isSprintView() && typeof commitSupportTeamInput === 'function') commitSupportTeamInput('new');
   var dl=document.getElementById('nt-deadline').value;
   var assignee=App.ntSelectedContribs[0]||'Unassigned';
+  var createdTs = Date.now();
   var payload={title:title,desc:document.getElementById('nt-desc').value.trim()||'No description provided.',
     priority:document.getElementById('nt-priority').value,status:'open',
     assignee:assignee,contributors:App.ntSelectedContribs.length?App.ntSelectedContribs:null,
-    deadline:dl||null,created:fmtDate(),createdTs:Date.now(),projectType:App.currentProjectView};
+    deadline:dl||null,created:fmtDate(),createdTs:createdTs,projectType:App.currentProjectView};
   if(isSprintView()) Object.assign(payload, sprintPayloadFromNewModal());
   currentTicketsRef().push(payload);
   logActivity('created',title,'');
@@ -59,6 +60,14 @@ window.updateTicketField = function(field,value){
   var before = App.allTickets[id] || {};
   var upd={};
   upd[field]=normalizeTicketFieldValue(field,value);
+  if(field==='deadline' && isSprintView()){
+    var sameAsDeadline = (before.timelineEnd || '') === (before.deadline || '');
+    if(sameAsDeadline){
+      upd.timelineEnd = upd.deadline || null;
+      var timelineEndInp = document.getElementById('d-timeline-end');
+      if(timelineEndInp) timelineEndInp.value = upd.timelineEnd || '';
+    }
+  }
   activeTicketRef(id).update(upd);
   if(field==='status'){
     if(before) logActivity('status',before.title,value);

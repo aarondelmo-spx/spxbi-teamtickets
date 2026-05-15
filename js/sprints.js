@@ -206,14 +206,17 @@ function sprintTotals(items){
 
 function sprintPayloadFromNewModal(){
   var teamName = normalizeTeamName(document.getElementById('nt-team-area').value);
+  var timelineStart = cleanTextField('nt-timeline-start');
+  var timelineEnd = cleanTextField('nt-timeline-end');
+  var deadline = cleanTextField('nt-deadline');
   return {
     projectType: 'sprint',
     teamArea: teamName,
     subteam: normalizeSubteamName(cleanTextField('nt-subteam')),
     supportingTeams: App.ntSelectedSupportTeams && App.ntSelectedSupportTeams.length ? App.ntSelectedSupportTeams.slice() : null,
     sprintCycle: cleanTextField('nt-sprint-cycle'),
-    timelineStart: cleanTextField('nt-timeline-start'),
-    timelineEnd: cleanTextField('nt-timeline-end'),
+    timelineStart: timelineStart || ymd(new Date()),
+    timelineEnd: timelineEnd || deadline,
     stage: document.getElementById('nt-stage').value || 'scoping',
     confidence: document.getElementById('nt-confidence').value || 'medium',
     automationScopedHc: cleanNumField('nt-automation-scoped-hc'),
@@ -226,7 +229,6 @@ function clearSprintNewFields(){
   [
     'nt-subteam',
     'nt-sprint-cycle',
-    'nt-timeline-start',
     'nt-timeline-end',
     'nt-automation-scoped-hc',
     'nt-actual-hc-savings',
@@ -241,6 +243,8 @@ function clearSprintNewFields(){
   renderTeamSelect('nt', 'FinOps');
   if(team && !team.value) team.value = 'FinOps';
   renderSubteamSelect('nt');
+  var timelineStart = document.getElementById('nt-timeline-start');
+  if(timelineStart) timelineStart.value = ymd(new Date());
   if(stage) stage.value = 'scoping';
   if(confidence) confidence.value = 'medium';
   App.ntSelectedSupportTeams = [];
@@ -555,10 +559,11 @@ function populateSprintDetail(t){
   if(!wrap) return;
   wrap.style.display = isSprintView() ? 'block' : 'none';
   if(!isSprintView()) return;
+  var defaultTimelineStart = t.timelineStart || (t.createdTs ? ymd(t.createdTs) : '');
   renderTeamSelect('d', normalizeTeamName(t.teamArea) || 'FinOps');
   renderSubteamSelect('d', normalizeSubteamName(t.subteam));
   document.getElementById('d-sprint-cycle').value = t.sprintCycle || '';
-  document.getElementById('d-timeline-start').value = t.timelineStart || '';
+  document.getElementById('d-timeline-start').value = defaultTimelineStart;
   document.getElementById('d-timeline-end').value = t.timelineEnd || '';
   document.getElementById('d-stage').value = t.stage || 'scoping';
   document.getElementById('d-confidence').value = t.confidence || 'medium';

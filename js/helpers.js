@@ -2,6 +2,12 @@ function colorFor(n){ return !n?App.COLORS[0]:App.COLORS[n.charCodeAt(0)%App.COL
 function initials(n){ return (n||'?').slice(0,2).toUpperCase(); }
 function avatarHtml(n,s){ s=s||22; var c=colorFor(n); return '<div style="width:'+s+'px;height:'+s+'px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:'+Math.floor(s*.45)+'px;font-weight:500;flex-shrink:0">'+initials(n)+'</div>'; }
 function fmtDate(){ var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],n=new Date(); return m[n.getMonth()]+' '+n.getDate(); }
+function ymd(date){
+  var value = date instanceof Date ? date : new Date(date || Date.now());
+  var month = String(value.getMonth() + 1).padStart(2, '0');
+  var day = String(value.getDate()).padStart(2, '0');
+  return value.getFullYear() + '-' + month + '-' + day;
+}
 function normalizeStatusValue(s){
   s = String(s || 'open').trim().toLowerCase();
   if(s === 'inprogress' || s === 'in-progress' || s === 'in_progress' || s === 'progress' || s === 'wip') return 'in progress';

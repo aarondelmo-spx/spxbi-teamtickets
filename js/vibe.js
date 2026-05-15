@@ -39,12 +39,6 @@ function parseYmd(value){
   return date;
 }
 
-function ymd(date){
-  var month = String(date.getMonth() + 1).padStart(2, '0');
-  var day = String(date.getDate()).padStart(2, '0');
-  return date.getFullYear() + '-' + month + '-' + day;
-}
-
 function addDays(date, days){
   var next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   next.setDate(next.getDate() + days);
