@@ -93,7 +93,6 @@ window.applyDetailAccessState = function(){
     'd-deadline-inp',
     'd-team-area',
     'd-subteam',
-    'd-sprint-cycle',
     'd-timeline-start',
     'd-stage',
     'd-confidence',
@@ -213,7 +212,6 @@ window.saveDetailChanges = function(){
     var defaultTimelineStart = ticket.timelineStart || (ticket.createdTs ? ymd(ticket.createdTs) : ymd(new Date()));
     upd.teamArea = normalizeTeamName(document.getElementById('d-team-area').value);
     upd.subteam = normalizeSubteamName(document.getElementById('d-subteam').value);
-    upd.sprintCycle = document.getElementById('d-sprint-cycle').value || null;
     upd.timelineStart = document.getElementById('d-timeline-start').value || defaultTimelineStart;
     upd.stage = document.getElementById('d-stage').value || null;
     upd.confidence = document.getElementById('d-confidence').value || null;

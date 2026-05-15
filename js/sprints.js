@@ -212,7 +212,6 @@ function sprintPayloadFromNewModal(){
     teamArea: teamName,
     subteam: normalizeSubteamName(cleanTextField('nt-subteam')),
     supportingTeams: App.ntSelectedSupportTeams && App.ntSelectedSupportTeams.length ? App.ntSelectedSupportTeams.slice() : null,
-    sprintCycle: cleanTextField('nt-sprint-cycle'),
     timelineStart: timelineStart || ymd(new Date()),
     stage: document.getElementById('nt-stage').value || 'scoping',
     confidence: document.getElementById('nt-confidence').value || 'medium',
@@ -225,7 +224,6 @@ function sprintPayloadFromNewModal(){
 function clearSprintNewFields(){
   [
     'nt-subteam',
-    'nt-sprint-cycle',
     'nt-automation-scoped-hc',
     'nt-actual-hc-savings',
     'nt-excess-capacity-hc'
@@ -533,14 +531,13 @@ function timelineLabel(t){
   if(start && end) return start + ' to ' + end;
   if(end) return 'Target ' + end;
   if(start) return 'From ' + start;
-  return t.sprintCycle || 'TBD';
+  return 'TBD';
 }
 
 function sprintMetaHtml(t){
   var pieces = [];
   if(t.teamArea) pieces.push('<span class="sprint-chip">'+safeText(t.teamArea)+'</span>');
   if(t.subteam) pieces.push('<span class="sprint-chip">'+safeText(t.subteam)+'</span>');
-  if(t.sprintCycle) pieces.push('<span>'+safeText(t.sprintCycle)+'</span>');
   pieces.push('<span class="stage-badge '+sprintStageClass(t.stage)+'">'+sprintStageLabel(t.stage)+'</span>');
   var timeline = timelineLabel(t);
   if(timeline !== 'TBD') pieces.push('<span>'+safeText(timeline)+'</span>');
@@ -558,7 +555,6 @@ function populateSprintDetail(t){
   var defaultTimelineStart = t.timelineStart || (t.createdTs ? ymd(t.createdTs) : '');
   renderTeamSelect('d', normalizeTeamName(t.teamArea) || 'FinOps');
   renderSubteamSelect('d', normalizeSubteamName(t.subteam));
-  document.getElementById('d-sprint-cycle').value = t.sprintCycle || '';
   document.getElementById('d-timeline-start').value = defaultTimelineStart;
   document.getElementById('d-stage').value = t.stage || 'scoping';
   document.getElementById('d-confidence').value = t.confidence || 'medium';
@@ -624,7 +620,7 @@ function firstNextAction(items){
 function firstTimeline(items){
   var found = items.find(function(item){
     var t = item.t || item;
-    return t.timelineStart || t.timelineEnd || t.deadline || t.sprintCycle;
+    return t.timelineStart || t.timelineEnd || t.deadline;
   });
   return found ? safeText(timelineLabel(found.t || found)) : 'TBD';
 }

@@ -30,7 +30,6 @@ window.renderList = function(){
         || (t.assignee||'').toLowerCase().includes(search)
         || (t.teamArea||'').toLowerCase().includes(search)
         || (t.subteam||'').toLowerCase().includes(search)
-        || (t.sprintCycle||'').toLowerCase().includes(search)
         || (t.nextAction||'').toLowerCase().includes(search);
     })
     .sort(function(a,b){
