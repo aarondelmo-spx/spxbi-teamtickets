@@ -58,15 +58,58 @@ function linkifyText(text){
   }).join('');
 }
 
+function commentItemKey(commentId, replyId){
+  return replyId ? commentId + ':' + replyId : commentId;
+}
+
+function commentBodyHtml(text, itemKey){
+  var expanded = !!App.commentExpanded[itemKey];
+  return '<div class="comment-body'+(expanded?' is-expanded':'')+'" data-comment-key="'+safeText(itemKey)+'">'
+    +'<div class="comment-text comment-text-collapsible'+(expanded?'':' is-collapsed')+'">'+linkifyText(text)+'</div>'
+    +'<button class="btn btn-ghost comment-toggle" type="button" style="display:none" onclick="toggleCommentExpanded(\''+jsDataArg(itemKey)+'\')">'+(expanded?'Show less':'Read more')+'</button>'
+    +'</div>';
+}
+
+function refreshCommentTruncation(root){
+  if(!root) return;
+  root.querySelectorAll('.comment-body').forEach(function(body){
+    var text = body.querySelector('.comment-text-collapsible');
+    var toggle = body.querySelector('.comment-toggle');
+    if(!text || !toggle) return;
+    var expanded = body.classList.contains('is-expanded');
+    text.classList.toggle('is-collapsed', !expanded);
+    var needsToggle = expanded;
+    if(!expanded){
+      needsToggle = text.scrollHeight > text.clientHeight + 1;
+    }
+    toggle.style.display = needsToggle ? 'inline-flex' : 'none';
+  });
+}
+
+window.toggleCommentExpanded = function(itemKey){
+  if(App.commentExpanded[itemKey]) delete App.commentExpanded[itemKey];
+  else App.commentExpanded[itemKey] = true;
+  var commentsEl = document.getElementById('d-comments');
+  if(!commentsEl) return;
+  var body = commentsEl.querySelector('[data-comment-key="'+itemKey.replace(/"/g, '\\"')+'"]');
+  if(body) body.classList.toggle('is-expanded', !!App.commentExpanded[itemKey]);
+  refreshCommentTruncation(commentsEl);
+};
+
 function renderComments(ticketId){
   var t=App.allTickets[ticketId]; if(!t) return;
   var comments=t.comments?Object.entries(t.comments).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
+  var commentsEl = document.getElementById('d-comments');
   document.getElementById('d-comment-count').textContent='Comments ('+countComments(t.comments)+')';
-  if(!comments.length){document.getElementById('d-comments').innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:8px">No comments yet.</p>';return;}
-  document.getElementById('d-comments').innerHTML=comments.map(function(entry){
+  if(!comments.length){commentsEl.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:8px">No comments yet.</p>';return;}
+  commentsEl.innerHTML=comments.map(function(entry){
     var cid=entry[0],c=entry[1];
     var replies=c.replies?Object.entries(c.replies).sort(function(a,b){return (a[1].ts||0)-(b[1].ts||0);}):[];
-    var rHtml=replies.length?'<div class="replies">'+replies.map(function(re){var r=re[1];return '<div class="comment" style="background:var(--surface3)"><div class="comment-header">'+avatarHtml(r.author,18)+'<span class="comment-author" style="font-size:12px">'+safeText(r.author)+'</span><span class="comment-time">'+safeText(r.time)+'</span></div><div class="comment-text">'+linkifyText(r.text)+'</div></div>';}).join('')+'</div>':'';
-    return '<div class="comment-thread"><div class="comment"><div class="comment-header">'+avatarHtml(c.author)+'<span class="comment-author">'+safeText(c.author)+'</span><span class="comment-time">'+safeText(c.time)+'</span></div><div class="comment-text">'+linkifyText(c.text)+'</div><div class="comment-actions"><button class="btn btn-ghost" onclick="toggleReplyBox(\''+cid+'\')">↩ Reply</button></div></div>'+rHtml+'<div class="reply-box" id="reply-box-'+cid+'" style="display:none">'+avatarHtml(App.currentUser,20)+'<textarea id="reply-input-'+cid+'" rows="2" placeholder="Reply to '+safeText(c.author)+'... (Enter to post, Shift/Ctrl+Enter for new line)" onkeydown="handleCommentKey(event,\''+cid+'\')"></textarea><button class="btn btn-primary btn-sm" onclick="postReply(\''+cid+'\')">Reply</button></div></div>';
+    var rHtml=replies.length?'<div class="replies">'+replies.map(function(re){
+      var rid=re[0],r=re[1];
+      return '<div class="comment" style="background:var(--surface3)"><div class="comment-header">'+avatarHtml(r.author,18)+'<span class="comment-author" style="font-size:12px">'+safeText(r.author)+'</span><span class="comment-time">'+safeText(r.time)+'</span></div>'+commentBodyHtml(r.text, commentItemKey(cid, rid))+'</div>';
+    }).join('')+'</div>':'';
+    return '<div class="comment-thread"><div class="comment"><div class="comment-header">'+avatarHtml(c.author)+'<span class="comment-author">'+safeText(c.author)+'</span><span class="comment-time">'+safeText(c.time)+'</span></div>'+commentBodyHtml(c.text, commentItemKey(cid))+'<div class="comment-actions"><button class="btn btn-ghost" onclick="toggleReplyBox(\''+cid+'\')">&#8617; Reply</button></div></div>'+rHtml+'<div class="reply-box" id="reply-box-'+cid+'" style="display:none">'+avatarHtml(App.currentUser,20)+'<textarea id="reply-input-'+cid+'" rows="2" placeholder="Reply to '+safeText(c.author)+'... (Enter to post, Shift/Ctrl+Enter for new line)" onkeydown="handleCommentKey(event,\''+cid+'\')"></textarea><button class="btn btn-primary btn-sm" onclick="postReply(\''+cid+'\')">Reply</button></div></div>';
   }).join('');
+  refreshCommentTruncation(commentsEl);
 }

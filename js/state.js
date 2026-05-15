@@ -44,6 +44,7 @@ var App = {
   forceLogoutSeen: 0,
   sessionControl: null,
   replyingTo: null,
+  commentExpanded: {},
   ntSelectedContribs: [],
   ntSelectedSupportTeams: [],
   dSelectedContribs: [],
