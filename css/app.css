@@ -199,7 +199,7 @@
   .support-contact-email:hover{text-decoration:underline}
   .support-contact-email.muted{color:var(--text3)}
   .support-contact-empty{font-size:12px;color:var(--text3);padding:4px 0}
-  .support-contact-add-row{display:grid;grid-template-columns:minmax(100px,.9fr) minmax(120px,1fr) minmax(150px,1.2fr) minmax(110px,.8fr) auto;gap:6px;margin-top:.65rem;align-items:center}
+  .support-contact-add-row{display:grid;grid-template-columns:minmax(100px,.9fr) minmax(120px,1fr) minmax(150px,1.2fr) auto;gap:6px;margin-top:.65rem;align-items:center}
   .support-contact-add-row input,.support-contact-add-row select{min-width:0;padding:7px 9px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;outline:none}
   .support-contact-add-row input:focus,.support-contact-add-row select:focus{border-color:var(--accent)}
   .who-filter-row{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.75rem}
