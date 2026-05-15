@@ -102,7 +102,6 @@ window.applyDetailAccessState = function(){
     'd-actual-hc-savings',
     'd-excess-capacity-hc',
     'support-contact-name',
-    'support-contact-role',
     'support-contact-email',
     'support-contact-team',
     'subtask-input',

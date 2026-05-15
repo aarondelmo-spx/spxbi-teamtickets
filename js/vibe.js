@@ -1146,17 +1146,15 @@ window.addSupportContact = function(){
   if(!App.selectedTicketId) return;
   if(!requireContentEditAccess('add support contacts')) return;
   var nameEl = document.getElementById('support-contact-name');
-  var roleEl = document.getElementById('support-contact-role');
   var emailEl = document.getElementById('support-contact-email');
   var teamEl = document.getElementById('support-contact-team');
   var contact = {
     name: cleanSupportTeamName(nameEl && nameEl.value),
-    role: cleanSupportTeamName(roleEl && roleEl.value),
     email: String((emailEl && emailEl.value) || '').trim().toLowerCase(),
     team: cleanSupportTeamName(teamEl && teamEl.value),
     createdTs: Date.now()
   };
-  if(!contact.name && !contact.role && !contact.email && !contact.team) return;
+  if(!contact.name && !contact.email && !contact.team) return;
   var newRef = activeTicketRef(App.selectedTicketId).child('supportContacts').push(contact);
   var ticket = App.allTickets[App.selectedTicketId] || {};
   if(!ticket.supportContacts) ticket.supportContacts = {};
