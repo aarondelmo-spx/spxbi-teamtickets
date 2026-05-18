@@ -56,11 +56,9 @@ function weekStartForDate(value){
 
 function selectedWeekStart(){
   var start = parseYmd(App.activePlanWeekStart);
-  var thisWeek = weekStartForDate(new Date());
-  if(!start || start < thisWeek){
-    start = thisWeek;
+  if(!start){
+    start = weekStartForDate(new Date());
     App.activePlanWeekStart = ymd(start);
-    localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   }
   return start;
 }
@@ -266,7 +264,6 @@ window.setWeeklyPlanDateFromInput = function(){
   var input = document.getElementById('vibe-week-date');
   var start = weekStartForDate(input ? input.value : null);
   App.activePlanWeekStart = ymd(start);
-  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
   renderList();
@@ -297,7 +294,6 @@ window.setVibeWhoFilter = function(val){
 window.shiftWeeklyPlanWeek = function(delta){
   var start = addDays(selectedWeekStart(), delta * 7);
   App.activePlanWeekStart = ymd(start);
-  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
   renderList();

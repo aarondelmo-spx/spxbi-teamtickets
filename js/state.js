@@ -34,7 +34,7 @@ var App = {
   vibeMetricFilter: 'all',
   vibeWhoFilter: 'all',
   vibeSupportFilter: [],
-  activePlanWeekStart: localStorage.getItem('spxbi_active_week_start') || '',
+  activePlanWeekStart: '',
   vibeFiltersOpen: false,
   selectedTicketId: null,
   currentUser: '',
