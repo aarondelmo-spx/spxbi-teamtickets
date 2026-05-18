@@ -609,9 +609,12 @@ function initiativeCardHtml(id, t){
   var supportContacts = supportContactEntries(t);
   var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(excessCapacityHc(t))+' excess / '+fmtCapacity(countedActualHcSavings(t))+' actualized';
   var priority = String(t.priority || 'p1').toLowerCase();
-  return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
+  var isDone = normalizeStatusValue(t.status) === 'done';
+  var cardClass = 'initiative-card' + (isDone ? ' initiative-card-done' : '');
+  var titlePrefix = isDone ? '🏆 ' : '';
+  return '<div class="'+cardClass+'" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
-    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
+    +'<div class="initiative-title-row"><span class="initiative-title">'+titlePrefix+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +(getSupportingTeams(t).length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+supportChipsHtml(getSupportingTeams(t))+'</div>' : '')
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'

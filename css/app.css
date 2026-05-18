@@ -212,6 +212,9 @@
   .who-card-title{font-size:22px;font-weight:300;font-family:var(--mono)}
   .initiative-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem .85rem;cursor:pointer;transition:all .15s;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;min-height:116px}
   .initiative-card:hover{border-color:rgba(111,212,168,.35);background:rgba(111,212,168,.04);transform:translateX(2px)}
+  .initiative-card-done{border-color:rgba(247,212,111,.4);background:rgba(247,212,111,.05);box-shadow:0 0 0 1px rgba(247,212,111,.15) inset}
+  .initiative-card-done:hover{border-color:rgba(247,212,111,.7);background:rgba(247,212,111,.09)}
+  .light .initiative-card-done{border-color:rgba(180,140,20,.35);background:rgba(180,140,20,.06);box-shadow:0 0 0 1px rgba(180,140,20,.12) inset}
   .initiative-title-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
   .initiative-title{font-size:13px;font-weight:500;color:var(--text);line-height:1.35}
   .initiative-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text3)}
