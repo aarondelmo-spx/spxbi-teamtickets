@@ -89,8 +89,10 @@ function taskInWeekWindow(task, start, weekCount){
 }
 
 function weekLabelForOffset(offset){
-  if(offset === 0) return 'Selected week';
+  if(offset === 0) return 'This week';
   if(offset === 1) return 'Next week';
+  if(offset === -1) return 'Last week';
+  if(offset < -1) return Math.abs(offset) + ' weeks ago';
   return offset + ' weeks out';
 }
 
@@ -888,11 +890,22 @@ function weeklyPlanPanelHtml(title, subtitle, items, start, emptyText){
 function renderVibeWeeklyPlan(search, list){
   syncWeeklyPlanControls();
   var start = selectedWeekStart();
+  var pastStart = addDays(start, -10 * 7);
   var whoFilter = App.vibeWhoFilter || 'all';
-  var items = collectVibeTasks()
-    .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
+  var allTasks = collectVibeTasks()
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
-    .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
+    .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; });
+  var items = allTasks
+    .filter(function(item){
+      var due = parseYmd(item.task.deadline);
+      if(!due) return false;
+      var end = addDays(start, VIBE_WEEKLY_PLAN_WEEKS * 7 - 1);
+      // future window: current week + 5 weeks ahead
+      if(due >= start && due <= end) return true;
+      // past window: up to 10 weeks back, only if unresolved
+      if(due >= pastStart && due < start && !item.task.done) return true;
+      return false;
+    })
     .sort(function(a,b){
       var da=a.task.deadline||'',db=b.task.deadline||'';
       return (da<db?-1:da>db?1:0)
