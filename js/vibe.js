@@ -56,8 +56,9 @@ function weekStartForDate(value){
 
 function selectedWeekStart(){
   var start = parseYmd(App.activePlanWeekStart);
-  if(!start){
-    start = weekStartForDate(new Date());
+  var thisWeek = weekStartForDate(new Date());
+  if(!start || start < thisWeek){
+    start = thisWeek;
     App.activePlanWeekStart = ymd(start);
     localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   }
