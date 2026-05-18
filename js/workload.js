@@ -103,10 +103,11 @@ function renderWorkload(){
     var s = stats[m.name];
     var c = colorFor(m.name);
     if(!s||s.total===0){
-      return '<div class="workload-member" style="opacity:.45">'
+      return '<div class="workload-member">'
         +'<div class="workload-member-header">'
-        +'<span class="workload-member-name" style="font-size:11px;font-weight:400">'+m.name+'</span>'
-        +'<span class="workload-member-total">—</span>'
+        +'<div style="width:20px;height:20px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0">'+initials(m.name)+'</div>'
+        +'<span class="workload-member-name">'+m.name+'</span>'
+        +'<span class="workload-member-total" style="color:var(--text3)">no active tasks</span>'
         +'</div>'
         +'</div>';
     }
