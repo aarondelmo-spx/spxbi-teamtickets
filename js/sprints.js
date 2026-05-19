@@ -79,7 +79,8 @@ function actualHcSavings(t){
 }
 
 function countedActualHcSavings(t){
-  return t && String(t.status || '').toLowerCase() === 'done' ? actualHcSavings(t) : 0;
+  var status = t && String(t.status || '').toLowerCase();
+  return (status === 'done' || status === 'in progress') ? actualHcSavings(t) : 0;
 }
 
 function excessCapacityHc(t){
