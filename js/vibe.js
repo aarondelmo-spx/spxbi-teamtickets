@@ -59,7 +59,6 @@ function selectedWeekStart(){
   if(!start){
     start = weekStartForDate(new Date());
     App.activePlanWeekStart = ymd(start);
-    localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   }
   return start;
 }
@@ -88,8 +87,10 @@ function taskInWeekWindow(task, start, weekCount){
 }
 
 function weekLabelForOffset(offset){
-  if(offset === 0) return 'Selected week';
+  if(offset === 0) return 'This week';
   if(offset === 1) return 'Next week';
+  if(offset === -1) return 'Last week';
+  if(offset < -1) return Math.abs(offset) + ' weeks ago';
   return offset + ' weeks out';
 }
 
@@ -224,7 +225,7 @@ function updateVibeShell(){
   var workload = document.getElementById('workload-panel');
   var activity = document.getElementById('activity-panel');
   var warnTitle = document.getElementById('warn-banner-title');
-  if(dashboard) dashboard.style.gridTemplateColumns = '1fr 1fr 300px';
+  if(dashboard) dashboard.style.gridTemplateColumns = '1.6fr 1fr 300px';
   setDisplay(workload, '');
   setDisplay(activity, '');
   if(warnTitle) warnTitle.textContent = vibe ? 'Needs attention' : '\u26A0 Deadline alerts';
@@ -263,7 +264,6 @@ window.setWeeklyPlanDateFromInput = function(){
   var input = document.getElementById('vibe-week-date');
   var start = weekStartForDate(input ? input.value : null);
   App.activePlanWeekStart = ymd(start);
-  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
   renderList();
@@ -294,7 +294,6 @@ window.setVibeWhoFilter = function(val){
 window.shiftWeeklyPlanWeek = function(delta){
   var start = addDays(selectedWeekStart(), delta * 7);
   App.activePlanWeekStart = ymd(start);
-  localStorage.setItem('spxbi_active_week_start', App.activePlanWeekStart);
   syncWeeklyPlanControls();
   updateStats();
   renderList();
@@ -619,9 +618,12 @@ function initiativeCardHtml(id, t){
   var supportContacts = supportContactEntries(t);
   var hcText = fmtCapacity(automationScopedHc(t))+' scoped | '+fmtCapacity(automationInProgressHc(t))+' in progress | '+fmtCapacity(excessCapacityHc(t))+' excess / '+fmtCapacity(countedActualHcSavings(t))+' actualized';
   var priority = String(t.priority || 'p1').toLowerCase();
-  return '<div class="initiative-card" onclick="openDetailModal(\''+jsArg(id)+'\')">'
+  var isDone = normalizeStatusValue(t.status) === 'done';
+  var cardClass = 'initiative-card' + (isDone ? ' initiative-card-done' : '');
+  var titlePrefix = isDone ? '🏆 ' : '';
+  return '<div class="'+cardClass+'" onclick="openDetailModal(\''+jsArg(id)+'\')">'
     +'<div>'
-    +'<div class="initiative-title-row"><span class="initiative-title">'+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
+    +'<div class="initiative-title-row"><span class="initiative-title">'+titlePrefix+safeText(t.title || 'Untitled initiative')+'</span><span class="priority-badge '+pbClass(priority)+'">'+safeText(priority.toUpperCase())+'</span><span class="status-badge '+statusClass(t.status)+'">'+safeText(t.status || 'open')+'</span></div>'
     +(getSupportingTeams(t).length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">'+supportChipsHtml(getSupportingTeams(t))+'</div>' : '')
     +'<div class="initiative-meta">'
     +'<span>'+stats.done+'/'+stats.total+' tasks</span>'
@@ -896,11 +898,22 @@ function weeklyPlanPanelHtml(title, subtitle, items, start, emptyText){
 function renderVibeWeeklyPlan(search, list){
   syncWeeklyPlanControls();
   var start = selectedWeekStart();
+  var pastStart = addDays(start, -10 * 7);
   var whoFilter = App.vibeWhoFilter || 'all';
-  var items = collectVibeTasks()
-    .filter(function(item){ return taskInWeekWindow(item.task, start, VIBE_WEEKLY_PLAN_WEEKS); })
+  var allTasks = collectVibeTasks()
     .filter(function(item){ return taskMatchesCurrentView(item, search); })
-    .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; })
+    .filter(function(item){ return whoFilter === 'mine' ? taskAssignedToCurrentUser(item) : true; });
+  var items = allTasks
+    .filter(function(item){
+      var due = parseYmd(item.task.deadline);
+      if(!due) return false;
+      var end = addDays(start, VIBE_WEEKLY_PLAN_WEEKS * 7 - 1);
+      // future window: current week + 5 weeks ahead
+      if(due >= start && due <= end) return true;
+      // past window: up to 10 weeks back, only if unresolved
+      if(due >= pastStart && due < start && !item.task.done) return true;
+      return false;
+    })
     .sort(function(a,b){
       var da=a.task.deadline||'',db=b.task.deadline||'';
       return (da<db?-1:da>db?1:0)
