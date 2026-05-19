@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(./setup --team)",
-      "Bash(dir *)"
+      "Bash(dir *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\SPXPH3027\\\\Claude\\\\spxbi-teamtickets\" -Force)",
+      "Bash(Select-Object -Property Name, PSIsContainer)"
     ]
   }
 }
