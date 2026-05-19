@@ -112,11 +112,11 @@
       </div>
     </div>
     <div class="stats" id="stats-row">
-      <div class="stat" data-vibe-metric="teamSize" onclick="setVibeMetricFilter('teamSize')"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div></div>
+      <div class="stat" data-vibe-metric="teamSize" onclick="setVibeMetricFilter('teamSize')"><div class="stat-label" id="s-total-label">Total</div><div class="stat-num" id="s-total">—</div><div class="stat-sub" id="s-total-bpo" style="display:none"></div></div>
       <div class="stat" id="s-open-wrap" data-vibe-metric="reviewed" onclick="setVibeMetricFilter('reviewed')"><div class="stat-label" id="s-open-label">Open</div><div class="stat-num c-high" id="s-open">—</div></div>
-      <div class="stat" data-vibe-metric="scoped" onclick="setVibeMetricFilter('scoped')"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div></div>
-      <div class="stat" data-vibe-metric="inProgress" onclick="setVibeMetricFilter('inProgress')"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div></div>
-      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div></div>
+      <div class="stat" data-vibe-metric="scoped" onclick="setVibeMetricFilter('scoped')"><div class="stat-label" id="s-prog-label">In Progress</div><div class="stat-num c-prog" id="s-prog">—</div><div class="stat-sub" id="s-prog-bpo" style="display:none"></div></div>
+      <div class="stat" data-vibe-metric="inProgress" onclick="setVibeMetricFilter('inProgress')"><div class="stat-label" id="s-done-label">Done</div><div class="stat-num c-done" id="s-done">—</div><div class="stat-sub" id="s-done-bpo" style="display:none"></div></div>
+      <div class="stat" id="s-extra-wrap" style="display:none"><div class="stat-label" id="s-extra-label">Unclassified</div><div class="stat-num" id="s-extra">—</div><div class="stat-sub" id="s-extra-bpo" style="display:none"></div></div>
     </div>
     <div class="who-filter-row" id="who-filter-row">
       <div class="who-card active" id="who-card-all" onclick="setVibeWhoFilter('all')">

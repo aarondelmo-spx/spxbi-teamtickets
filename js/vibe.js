@@ -302,7 +302,8 @@ window.shiftWeeklyPlanWeek = function(delta){
 
 function updateVibeStats(initiatives, extra){
   var totals = automationTotals(initiatives);
-  var teamSize = automationTeamSizeTotal(initiatives);
+  var sizeSplit = automationTeamSizeSplit(initiatives);
+  var hasBpo = sizeSplit.bpo > 0 || totals.bpoScoped > 0 || totals.bpoProgress > 0;
   var reviewedCard = document.getElementById('s-open-wrap');
   document.getElementById('s-total-label').textContent='Team size';
   document.getElementById('s-prog-label').textContent='Scoped';
@@ -310,11 +311,19 @@ function updateVibeStats(initiatives, extra){
   document.getElementById('s-prog').className='stat-num c-prog';
   document.getElementById('s-done').className='stat-num c-done';
   if(reviewedCard) reviewedCard.style.display='none';
-  document.getElementById('s-total').textContent=fmtCapacity(teamSize);
+  document.getElementById('s-total').textContent=fmtCapacity(sizeSplit.total);
   document.getElementById('s-prog').textContent=fmtCapacity(totals.scoped);
   document.getElementById('s-done').textContent=fmtCapacity(totals.progress);
   document.getElementById('s-extra-label').textContent='HC savings (excess / actualized)';
   document.getElementById('s-extra').textContent=fmtCapacity(totals.excess)+' / '+fmtCapacity(totals.actual);
+  var totalBpoEl = document.getElementById('s-total-bpo');
+  var progBpoEl = document.getElementById('s-prog-bpo');
+  var doneBpoEl = document.getElementById('s-done-bpo');
+  var extraBpoEl = document.getElementById('s-extra-bpo');
+  if(totalBpoEl){ totalBpoEl.style.display = hasBpo ? '' : 'none'; if(hasBpo) totalBpoEl.textContent = fmtCapacity(sizeSplit.fte)+' FTE · '+fmtCapacity(sizeSplit.bpo)+' BPO'; }
+  if(progBpoEl){ progBpoEl.style.display = hasBpo ? '' : 'none'; if(hasBpo) progBpoEl.textContent = fmtCapacity(totals.fteScoped)+' FTE · '+fmtCapacity(totals.bpoScoped)+' BPO'; }
+  if(doneBpoEl){ doneBpoEl.style.display = hasBpo ? '' : 'none'; if(hasBpo) doneBpoEl.textContent = fmtCapacity(totals.fteProgress)+' FTE · '+fmtCapacity(totals.bpoProgress)+' BPO'; }
+  if(extraBpoEl){ extraBpoEl.style.display = hasBpo ? '' : 'none'; if(hasBpo) extraBpoEl.textContent = fmtCapacity(totals.fteExcess)+'/'+fmtCapacity(totals.fteActual)+' FTE · '+fmtCapacity(totals.bpoExcess)+'/'+fmtCapacity(totals.bpoActual)+' BPO'; }
   if(extra) extra.style.display='';
   var viewLabel = App.currentVibeView === 'sprint'
     ? 'Weekly plan: '+weekRangeLabel(selectedWeekStart())+' onward'

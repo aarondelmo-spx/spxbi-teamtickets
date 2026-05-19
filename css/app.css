@@ -65,6 +65,8 @@
   .stat-label{font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
   .stat-num{font-size:26px;font-weight:300;font-family:var(--mono)}
   .stat-num.c-high{color:var(--high)}.stat-num.c-prog{color:var(--prog)}.stat-num.c-done{color:var(--done)}
+  .stat-sub{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:5px}
+  .bpo-badge{display:inline-block;background:rgba(247,184,111,.15);color:#f7b86f;border:1px solid rgba(247,184,111,.3);border-radius:4px;font-size:10px;font-family:var(--mono);padding:1px 5px;vertical-align:middle;margin-left:4px}
   .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
   .filter-pill{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--font)}
   .filter-pill:hover{border-color:var(--border2);color:var(--text)}
